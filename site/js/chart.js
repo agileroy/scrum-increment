@@ -27,8 +27,8 @@ function mark(kind, x, y, title) {
 /**
  * series : [{ kind: 1 | 2, label, values: [cumul de chaque période] }]
  * options :
- *   axis : libellé court de chaque période (« S3 », « +4 sem. ») ;
- *   names : libellé long de chaque période, pour le survol (« Sprint 3 », « 4 semaines après le projet ») ;
+ *   axis : libellé court de chaque période (« 6 sem. ») ;
+ *   names : libellé long de chaque période, pour le survol (« semaines 5 et 6 ») ;
  *   frontier : nombre de Sprints de développement (ligne « Fin du projet » après cette période) ;
  *   compact : mise en page pour téléphone.
  * Renvoie le SVG du graphique.
@@ -39,7 +39,7 @@ export function chartSvg(series, { axis, names, frontier, compact = false }) {
   const top = niceTop(Math.max(...series.flatMap((s) => s.values)));
   const x = (i) => LEFT + (i * (W - LEFT - RIGHT)) / (n - 1);
   const y = (v) => TOP + (H - TOP - BOTTOM) * (1 - v / top);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur 20 semaines, une courbe par manche, avec la fin du projet après le Sprint ${frontier}">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur 20 semaines, une courbe par manche, avec la fin du projet après ${frontier * 2} semaines">`;
 
   // Zone d'exploitation et frontière « Fin du projet », sous les courbes.
   if (frontier < n) {
@@ -60,7 +60,7 @@ export function chartSvg(series, { axis, names, frontier, compact = false }) {
   for (let i = 0; i < n; i++) {
     const label = axis[i];
     // Sur téléphone, « +4 sem. » passe sur deux lignes pour ne pas chevaucher ses voisins.
-    const m = compact && label.match(/^(\+\d+) (sem\.)$/);
+    const m = compact && label.match(/^(\+?\d+) (sem\.)$/);
     svg += m
       ? `<text class="axis" x="${x(i)}" y="${H - 24}" text-anchor="middle"><tspan>${m[1]}</tspan><tspan x="${x(i)}" dy="13">${m[2]}</tspan></text>`
       : `<text class="axis" x="${x(i)}" y="${H - 12}" text-anchor="middle">${label}</text>`;

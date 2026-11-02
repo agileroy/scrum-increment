@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   newRound, planStatus, toggleInPlan, moveFeature, validatePlan, playSprint, finishRound,
   roundResults, canMove, featureState, developmentOver, truthTable,
-  requestStatus, decideRequest, canRemove, periodLabel, planStatus as status,
+  requestStatus, decideRequest, canRemove, periodWeeks, projectWeather, planStatus as status,
 } from '../site/js/game-core.js';
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
@@ -110,7 +110,7 @@ test('Sortie au Sprint 6 : 8 fonctionnalités, premières ventes 2 semaines apr�
   assert.ok(reports.every((r) => r.quotes.length === 0));
   assert.equal(results.liveAtEnd.length, 8);
   assert.equal(results.firstSale, 7);
-  assert.equal(periodLabel(results.firstSale, results.lastBuildSprint), '2 semaines après le projet');
+  assert.deepEqual(periodWeeks(results.firstSale), [13, 14]);
   assert.equal(state.recette, 8);
 });
 
@@ -318,7 +318,7 @@ test('manche 1 : la demande bloque le Sprint suivant jusqu\'à la décision', ()
   assert.equal(refused.pendingRequest, null);
   assert.deepEqual(refused.included, r.state.included);
   assert.equal(refused.recetteCost, 8);
-  assert.ok(refused.log.some((l) => l.kind === 'decision' && /refusée/.test(l.text)));
+  assert.deepEqual(refused.log.at(-1), { sprint: 1, kind: 'decision', request: 'anglais', decision: 'refused', removed: [] });
   assert.ok(playSprint(refused));
 });
 
@@ -393,12 +393,39 @@ test('les trois demandes arrivent aux Reviews 1, 2 et 3 dans les deux manches', 
   }
 });
 
-test('Coupure budgétaire : 10 semaines d\'exploitation après le Sprint 5', () => {
+test('Coupure budgétaire : 10 semaines d\'exploitation après la cinquième période', () => {
   const { results } = playAll(newRound('increment', { cut: true }));
   assert.equal(results.lastBuildSprint, 5);
-  assert.deepEqual([6, 7, 8, 9, 10].map((p) => periodLabel(p, 5, { short: true })), ['+2 sem.', '+4 sem.', '+6 sem.', '+8 sem.', '+10 sem.']);
-  assert.equal(periodLabel(5, 5, { short: true }), 'S5');
-  assert.equal(periodLabel(10, 5), '10 semaines après le projet');
+  assert.deepEqual(periodWeeks(5), [9, 10]);
+  assert.equal((10 - results.lastBuildSprint) * 2, 10);
+});
+
+test('Échéance et semaines : la troisième période couvre les semaines 5 et 6', () => {
+  assert.deepEqual(periodWeeks(3), [5, 6]);
+  assert.deepEqual(periodWeeks(1), [1, 2]);
+});
+
+test('Orage à l\'annonce de la coupure', () => {
+  const { reports } = playDevelopment(cascadeWithoutReviews(true));
+  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'stormy', 'stormy', 'stormy']);
+});
+
+test('Soleil sans coupure, puis « Livré »', () => {
+  const { reports } = playDevelopment(cascadeWithoutReviews(false));
+  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'sunny', 'sunny', 'sunny', 'delivered']);
+});
+
+test('pas de météo en manche 2', () => {
+  assert.equal(playSprint(newRound('increment')).report.weather, null);
+  assert.equal(projectWeather(cascadeWithoutReviews(false)), 'sunny');
+});
+
+test('journal en faits, sans phrase', () => {
+  const { state } = playDevelopment(newRound('increment', { cut: true }));
+  for (const entry of state.log) assert.ok(!('text' in entry), JSON.stringify(entry));
+  assert.ok(state.log.some((l) => l.kind === 'quote' && typeof l.quote === 'string'));
+  assert.ok(state.log.some((l) => l.kind === 'event' && l.event === 'coupure'));
+  assert.ok(state.log.some((l) => l.kind === 'decision' && l.decision === 'backlog'));
 });
 
 test('Parcours de référence : plateaux acceptés contre la livraison rapportent plus qu\'un refus', () => {

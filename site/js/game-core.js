@@ -84,10 +84,10 @@ function checkPlan(items, budget) {
     .filter((id) => feature(id).req && !has(items, feature(id).req))
     .map((id) => ({ id, req: feature(id).req }));
   let message;
-  if (items.length === 0) message = 'Le plan est vide : ajoutez au moins une fonctionnalité.';
-  else if (over > 0) message = `Le plan dépasse de ${over} point${over > 1 ? 's' : ''} : retirez au moins une fonctionnalité.`;
+  if (items.length === 0) message = 'Le cahier des charges est vide : ajoutez au moins un lot.';
+  else if (over > 0) message = `Le cahier des charges dépasse de ${over} point${over > 1 ? 's' : ''} : retirez au moins un lot.`;
   else if (missing.length) message = `« ${feature(missing[0].id).name} » nécessite « ${feature(missing[0].req).name} ».`;
-  else message = 'Le plan tient dans le budget. Le comité est prêt à signer.';
+  else message = 'Le cahier des charges tient dans le budget : la commanditaire est prête à signer.';
   return { total, budget, over, missing, valid: items.length > 0 && over === 0 && missing.length === 0, message };
 }
 
@@ -134,7 +134,7 @@ export function validatePlan(state) {
   if (!status.valid) throw new Error(status.message);
   const next = clone(state);
   next.planValidated = true;
-  next.log.push({ sprint: 0, kind: 'plan', text: `Plan de ${status.total} points validé et signé par le comité.` });
+  next.log.push({ sprint: 0, kind: 'plan', total: status.total });
   return next;
 }
 
@@ -251,29 +251,27 @@ export function playSprint(state) {
   for (const e of events) if (e.lastBuildSprint) next.lastBuildSprint = Math.min(next.lastBuildSprint, e.lastBuildSprint);
 
   const progress = next.mode === MODES.cascade ? planProgress(next) : null;
-  let text;
-  if (next.mode === MODES.cascade) text = launched ? `avancement ${progress} %, appli en ligne.` : `avancement ${progress} %.`;
-  else text = completed.length ? `${completed.map((id) => feature(id).name).join(', ')} en ligne.` : 'élément en cours.';
-  next.log.push({ sprint, kind: 'sprint', text, sales: Math.round(sales) });
-  for (const q of quotes) next.log.push({ sprint, kind: 'quote', text: q.text, who: q.who });
-  for (const e of events) next.log.push({ sprint, kind: 'event', text: e.log });
+  const weather = next.mode === MODES.cascade ? projectWeather(next) : null;
+  next.log.push({ sprint, kind: 'sprint', completed: completed.slice(), launched, progress, weather, sales: Math.round(sales) });
+  for (const q of quotes) next.log.push({ sprint, kind: 'quote', quote: q.id });
+  for (const e of events) next.log.push({ sprint, kind: 'event', event: e.id });
 
   const request = REQUESTS.find((r) => r.after === sprint && !developmentOver(next)) ?? null;
   if (request) {
-    next.log.push({ sprint, kind: 'request', text: `${request.name} : « ${request.ask} »` });
+    next.log.push({ sprint, kind: 'request', request: request.id });
     if (next.mode === MODES.cascade) {
       next.pendingRequest = request.id;
     } else {
       next.order.push(request.id);
       next.requests.push({ id: request.id, sprint, decision: 'backlog', removed: [] });
-      next.log.push({ sprint, kind: 'decision', text: `${request.name} ajoutée en bas du Product Backlog.` });
+      next.log.push({ sprint, kind: 'decision', request: request.id, decision: 'backlog', removed: [] });
     }
   }
 
   return {
     state: next,
     report: {
-      sprint, sales, completed, launched, progress, quotes, events, request,
+      sprint, sales, completed, launched, progress, weather, quotes, events, request,
       nothingLive: next.live.length === 0,
       developmentOver: developmentOver(next),
     },
@@ -345,11 +343,11 @@ export function requestStatus(state, remove = []) {
   const status = checkPlan(items, planBudget(state, state.recetteCost + AVENANT));
   const blocked = remove.filter((x) => !removable.includes(x));
   if (blocked.length) {
-    return { ...status, removable, valid: false, message: `« ${feature(blocked[0]).name} » est déjà commencée : elle ne peut plus être retirée.` };
+    return { ...status, removable, valid: false, message: `« ${feature(blocked[0]).name} » est déjà commencé : ce lot ne peut plus être retiré.` };
   }
   let message = status.message;
-  if (status.over > 0) message = `Le plan dépasserait le budget de ${status.over} point${status.over > 1 ? 's' : ''} : retirez des fonctionnalités pas encore commencées.`;
-  else if (status.valid) message = 'Le plan tient dans le budget : le comité peut signer l\'avenant.';
+  if (status.over > 0) message = `Le cahier des charges dépasserait le budget de ${status.over} point${status.over > 1 ? 's' : ''} : retirez des lots pas encore commencés.`;
+  else if (status.valid) message = 'Le cahier des charges tient dans le budget : le COPIL peut signer l\'avenant.';
   return { ...status, removable, message };
 }
 
@@ -358,17 +356,15 @@ export function decideRequest(state, { accept, remove = [] }) {
   const id = state.pendingRequest;
   if (!id) throw new Error('Aucune demande de changement en attente.');
   const next = clone(state);
-  const r = feature(id);
   if (accept) {
     const status = requestStatus(state, remove);
     if (!status.valid) throw new Error(status.message);
     next.included = [...next.included.filter((x) => !remove.includes(x)), id];
     next.order = [...next.order.filter((x) => x !== id), id];
     next.recetteCost += AVENANT;
-    const removedNames = remove.map((x) => feature(x).name);
-    next.log.push({ sprint: next.sprint, kind: 'decision', text: `${r.name} acceptée par avenant (+${AVENANT} points de recette)${removedNames.length ? `, en retirant : ${removedNames.join(', ')}` : ''}.` });
+    next.log.push({ sprint: next.sprint, kind: 'decision', request: id, decision: 'accepted', removed: remove.slice() });
   } else {
-    next.log.push({ sprint: next.sprint, kind: 'decision', text: `${r.name} refusée : le plan reste inchangé.` });
+    next.log.push({ sprint: next.sprint, kind: 'decision', request: id, decision: 'refused', removed: [] });
   }
   next.requests.push({ id, sprint: next.sprint, decision: accept ? 'accepted' : 'refused', removed: accept ? remove.slice() : [] });
   next.pendingRequest = null;
@@ -377,12 +373,23 @@ export function decideRequest(state, { accept, remove = [] }) {
 
 /* ---------- Calendrier ---------- */
 
-/**
- * Libellé d'une période (1 à 10) : un Sprint pendant le projet, des semaines d'exploitation ensuite.
- * short : « S3 », « +4 sem. » ; sinon « Sprint 3 », « 4 semaines après le projet ».
- */
-export function periodLabel(period, lastBuildSprint, { short = false } = {}) {
-  if (period <= lastBuildSprint) return short ? `S${period}` : `Sprint ${period}`;
-  const weeks = (period - lastBuildSprint) * SPRINT_WEEKS;
-  return short ? `+${weeks} sem.` : `${weeks} semaines après le projet`;
+/** Semaines couvertes par une période (1 à 10) : [2p − 1, 2p]. */
+export function periodWeeks(period) {
+  return [period * SPRINT_WEEKS - 1, period * SPRINT_WEEKS];
+}
+
+/* ---------- Météo du projet (manche 1) ---------- */
+
+/** Points restant à faire : lots du plan non terminés, puis recette (avenants compris). */
+export function remainingWork(state) {
+  const items = workItems(state);
+  return items.reduce((sum, id) => sum + Math.max(0, feature(id).cost - state.progress[id]), 0)
+    + Math.max(0, state.recetteCost - state.recette);
+}
+
+/** « delivered » une fois l'appli sortie ; « sunny » si le reste tient dans la capacité restante ; « stormy » sinon. */
+export function projectWeather(state) {
+  if (state.launched) return 'delivered';
+  const capacityLeft = Math.max(0, state.lastBuildSprint - state.sprint) * TEAM_CAPACITY;
+  return remainingWork(state) <= capacityLeft ? 'sunny' : 'stormy';
 }

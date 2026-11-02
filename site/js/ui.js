@@ -1,24 +1,25 @@
 // Interface du jeu solo : écrans, listes et fenêtres.
-// Aucune règle de jeu ici : tout vient de game-core.js, l'interface affiche ses comptes rendus.
+// Aucune règle de jeu ici (tout vient de game-core.js), et aucun mot propre à une manche
+// (tout vient de vocabulary.js) : l'interface met en page.
 
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
-  workItems, featureState, buildCapacity, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, periodLabel,
+  workItems, featureState, playSprint, finishRound, roundResults, truthTable,
+  requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather,
 } from './game-core.js';
-import { EURO_PER_POINT, LAST_SPRINT, DONE_COST, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS } from './scenario.js';
+import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js';
+import { lexicon, logEntry, exploitationText } from './vocabulary.js';
 import { chartSvg, legendHtml, formatEuro } from './chart.js';
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ['home', 'plan', 'board', 'transition', 'results'];
-const ROUND_LABEL = { [MODES.cascade]: 'Manche 1', [MODES.increment]: 'Manche 2' };
 
 const app = { cut: true, round: null, results: {}, afterDialog: null, remove: [] };
 const compactQuery = window.matchMedia('(max-width: 560px)');
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
-const requestChip = (id) => (isRequest(id) ? '<span class="chip request">Demande de Mme Lefèvre</span>' : '');
+const lex = () => lexicon(app.round.mode);
 const stars = (n) => `<span class="stars" aria-label="Intuition de Mme Lefèvre : ${n} sur 5">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
 
 function show(name) {
@@ -26,21 +27,24 @@ function show(name) {
   const chip = $('round-chip');
   const inRound = ['plan', 'board'].includes(name) && app.round;
   chip.hidden = !inRound;
-  if (inRound) chip.textContent = ROUND_LABEL[app.round.mode];
+  if (inRound) chip.textContent = lex().round;
   window.scrollTo(0, 0);
 }
 
-/* ---------------------------------------------------------------- Fonctionnalités */
+/* ---------------------------------------------------------------- Lots et éléments */
 
-const STATE_BADGE = {
-  live: () => '<span class="chip live">En ligne</span>',
-  awaiting: () => '<span class="chip">Terminée, en attente de recette</span>',
-  'in-progress': () => '<span class="chip">En cours</span>',
-  blocked: (f) => `<span class="chip warn">Nécessite : ${esc(feature(f.req).name)}</span>`,
-  todo: () => '',
-};
+function stateBadge(state, id) {
+  const f = feature(id);
+  switch (featureState(state, id)) {
+    case 'live': return '<span class="chip live">En ligne</span>';
+    case 'awaiting': return `<span class="chip">${esc(lexicon(state.mode).awaiting)}</span>`;
+    case 'in-progress': return '<span class="chip">En cours</span>';
+    case 'blocked': return `<span class="chip warn">Nécessite : ${esc(feature(f.req).name)}</span>`;
+    default: return '';
+  }
+}
 
-function moveButtons(state, id, index, count) {
+function moveButtons(id, index, count) {
   const name = esc(feature(id).name);
   return `<div class="move">
     <button type="button" data-move="${id}" data-dir="-1" aria-label="Monter « ${name} »" ${index === 0 ? 'disabled' : ''}>↑</button>
@@ -59,24 +63,25 @@ function planItemHtml(state, id, index) {
       <div class="item-meta"><span>${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${f.req ? `<span>Nécessite : ${esc(feature(f.req).name)}</span>` : ''}</div>
     </div>
     <div class="item-controls">
-      <label class="include"><input type="checkbox" data-toggle="${id}" ${inPlan ? 'checked' : ''}> Au plan</label>
-      ${moveButtons(state, id, index, state.order.length)}
+      <label class="include"><input type="checkbox" data-toggle="${id}" ${inPlan ? 'checked' : ''}> Retenu</label>
+      ${moveButtons(id, index, state.order.length)}
     </div>
   </li>`;
 }
 
 function boardItemHtml(state, id, index, count) {
   const f = feature(id);
-  const st = featureState(state, id);
+  const l = lexicon(state.mode);
   const p = Math.min(state.progress[id], f.cost);
   const value = state.revealed.includes(id)
-    ? `<span class="value-known">Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} / Sprint</span>`
+    ? `<span class="value-known">Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} ${l.valuePer}</span>`
     : '<span>Ventes réelles : ?</span>';
-  const controls = canMove(state, id) ? moveButtons(state, id, index, count) : '';
-  return `<li class="item ${st === 'live' ? 'is-live' : ''}">
+  const chip = isRequest(id) ? `<span class="chip request">${esc(l.requestChip)}</span>` : '';
+  const controls = canMove(state, id) ? moveButtons(id, index, count) : '';
+  return `<li class="item ${featureState(state, id) === 'live' ? 'is-live' : ''}">
     <div class="rank">${index + 1}</div>
     <div>
-      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${requestChip(id)}${STATE_BADGE[st](f)}</div>
+      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}</div>
       <div class="item-desc">${esc(f.desc)}</div>
       <div class="item-meta"><span>${p} / ${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
       <div class="bar"><span style="width:${(p / f.cost) * 100}%"></span></div>
@@ -86,20 +91,21 @@ function boardItemHtml(state, id, index, count) {
 }
 
 function recetteHtml(state) {
+  const l = lexicon(state.mode);
   const ready = workItems(state).every((id) => state.done.includes(id));
   return `<li class="item is-recette ${state.launched ? 'is-live' : ''}">
     <div class="rank" aria-hidden="true">✓</div>
     <div>
-      <div class="item-head"><span class="item-name">Recette et mise en production</span>${state.launched ? '<span class="chip live">Appli en ligne</span>' : ''}</div>
-      <div class="item-desc">${ready ? 'Toutes les fonctionnalités du plan sont terminées.' : 'Commence quand tout le reste du plan est terminé.'}</div>
-      <div class="item-meta"><span>${state.recette} / ${state.recetteCost} pts</span>${state.recetteCost > 8 ? `<span>dont ${state.recetteCost - 8} points d'avenant</span>` : ''}</div>
+      <div class="item-head"><span class="item-name">${esc(l.recetteName)}</span>${state.launched ? '<span class="chip live">Appli en ligne</span>' : ''}</div>
+      <div class="item-desc">${esc(ready ? l.recetteReady : l.recetteWaiting)}</div>
+      <div class="item-meta"><span>${state.recette} / ${state.recetteCost} pts</span>${state.recetteCost > RECETTE ? `<span>${esc(l.recetteAvenant(state.recetteCost - RECETTE))}</span>` : ''}</div>
       <div class="bar"><span style="width:${(state.recette / state.recetteCost) * 100}%"></span></div>
     </div>
     <div class="item-controls"></div>
   </li>`;
 }
 
-/* ---------------------------------------------------------------- Plan (manche 1) */
+/* ---------------------------------------------------------------- Cahier des charges (manche 1) */
 
 function renderPlan() {
   const s = app.round;
@@ -114,38 +120,38 @@ function renderPlan() {
   $('plan-list').innerHTML = s.order.map((id, i) => planItemHtml(s, id, i)).join('');
 }
 
-/* ---------------------------------------------------------------- Tableau de Sprint */
+/* ---------------------------------------------------------------- Tableau */
 
-function logHtml(entry) {
-  if (entry.kind === 'quote') return `<p class="quote-line">« ${esc(entry.text)} » — ${esc(entry.who)}</p>`;
-  if (entry.kind === 'request') return `<p class="request-line"><strong>Demande de Mme Lefèvre :</strong> ${esc(entry.text)}</p>`;
-  if (entry.kind === 'decision') return `<p class="decision-line">${esc(entry.text)}</p>`;
-  if (entry.kind === 'event') return `<p class="event-line"><strong>Imprévu :</strong> ${esc(entry.text)}</p>`;
-  if (entry.kind === 'sprint') return `<p><strong>Sprint ${entry.sprint}</strong> : ${esc(entry.text)} Ventes : ${formatEuro(entry.sales)}.</p>`;
-  return `<p>${esc(entry.text)}</p>`;
+function logHtml(mode, fact) {
+  const e = logEntry(mode, fact);
+  if (!e.text) return '';
+  const label = e.label ? `<strong>${esc(e.label)} :</strong> ` : '';
+  if (e.kind === 'quote') return `<p class="quote-line">« ${esc(e.text)} » — ${esc(e.who)}</p>`;
+  return `<p class="${e.kind}-line">${label}${esc(e.text)}</p>`;
 }
 
 function renderBoard() {
   const s = app.round;
+  const l = lex();
   const cascade = s.mode === MODES.cascade;
-  const next = s.sprint + 1;
-  $('board-chip').textContent = ROUND_LABEL[s.mode];
-  $('board-title').textContent = `Sprint ${next} sur ${s.lastBuildSprint}`;
-  $('play-sprint').textContent = `Lancer le Sprint ${next}`;
-  $('list-title').textContent = cascade ? 'Le plan' : 'Product Backlog';
-  $('list-hint').textContent = cascade
-    ? "Le plan est figé par contrat : l'ordre ne peut plus changer."
-    : "Ordonnez le Product Backlog : l'équipe prend les éléments par le haut, et un élément non terminé continue au Sprint suivant.";
-  const capacity = cascade ? `${buildCapacity(s)} pts` : `${buildCapacity(s)} pts + ${DONE_COST}`;
-  $('board-stats').innerHTML = [
-    [capacity, cascade ? 'Capacité du Sprint' : 'Pour construire + pour finir'],
-    [s.live.length, 'Fonctionnalités en ligne'],
-    [`${Math.round(s.clientele * 100)} %`, 'Clients potentiels'],
-    [formatEuro(s.cumulative), 'Ventes cumulées'],
-  ].map(([v, l]) => `<div class="stat"><strong>${v}</strong><span>${l}</span></div>`).join('');
+  const next = Math.min(s.sprint + 1, s.lastBuildSprint);
+  $('board-chip').textContent = l.round;
+  $('board-title').textContent = `${l.deadline(next, s.lastBuildSprint)} · ${l.deadlineWeeks(next)}`;
+  $('play-sprint').textContent = l.play(next);
+  $('list-title').textContent = l.listTitle;
+  $('list-hint').textContent = l.listHint;
+  $('journal-title').textContent = l.journalTitle;
+  $('board-stats').innerHTML = l.stats(s, {
+    progress: cascade ? planProgress(s) : null,
+    weather: cascade ? projectWeather(s) : null,
+    live: s.live.length,
+    clientele: Math.round(s.clientele * 100),
+    cumulative: s.cumulative,
+  }).map(([v, label]) => `<div class="stat"><strong>${esc(v)}</strong><span>${esc(label)}</span></div>`).join('');
   const items = workItems(s);
   $('board-list').innerHTML = items.map((id, i) => boardItemHtml(s, id, i, items.length)).join('') + (cascade ? recetteHtml(s) : '');
-  $('journal').innerHTML = s.log.length ? s.log.slice().reverse().map(logHtml).join('') : '<p class="muted">Le projet démarre.</p>';
+  const lines = s.log.slice().reverse().map((fact) => logHtml(s.mode, fact)).filter(Boolean);
+  $('journal').innerHTML = lines.length ? lines.join('') : `<p class="muted">${esc(l.journalEmpty)}</p>`;
 }
 
 /* ---------------------------------------------------------------- Fenêtres */
@@ -159,13 +165,16 @@ function openDialog(html, afterClose) {
 }
 
 function reportHtml(state, report) {
+  const l = lexicon(state.mode);
   const cascade = state.mode === MODES.cascade;
-  let h = `<h2 id="dialog-title">Sprint ${report.sprint} terminé</h2>`;
+  let h = `<h2 id="dialog-title">${esc(l.reportTitle(report.sprint))}</h2>`;
   if (cascade) {
+    const w = l.weather(report.weather);
+    h += `<p class="weather weather-${report.weather}"><span class="weather-icon" aria-hidden="true">${w.icon}</span><span><strong>Météo du projet : ${esc(w.label)}.</strong> ${esc(w.text)}</span></p>`;
     h += report.launched
-      ? `<p class="good"><strong>L'appli est en ligne !</strong> Les ${state.live.length} fonctionnalités du plan sortent toutes en même temps.</p>`
-      : `<p>Avancement du plan : <strong>${report.progress} %</strong></p><p class="good">Rapport au comité : tout se déroule comme prévu.</p>`;
-    h += `<p>Ventes pendant ce Sprint : <strong>${formatEuro(report.sales)}</strong></p>`;
+      ? `<p class="good"><strong>L'appli est en ligne !</strong> Les ${state.live.length} lots du cahier des charges sortent tous en même temps.</p>`
+      : `<p>Avancement du cahier des charges : <strong>${report.progress} %</strong></p>`;
+    h += `<p>${esc(l.salesLine(report.sales))}</p>`;
     h += '<h3>Retours clients</h3>';
     h += report.launched
       ? '<p class="muted">Les premiers clients découvrent l\'appli.</p>'
@@ -174,41 +183,38 @@ function reportHtml(state, report) {
     h += report.completed.length
       ? `<p>Mis en ligne : <strong>${report.completed.map((id) => esc(feature(id).name)).join(', ')}</strong></p>`
       : '<p>Rien de nouveau en ligne ce Sprint : un élément est encore en cours.</p>';
-    h += `<p>Ventes pendant ce Sprint : <strong>${formatEuro(report.sales)}</strong></p>`;
-    h += '<h3>Sprint Review : ce que disent les clients</h3>';
+    h += `<p>${esc(l.salesLine(report.sales))}</p>`;
+    h += '<h3>Ce que disent les clients</h3>';
     h += report.quotes.length
       ? report.quotes.map((q) => `<blockquote class="quote">« ${esc(q.text)} »<footer>${esc(q.who)}</footer></blockquote>`).join('')
       : '<p class="muted">Pas de nouveau retour.</p>';
     if (report.completed.length) h += '<p class="muted">La vraie valeur des fonctionnalités en ligne apparaît maintenant dans le Product Backlog.</p>';
   }
   for (const e of report.events) {
-    const extra = cascade && e.lastBuildSprint ? ' Le comité maintient le plan signé.' : '';
-    h += `<p class="news"><strong>${esc(e.title)} :</strong> ${esc(e.text)}${extra}</p>`;
+    h += `<p class="news"><strong>${esc(e.title)} :</strong> ${esc(l.eventText(e))}</p>`;
   }
   if (report.request) {
     const r = report.request;
-    h += `<div class="request-box"><p><strong>Mme Lefèvre a une demande :</strong> « ${esc(r.ask)} »</p>`;
-    h += cascade
-      ? `<p>${esc(r.name)} : ${r.cost} points, plus ${AVENANT} points d'avenant. Le comité doit trancher avant le Sprint suivant.</p></div>`
-      : `<p><strong>${esc(r.name)}</strong> est ajoutée en bas du Product Backlog : à vous de l'ordonner.</p></div>`;
+    h += `<div class="request-box"><p><strong>Demande de ${esc(l.stakeholder)} :</strong> « ${esc(r.ask)} »</p><p>${esc(l.requestAnnounce(r))}</p></div>`;
   }
-  let next = report.developmentOver ? 'Fin du projet' : `Préparer le Sprint ${report.sprint + 1}`;
-  if (cascade && report.request) next = 'Voir la demande de Mme Lefèvre';
-  h += `<button type="button" class="button button-primary" data-close>${next}</button>`;
+  let next = report.developmentOver ? 'Fin du projet' : l.next(report.sprint + 1);
+  if (cascade && report.request) next = l.seeRequest;
+  h += `<button type="button" class="button button-primary" data-close>${esc(next)}</button>`;
   return h;
 }
 
 function finishHtml(state, summary) {
-  let h = `<h2 id="dialog-title">Fin du projet</h2><p>Le développement s'arrête après le Sprint ${summary.lastBuildSprint}.</p>`;
+  const l = lexicon(state.mode);
+  let h = `<h2 id="dialog-title">Fin du projet</h2>`;
   if (state.mode === MODES.cascade && !summary.launched) {
-    h += `<p class="bad"><strong>Le projet s'arrête après le Sprint ${summary.lastBuildSprint}.</strong> L'appli n'est jamais sortie : ${plural(summary.doneOffline, 'fonctionnalité terminée')} ne ${summary.doneOffline > 1 ? 'servent' : 'sert'} à aucun client.</p>`;
+    h += `<p class="bad">${esc(l.neverReleased(summary.lastBuildSprint, summary.doneOffline))}</p>`;
   } else {
+    h += `<p>${esc(l.endOfDev(summary.lastBuildSprint))}</p>`;
     h += `<p class="good">L'appli tourne avec <strong>${plural(summary.liveCount, 'fonctionnalité')}</strong>.</p>`;
   }
-  const weeks = (LAST_SPRINT - summary.lastBuildSprint) * SPRINT_WEEKS;
-  h += `<p>Place à l'exploitation : ${weeks} semaines sans développement, jusqu'à ${HORIZON_WEEKS} semaines après le lancement du projet. La boulangerie vit avec ce qui est en ligne.</p>`;
+  h += `<p>${esc(exploitationText(summary.lastBuildSprint, HORIZON_WEEKS, SPRINT_WEEKS))}</p>`;
   h += `<p>Ventes cumulées après ${HORIZON_WEEKS} semaines : <strong>${formatEuro(summary.cumulative)}</strong></p>`;
-  h += `<button type="button" class="button button-primary" data-close>${state.mode === MODES.cascade ? 'Passer à la manche 2' : 'Voir les résultats'}</button>`;
+  h += `<button type="button" class="button button-primary" data-close>${esc(l.finishButton)}</button>`;
   return h;
 }
 
@@ -216,7 +222,6 @@ function finishCurrentRound() {
   const { state, summary } = finishRound(app.round);
   app.round = state;
   app.results[state.mode] = roundResults(state);
-  renderBoard();
   openDialog(finishHtml(state, summary), () => {
     if (state.mode === MODES.cascade) show('transition');
     else renderResults();
@@ -238,19 +243,19 @@ function requestHtml() {
   const s = app.round;
   const r = feature(s.pendingRequest);
   const st = requestStatus(s, app.remove);
-  let h = `<h2 id="dialog-title">Demande de changement</h2>`;
-  h += `<blockquote class="quote">« ${esc(r.ask)} »<footer>Madame Lefèvre</footer></blockquote>`;
+  let h = '<h2 id="dialog-title">Demande de changement</h2>';
+  h += `<blockquote class="quote">« ${esc(r.ask)} »<footer>Madame Lefèvre, la commanditaire</footer></blockquote>`;
   h += `<p><strong>${esc(r.name)}</strong> (${esc(r.desc)}) : ${r.cost} points, intuition ${stars(r.stars)}.</p>`;
-  h += `<p class="muted">Accepter, c'est signer un avenant : ${AVENANT} points de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du plan des fonctionnalités pas encore commencées.</p>`;
-  h += `<div class="panel-head"><strong>Plan avec la demande</strong><span class="count">${st.total} / ${st.budget} points</span></div>`;
+  h += `<p class="muted">Accepter, c'est signer un avenant : ${AVENANT} points de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du cahier des charges des lots pas encore commencés.</p>`;
+  h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${st.total} / ${st.budget} points</span></div>`;
   h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
   h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
   h += st.removable.length
-    ? `<fieldset class="removals"><legend>Retirer du plan</legend>${st.removable.map((id) => {
+    ? `<fieldset class="removals"><legend>Retirer des lots</legend>${st.removable.map((id) => {
       const f = feature(id);
       return `<label class="include"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${esc(f.name)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span></span></label>`;
     }).join('')}</fieldset>`
-    : '<p class="muted">Toutes les fonctionnalités du plan sont commencées : plus rien ne peut être retiré.</p>';
+    : '<p class="muted">Tous les lots sont commencés : plus rien ne peut être retiré.</p>';
   h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Accepter (avenant)</button><button type="button" class="button button-ghost" data-refuse>Refuser</button></div>`;
   return h;
 }
@@ -275,19 +280,19 @@ function decide(accept) {
 
 /* ---------------------------------------------------------------- Résultats */
 
+const firstWeek = (period) => periodWeeks(period)[0];
+
 function renderResults() {
   const a = app.results[MODES.cascade];
   const b = app.results[MODES.increment];
   const series = [
-    { kind: 1, label: 'Manche 1 : une seule livraison à la fin', values: a.curve },
-    { kind: 2, label: 'Manche 2 : un incrément à chaque Sprint', values: b.curve },
+    { kind: 1, label: 'Manche 1 : projet, une livraison à la fin', values: a.curve },
+    { kind: 2, label: 'Manche 2 : Scrum, un incrément à chaque Sprint', values: b.curve },
   ];
-  const frontier = a.lastBuildSprint;
-  const periods = a.curve.map((_, i) => i + 1);
-  app.chart = { series, frontier, periods };
+  app.chart = { series, frontier: a.lastBuildSprint, periods: a.curve.map((_, i) => i + 1) };
   drawChart();
   $('legend').innerHTML = legendHtml(series);
-  const first = (r) => (r.firstSale ? periodLabel(r.firstSale, r.lastBuildSprint) : 'Jamais');
+  const first = (r) => (r.firstSale ? `Dès la semaine ${firstWeek(r.firstSale)}` : 'Jamais');
   const invested = (r) => `${formatEuro(r.invested)}${r.neverSold ? ' (sans retour)' : ''}`;
   const low = (r) => (r.liveAtEnd.length ? `${r.lowUse.length} sur ${r.liveAtEnd.length}` : '—');
   const rows = [
@@ -298,9 +303,9 @@ function renderResults() {
     ['Demandes de Mme Lefèvre mises en ligne', a.requestsLive.length, b.requestsLive.length],
     [`Ventes cumulées après ${HORIZON_WEEKS} semaines`, `<strong>${formatEuro(a.cumulative)}</strong>`, `<strong>${formatEuro(b.cumulative)}</strong>`],
   ];
-  $('kpi').innerHTML = '<thead><tr><th scope="col"><span hidden>Indicateur</span></th><th scope="col">Manche 1</th><th scope="col">Manche 2</th></tr></thead><tbody>'
-    + rows.map(([l, x, y]) => `<tr><th scope="row">${l}</th><td>${x}</td><td>${y}</td></tr>`).join('') + '</tbody>';
-  $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / Sprint</th></tr></thead><tbody>'
+  $('kpi').innerHTML = '<thead><tr><th scope="col"><span hidden>Indicateur</span></th><th scope="col">Manche 1 · Projet</th><th scope="col">Manche 2 · Scrum</th></tr></thead><tbody>'
+    + rows.map(([label, x, y]) => `<tr><th scope="row">${label}</th><td>${x}</td><td>${y}</td></tr>`).join('') + '</tbody>';
+  $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th></tr></thead><tbody>'
     + truthTable().map((t) => `<tr><td>${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
   show('results');
 }
@@ -309,8 +314,8 @@ function drawChart() {
   if (!app.chart) return;
   const { series, frontier, periods } = app.chart;
   $('chart').innerHTML = chartSvg(series, {
-    axis: periods.map((p) => periodLabel(p, frontier, { short: true })),
-    names: periods.map((p) => periodLabel(p, frontier)),
+    axis: periods.map((p) => `${periodWeeks(p)[1]} sem.`),
+    names: periods.map((p) => { const [x, y] = periodWeeks(p); return `semaines ${x} et ${y}`; }),
     frontier,
     compact: compactQuery.matches,
   });

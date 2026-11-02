@@ -85,19 +85,34 @@ export const REQUESTS = [
 /** Au plus ce nombre de nouveaux retours par Sprint Review. */
 export const QUOTES_PER_REVIEW = 3;
 
-/** Imprévus, annoncés dans la Sprint Review du Sprint `after`, identiques dans les deux manches. */
+/**
+ * Imprévus, annoncés à la fin de la période `after` (COPIL en manche 1, Sprint Review en manche 2),
+ * identiques dans les deux manches ; textes rédigés dans le vocabulaire de chaque manche.
+ */
 export const EVENTS = [
   {
     id: 'concurrent', after: 2, optional: false,
     title: 'Nouvelle du quartier',
-    text: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients à chaque Sprint.",
-    log: 'La Mie Dorée lance sa commande en ligne.',
+    text: {
+      cascade: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients toutes les deux semaines.",
+      increment: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients toutes les deux semaines.",
+    },
+    log: {
+      cascade: 'La Mie Dorée lance sa commande en ligne.',
+      increment: 'La Mie Dorée lance sa commande en ligne.',
+    },
   },
   {
     id: 'coupure', after: 3, optional: true, lastBuildSprint: 5,
     title: 'Coup dur',
-    text: "La banque réduit le prêt. Le développement s'arrêtera après le Sprint 5.",
-    log: "La banque réduit le prêt : le développement s'arrête après le Sprint 5.",
+    text: {
+      cascade: "La banque réduit le prêt : le projet s'arrêtera au COPIL 5.",
+      increment: "La banque réduit le prêt : le développement s'arrêtera après le Sprint 5.",
+    },
+    log: {
+      cascade: "La banque réduit le prêt : le projet s'arrête au COPIL 5.",
+      increment: "La banque réduit le prêt : le développement s'arrête après le Sprint 5.",
+    },
   },
 ];
 

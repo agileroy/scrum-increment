@@ -257,6 +257,14 @@ th { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
 tbody th { color: var(--text); font-size: inherit; font-weight: 500; }
 td.num, th.num { text-align: right; white-space: nowrap; }
 .questions { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.lexicon td:first-child { color: var(--muted); }
+.weather { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 10px; }
+.weather-icon { font-size: 1.6rem; line-height: 1; }
+.weather-sunny { background: var(--live-soft); color: var(--live-text); }
+.weather-stormy { background: var(--warn-bg); color: var(--warn-text); }
+.weather-delivered { background: var(--accent-soft); color: var(--accent); }
+.journal .plan-line { color: var(--muted); }
+.journal .event-line { color: var(--news-text); }
 .rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 
 /* ---------------------------------------------------------------- Petits écrans */

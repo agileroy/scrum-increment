@@ -36,10 +36,10 @@
   <main>
     <!-- Accueil -->
     <section class="screen home" id="screen-home">
-      <p class="home-intro">Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 6 Sprints. Sa seule question : <strong>« Quand est-ce que ça me rapporte ? »</strong></p>
+      <p class="home-intro">Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 12 semaines de développement. Sa seule question : <strong>« Quand est-ce que ça me rapporte ? »</strong></p>
       <section class="panel home-card" aria-labelledby="home-solo-title">
         <h2 id="home-solo-title">Jouer seul</h2>
-        <p class="muted">Deux manches sur le même projet, avec le même budget et les mêmes imprévus. Seule la façon de travailler change. À la fin, on compare.</p>
+        <p class="muted">Deux manches sur le même projet, avec le même budget et les mêmes imprévus : d'abord en chef de projet, puis en Product Owner. Seule la façon de travailler change. À la fin, on compare.</p>
         <label class="check">
           <input type="checkbox" id="opt-cut" checked>
           <span>Coupure budgétaire en cours de projet</span>
@@ -51,9 +51,9 @@
     <!-- Manche 1 : plan -->
     <section class="screen" id="screen-plan" hidden>
       <div class="screen-head">
-        <span class="chip">Manche 1 · Avant le Sprint 1</span>
-        <h2 class="title">Le plan du projet</h2>
-        <p class="lead">Le comité veut un plan complet avant de lancer le projet : 6 Sprints de 12 points, soit 72 points, dont 8 réservés à la recette et à la mise en production finales. Choisissez les fonctionnalités et leur ordre. Une fois validé, le plan est contractuel : tout changement demandé en cours de route passera par un avenant.</p>
+        <span class="chip">Manche 1 · Projet · Avant le premier COPIL</span>
+        <h2 class="title">Le cahier des charges</h2>
+        <p class="lead">Vous êtes chef de projet. La commanditaire, Madame Lefèvre, veut un cahier des charges complet avant de lancer le projet : 12 semaines, avec un COPIL toutes les 2 semaines. L'équipe abat 12 points tous les 15 jours, soit 72 points, dont 8 réservés à la recette et à la mise en production finales. Choisissez les lots et leur ordre. Une fois validé, le cahier des charges est contractuel : tout changement demandé en cours de route passera par un avenant.</p>
       </div>
       <div class="panel plan-gauge">
         <div class="panel-head"><strong>Points planifiés</strong><span class="count" id="plan-total"></span></div>
@@ -81,7 +81,7 @@
           <ol class="backlog" id="board-list"></ol>
         </div>
         <aside class="panel journal-panel">
-          <h3>Journal</h3>
+          <h3 id="journal-title">Journal</h3>
           <div class="journal" id="journal"></div>
         </aside>
       </div>
@@ -91,12 +91,26 @@
     <section class="screen" id="screen-transition" hidden>
       <div class="screen-head">
         <span class="chip">Manche 2</span>
-        <h2 class="title">Même boulangerie, autre façon de faire</h2>
-        <p class="lead">Madame Lefèvre retente l'aventure avec une nouvelle équipe. Même budget, mêmes fonctionnalités, mêmes imprévus. Mais cette fois, chaque Sprint se termine par une version utilisable, mise en ligne pour les clients.</p>
+        <h2 class="title">Vous n'êtes plus chef de projet, mais Product Owner</h2>
+        <p class="lead">Madame Lefèvre retente l'aventure avec une équipe Scrum. Même budget, mêmes fonctionnalités, mêmes imprévus. Mais cette fois, chaque Sprint se termine par une version utilisable, mise en ligne pour les clients. Et le vocabulaire change avec la façon de faire.</p>
       </div>
       <div class="panel">
+        <h3>Ce qui change</h3>
+        <table class="lexicon">
+          <thead><tr><th scope="col">Manche 1 · Projet</th><th scope="col">Manche 2 · Scrum</th></tr></thead>
+          <tbody>
+            <tr><td>Chef de projet</td><td>Product Owner</td></tr>
+            <tr><td>Cahier des charges, en lots</td><td>Product Backlog, ordonné à chaque Sprint</td></tr>
+            <tr><td>COPIL toutes les 2 semaines</td><td>Sprint de 2 semaines, conclu par une Sprint Review</td></tr>
+            <tr><td>Recette et mise en production à la fin</td><td>Definition of Done respectée à chaque Sprint</td></tr>
+            <tr><td>Demande de changement et avenant</td><td>Nouvel élément du Product Backlog</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>Les règles</h3>
         <ul class="rules">
-          <li>Capacité : 12 points par Sprint, dont 2 consacrés à finir proprement (tests, mise en ligne). Il reste 10 points pour construire.</li>
+          <li>Capacité : 12 points par Sprint, dont 2 pour respecter la Definition of Done (tests, mise en ligne). Il reste 10 points pour construire.</li>
           <li>Avant chaque Sprint, vous pouvez réordonner le Product Backlog : l'équipe prend les éléments par le haut.</li>
           <li>Une fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant.</li>
           <li>À chaque Sprint Review, les clients donnent leur avis et la vraie valeur des fonctionnalités en ligne apparaît.</li>
@@ -110,7 +124,7 @@
     <section class="screen" id="screen-results" hidden>
       <div class="screen-head">
         <span class="chip">Résultats</span>
-        <h2 class="title">Deux façons de livrer, deux courbes</h2>
+        <h2 class="title">Un projet, puis Scrum : deux courbes</h2>
       </div>
       <section class="panel" aria-labelledby="chart-title">
         <h3 id="chart-title">Ventes cumulées sur 20 semaines</h3>
@@ -136,6 +150,7 @@
           <li>Quand la banque a réduit le budget, que restait-il entre vos mains dans chaque manche ?</li>
           <li>Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu'en pensaient vraiment ses clients ?</li>
           <li>Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu'est-ce que ça change ?</li>
+          <li>COPIL et cahier des charges, puis Sprint Review et Product Backlog : qu'est-ce que le changement de vocabulaire a changé dans votre façon de décider ?</li>
         </ol>
         <button type="button" class="button button-ghost" id="replay">Rejouer</button>
       </section>
