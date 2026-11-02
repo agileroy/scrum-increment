@@ -308,6 +308,36 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .journal .event-line { color: var(--news-text); }
 .rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 
+/* ---------------------------------------------------------------- Briefings */
+
+.briefing { display: flex; flex-direction: column; gap: 14px; }
+.speech {
+  position: relative; margin: 6px 0 0 6px; padding: 14px 18px; max-width: 62ch;
+  border-radius: 16px 16px 16px 4px; background: var(--crust-soft); color: var(--text);
+  font-size: 1.15rem; font-weight: 600; line-height: 1.4;
+}
+.speech::before { content: "«"; position: absolute; left: -8px; top: -16px; font-size: 2.6rem; line-height: 1; color: var(--crust); }
+.speech footer { margin-top: 4px; font-size: 0.85rem; font-weight: 500; color: var(--crust); }
+.tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+}
+.tile svg { width: 26px; height: 26px; color: var(--crust); }
+.tile strong { font-size: 1.55rem; font-weight: 800; line-height: 1.1; }
+.tile span { color: var(--muted); font-size: 0.88rem; }
+.mission { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; }
+.mission::before {
+  content: "→"; flex: none; display: grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 50%; background: var(--accent); color: var(--accent-text);
+}
+.mission-note { color: var(--muted); font-size: 0.92rem; margin-top: -6px; padding-left: 38px; }
+.lexicon-panel summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+.lexicon-panel summary::-webkit-details-marker { display: none; }
+.lexicon-panel summary::after { content: "▾"; color: var(--muted); }
+.lexicon-panel[open] summary::after { content: "▴"; }
+.lexicon-panel summary h3 { display: inline; }
+
 /* ---------------------------------------------------------------- Mode collectif */
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -394,6 +424,7 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 /* ---------------------------------------------------------------- Petits écrans */
 
 @media (max-width: 900px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stats.stats-project, .stats.stats-project:has(> :nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tvw { grid-column: 1 / -1; }
   .board { grid-template-columns: minmax(0, 1fr); }
@@ -413,6 +444,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .stats, .stats.stats-project, .stats.stats-project:has(> :nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tvw { grid-column: 1 / -1; }
   .tvw-row { grid-template-columns: 96px minmax(0, 1fr) 42px; }
+  .tile strong { font-size: 1.3rem; }
+  .speech { font-size: 1.02rem; }
   table { font-size: 0.85rem; }
   th, td { padding: 6px 4px; }
   th.num { white-space: normal; }

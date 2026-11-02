@@ -124,3 +124,20 @@ test('Après une sortie en manche 1, les ventes réapparaissent', async () => {
   const last = s.log.filter((e) => e.kind === 'sprint').at(-1);
   assert.match(logEntry('cascade', last).text, /Ventes : /);
 });
+
+test('Briefings : aucun mot de l\'autre manche sur le cahier des charges et sur le rôle de Product Owner', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8');
+  const section = (id) => {
+    const start = html.indexOf(`id="${id}"`);
+    const end = html.indexOf('</section>', start);
+    return html.slice(start, end).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  };
+  const plan = section('screen-plan');
+  const role = section('screen-role');
+  for (const re of FORBIDDEN.cascade) assert.ok(!re.test(plan), `cahier des charges : ${re}`);
+  for (const re of FORBIDDEN.increment) assert.ok(!re.test(role), `rôle : ${re}`);
+  for (const text of ['12 semaines', '72 points', '8 points', 'Contrat', '64 points']) assert.ok(plan.includes(text), text);
+  for (const text of ['2 semaines', '10 + 2 points', 'En ligne', 'Retours clients', 'Nous sommes prêts']) assert.ok(role.includes(text), text);
+  assert.ok(!/class="lead"/.test(html.slice(html.indexOf('id="screen-plan"'), html.indexOf('id="plan-list"'))), 'plus de paragraphe sur le cahier des charges');
+});
