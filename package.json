@@ -1,0 +1,9 @@
+{
+  "name": "scrum-increment",
+  "private": true,
+  "type": "module",
+  "description": "Jeu de formation Scrum : la valeur de l'incrément, avec la boulangerie de Madame Lefèvre",
+  "scripts": {
+    "test": "node --test"
+  }
+}

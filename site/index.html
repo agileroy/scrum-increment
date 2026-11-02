@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fournée</title>
+  <meta name="description" content="Jeu de formation Scrum : vivez la valeur de l'incrément en aidant une boulangerie à lancer son appli, sans publicité.">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <script>
+    // Thème appliqué avant l'affichage : choix mémorisé, sinon réglage du système.
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem('scrum-increment.theme'); } catch (e) {}
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  <link rel="stylesheet" href="app.css?v=__VERSION__">
+  <script type="module" src="js/theme.js?v=__VERSION__"></script>
+  <script type="module" src="js/app.js?v=__VERSION__"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="brand"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>Fournée</h1>
+    <div class="topbar-actions">
+      <span class="round-chip" id="round-chip" hidden></span>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Passer en thème sombre" title="Passer en thème sombre">
+        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Accueil -->
+    <section class="screen home" id="screen-home">
+      <p class="home-intro">Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 6 Sprints. Sa seule question : <strong>« Quand est-ce que ça me rapporte ? »</strong></p>
+      <section class="panel home-card" aria-labelledby="home-solo-title">
+        <h2 id="home-solo-title">Jouer seul</h2>
+        <p class="muted">Deux manches sur le même projet, avec le même budget et les mêmes imprévus. Seule la façon de travailler change. À la fin, on compare.</p>
+        <label class="check">
+          <input type="checkbox" id="opt-cut" checked>
+          <span>Coupure budgétaire en cours de projet</span>
+        </label>
+        <button type="button" class="button button-primary button-large" id="start">Commencer la manche 1</button>
+      </section>
+    </section>
+
+    <!-- Manche 1 : plan -->
+    <section class="screen" id="screen-plan" hidden>
+      <div class="screen-head">
+        <span class="chip">Manche 1 · Avant le Sprint 1</span>
+        <h2 class="title">Le plan du projet</h2>
+        <p class="lead">Le comité veut un plan complet avant de lancer le projet : 6 Sprints de 12 points, soit 72 points, dont 8 réservés à la recette et à la mise en production finales. Choisissez les fonctionnalités et leur ordre. Une fois validé, le plan est contractuel.</p>
+      </div>
+      <div class="panel plan-gauge">
+        <div class="panel-head"><strong>Points planifiés</strong><span class="count" id="plan-total"></span></div>
+        <div class="meter" id="plan-meter"><span></span></div>
+        <p class="hint" id="plan-message" role="status"></p>
+      </div>
+      <ol class="backlog" id="plan-list"></ol>
+      <div class="actions"><button type="button" class="button button-primary button-large" id="validate-plan">Valider le plan et lancer le projet</button></div>
+    </section>
+
+    <!-- Tableau de Sprint -->
+    <section class="screen" id="screen-board" hidden>
+      <div class="board-head">
+        <div>
+          <span class="chip" id="board-chip"></span>
+          <h2 class="title" id="board-title"></h2>
+        </div>
+        <button type="button" class="button button-primary button-large" id="play-sprint"></button>
+      </div>
+      <div class="stats" id="board-stats"></div>
+      <div class="board">
+        <div class="board-main">
+          <h3 class="list-title" id="list-title"></h3>
+          <p class="muted list-hint" id="list-hint"></p>
+          <ol class="backlog" id="board-list"></ol>
+        </div>
+        <aside class="panel journal-panel">
+          <h3>Journal</h3>
+          <div class="journal" id="journal"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Transition vers la manche 2 -->
+    <section class="screen" id="screen-transition" hidden>
+      <div class="screen-head">
+        <span class="chip">Manche 2</span>
+        <h2 class="title">Même boulangerie, autre façon de faire</h2>
+        <p class="lead">Madame Lefèvre retente l'aventure avec une nouvelle équipe. Même budget, mêmes fonctionnalités, mêmes imprévus. Mais cette fois, chaque Sprint se termine par une version utilisable, mise en ligne pour les clients.</p>
+      </div>
+      <div class="panel">
+        <ul class="rules">
+          <li>Capacité : 12 points par Sprint, dont 2 consacrés à finir proprement (tests, mise en ligne). Il reste 10 points pour construire.</li>
+          <li>Avant chaque Sprint, vous pouvez réordonner le Product Backlog : l'équipe prend les éléments par le haut.</li>
+          <li>Une fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant.</li>
+          <li>À chaque Sprint Review, les clients donnent leur avis et la vraie valeur des fonctionnalités en ligne apparaît.</li>
+        </ul>
+      </div>
+      <div class="actions"><button type="button" class="button button-primary button-large" id="start-round-2">Commencer la manche 2</button></div>
+    </section>
+
+    <!-- Résultats -->
+    <section class="screen" id="screen-results" hidden>
+      <div class="screen-head">
+        <span class="chip">Résultats</span>
+        <h2 class="title">Deux façons de livrer, deux courbes</h2>
+      </div>
+      <section class="panel" aria-labelledby="chart-title">
+        <h3 id="chart-title">Ventes cumulées de la boulangerie</h3>
+        <div class="chart" id="chart"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <div class="results-grid">
+        <section class="panel" aria-labelledby="kpi-title">
+          <h3 id="kpi-title">Les indicateurs</h3>
+          <div class="table-wrap"><table id="kpi"></table></div>
+        </section>
+        <section class="panel" aria-labelledby="truth-title">
+          <h3 id="truth-title">Intuition contre réalité</h3>
+          <div class="table-wrap"><table id="truth"></table></div>
+        </section>
+      </div>
+      <section class="panel" aria-labelledby="debrief-title">
+        <h3 id="debrief-title">Pour le débrief</h3>
+        <ol class="questions">
+          <li>À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu'est-ce qui l'a permis ?</li>
+          <li>Pourquoi le Scrum Guide demande-t-il qu'un Increment soit utilisable ? Que se passe-t-il quand il ne l'est pas ?</li>
+          <li>Qu'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l'ordre du Product Backlog ?</li>
+          <li>Quand la banque a réduit le budget, que restait-il entre vos mains dans chaque manche ?</li>
+          <li>Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu'en pensaient vraiment ses clients ?</li>
+        </ol>
+        <button type="button" class="button button-ghost" id="replay">Rejouer</button>
+      </section>
+    </section>
+  </main>
+
+  <dialog class="dialog" id="dialog" aria-labelledby="dialog-title">
+    <div id="dialog-body"></div>
+  </dialog>
+</body>
+</html>

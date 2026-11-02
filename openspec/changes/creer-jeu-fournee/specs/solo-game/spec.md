@@ -32,10 +32,15 @@ Pendant le développement, l'écran SHALL afficher la manche, le Sprint à jouer
 ### Requirement: Fin de Sprint
 Après chaque Sprint, une fenêtre SHALL résumer le Sprint, puis un bouton SHALL mener au Sprint suivant ou, après le dernier Sprint de développement, à la fin du développement. Dans la manche 1, elle SHALL donner l'avancement du plan en pourcentage, un rapport rassurant au comité (« tout se déroule comme prévu ») ou l'annonce de la sortie de l'appli, les ventes du Sprint, et indiquer qu'il n'y a aucun retour client tant que l'appli n'est pas sortie. Dans la manche 2, elle SHALL donner les fonctionnalités mises en ligne, les ventes du Sprint et, sous le titre « Sprint Review », au plus trois nouveaux retours clients dont les conditions sont remplies, dans l'ordre du scénario et sans répéter un retour déjà affiché. Les imprévus SHALL être annoncés dans cette fenêtre.
 
-#### Scenario: Review sans rien en ligne
-- **GIVEN** la manche 2, aucune fonctionnalité en ligne
+#### Scenario: Aucun retour avant la sortie
+- **GIVEN** la manche 1, appli pas encore sortie
 - **WHEN** la fenêtre de fin de Sprint s'affiche
-- **THEN** elle indique qu'aucun retour n'est possible, car rien n'est encore en ligne
+- **THEN** elle indique qu'il n'y a aucun retour client, car l'appli n'est pas encore sortie
+
+#### Scenario: Premiers retours dès le Sprint 1
+- **GIVEN** la manche 2, quel que soit l'ordre du Product Backlog
+- **WHEN** le Sprint 1 est joué
+- **THEN** la vitrine, seule fonctionnalité sans prérequis, est en ligne et la Sprint Review affiche déjà des retours clients
 
 ### Requirement: Fin du développement et enchaînement
 À la fin du développement, une fenêtre SHALL dire ce qui est en ligne (ou, dans la manche 1 sans sortie, que l'appli n'est jamais sortie et que ses fonctionnalités terminées ne servent à aucun client), expliquer que les Sprints suivants se jouent sans développement jusqu'au Sprint 10 et donner les ventes cumulées. Après la manche 1, un écran de transition SHALL présenter la manche 2 (même budget, mêmes fonctionnalités, mêmes imprévus, mais un incrément utilisable à chaque Sprint) et ses règles. Après la manche 2, le jeu SHALL afficher les résultats. Depuis les résultats, « Rejouer » SHALL ramener à l'accueil.
