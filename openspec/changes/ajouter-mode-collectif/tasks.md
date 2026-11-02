@@ -19,8 +19,8 @@
 - [x] 4.1 Jouer des parties complètes en mode démo dans un navigateur automatisé (un onglet formateur, plusieurs onglets participants) : 2 et 4 équipes, retardataire, déplacements simultanés, demande tranchée par un membre, demande refusée faute de décision, chrono, coupure, révélation ; neutralité de l'écran du formateur ; vocabulaire de chaque équipe. Vérification : aucune erreur dans la console, chiffres d'équipe égaux à ceux du moteur.
 - [x] 4.2 Vérifier l'affichage à 360, 390, 1280 et 1440 px, en thème clair et sombre. Vérification : captures sans défilement horizontal.
 - [x] 4.3 Mettre à jour `README.md` et `openspec/config.yaml`. Vérification : `npm test` et `openspec validate` au vert.
-- [ ] 4.4 Recopier `database.rules.json` dans `roles-responsabilites`, `scrum-events`, `poker-planning`, `matrice-competences`, `wheel-of-chance` et `moving-motivators`. Vérification : fichier identique partout, tests de chaque dépôt au vert, publications réussies.
-- [ ] 4.5 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit.
+- [x] 4.4 Recopier `database.rules.json` dans `roles-responsabilites`, `scrum-events`, `poker-planning`, `matrice-competences`, `wheel-of-chance` et `moving-motivators`. Vérification : fichier identique partout, tests de chaque dépôt au vert, publications réussies.
+- [x] 4.5 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit.
 - [ ] 4.6 L'auteur publie les règles dans la console Firebase et joue une partie avec de vrais téléphones. Vérification : validation explicite de l'auteur.
 
 ## Workflow follow-up
