@@ -1,12 +1,12 @@
 ## 1. Moteur et logique de salle
 
-- [ ] 1.1 Ajouter à `site/js/game-core.js` `reviveRound`, `reportFromState`, `finishSummary` et le refus « faute de décision » dans `decideRequest`. Vérification : tests (état relu après aller-retour dans une base qui supprime tableaux vides et `null`, bilan reconstruit identique à celui de `playSprint` à chaque période, résumé identique à `finishRound`).
-- [ ] 1.2 Écrire `site/js/room-core.js` : code de salle, prénoms, équipes et noms, approche par équipe, répartition dans l'équipe la moins nombreuse, rééquilibrage à la réduction du nombre d'équipes, état « prêt », chrono. Vérification : `tests/room-core.test.mjs` (scénarios « Répartition automatique », « Réduire le nombre d'équipes », « Prénom déjà pris »).
+- [x] 1.1 Ajouter à `site/js/game-core.js` `reviveRound`, `reportFromState`, `finishSummary` et le refus « faute de décision » dans `decideRequest`. Vérification : tests (état relu après aller-retour dans une base qui supprime tableaux vides et `null`, bilan reconstruit identique à celui de `playSprint` à chaque période, résumé identique à `finishRound`).
+- [x] 1.2 Écrire `site/js/room-core.js` : code de salle, prénoms, équipes et noms, approche par équipe, répartition dans l'équipe la moins nombreuse, rééquilibrage à la réduction du nombre d'équipes, état « prêt », chrono. Vérification : `tests/room-core.test.mjs` (scénarios « Répartition automatique », « Réduire le nombre d'équipes », « Prénom déjà pris »).
 
 ## 2. Base et actions de salle
 
-- [ ] 2.1 Reprendre `firebase-db.js`, `memory-db.js` (clés de démo propres à ce jeu) et `firebase-config.js` des jeux frères ; écrire `site/js/room-store.js` : salle, prénoms, équipes, réglages, présence, retrait, suppression, lancement de la partie, actions d'équipe en transaction, prêt, lancement de période, révélation. Vérification : `tests/room-store.test.mjs`, parties complètes à plusieurs clients sur la base en mémoire (2 et 4 équipes, retardataire, demande refusée faute de décision, actions simultanées, coupure, révélation).
-- [ ] 2.2 Ajouter la branche `incrementGame` à `database.rules.json` (repris de `scrum-events`, autres branches identiques). Vérification : `tests/rules.test.mjs` (branche présente, codes, chrono, nombre d'équipes, champs protégés de l'état d'équipe, suppression à 24 heures, autres branches inchangées).
+- [x] 2.1 Reprendre `firebase-db.js`, `memory-db.js` (clés de démo propres à ce jeu) et `firebase-config.js` des jeux frères ; écrire `site/js/room-store.js` : salle, prénoms, équipes, réglages, présence, retrait, suppression, lancement de la partie, actions d'équipe en transaction, prêt, lancement de période, révélation. Vérification : `tests/room-store.test.mjs`, parties complètes à plusieurs clients sur la base en mémoire (2 et 4 équipes, retardataire, demande refusée faute de décision, actions simultanées, coupure, révélation).
+- [x] 2.2 Ajouter la branche `incrementGame` à `database.rules.json` (repris de `scrum-events`, autres branches identiques). Vérification : `tests/rules.test.mjs` (branche présente, codes, chrono, nombre d'équipes, champs protégés de l'état d'équipe, suppression à 24 heures, autres branches inchangées).
 
 ## 3. Interface
 

@@ -60,6 +60,7 @@ const cascade = {
   decision: (d) => {
     const r = feature(d.request).name;
     if (d.decision === 'accepted') return `${r} acceptée par avenant (+${AVENANT} points de recette)${d.removed.length ? `, en retirant : ${names(d.removed)}` : ''}.`;
+    if (d.reason === 'timeout') return `${r} refusée faute de décision : le cahier des charges reste inchangé.`;
     return `${r} refusée : le cahier des charges reste inchangé.`;
   },
   planLog: (total) => `Cahier des charges de ${total} points validé et signé par la commanditaire.`,

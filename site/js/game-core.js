@@ -395,8 +395,11 @@ export function requestStatus(state, remove = []) {
   return { ...status, removable, message };
 }
 
-/** Accepte (avec les retraits) ou refuse la demande en attente. */
-export function decideRequest(state, { accept, remove = [] }) {
+/**
+ * Accepte (avec les retraits) ou refuse la demande en attente.
+ * `reason: 'timeout'` : refus d'office, faute de décision au lancement de la période suivante (mode collectif).
+ */
+export function decideRequest(state, { accept, remove = [], reason = null }) {
   const id = state.pendingRequest;
   if (!id) throw new Error('Aucune demande de changement en attente.');
   const next = clone(state);
@@ -408,9 +411,13 @@ export function decideRequest(state, { accept, remove = [] }) {
     next.recetteCost += AVENANT;
     next.log.push({ sprint: next.sprint, kind: 'decision', request: id, decision: 'accepted', removed: remove.slice() });
   } else {
-    next.log.push({ sprint: next.sprint, kind: 'decision', request: id, decision: 'refused', removed: [] });
+    const entry = { sprint: next.sprint, kind: 'decision', request: id, decision: 'refused', removed: [] };
+    if (reason === 'timeout') entry.reason = 'timeout';
+    next.log.push(entry);
   }
-  next.requests.push({ id, sprint: next.sprint, decision: accept ? 'accepted' : 'refused', removed: accept ? remove.slice() : [] });
+  const record = { id, sprint: next.sprint, decision: accept ? 'accepted' : 'refused', removed: accept ? remove.slice() : [] };
+  if (!accept && reason === 'timeout') record.reason = 'timeout';
+  next.requests.push(record);
   next.pendingRequest = null;
   return next;
 }
@@ -436,4 +443,84 @@ export function projectWeather(state) {
   if (state.launched) return 'delivered';
   const capacityLeft = Math.max(0, state.lastBuildSprint - state.sprint) * TEAM_CAPACITY;
   return remainingWork(state) <= capacityLeft ? 'sunny' : 'stormy';
+}
+
+/* ---------- Mode collectif : état relu depuis la base, bilans reconstruits ---------- */
+
+// Tableau depuis une valeur de la base : Firebase ne stocke pas les tableaux vides
+// et renvoie parfois un tableau sous forme d'objet à clés numériques.
+function toArray(value) {
+  if (value === undefined || value === null) return [];
+  if (Array.isArray(value)) return value.filter((v) => v !== undefined && v !== null);
+  if (typeof value === 'object') {
+    return Object.keys(value).sort((a, b) => Number(a) - Number(b)).map((k) => value[k]).filter((v) => v !== undefined && v !== null);
+  }
+  return [];
+}
+
+function reviveEntry(entry) {
+  const e = { ...entry };
+  if (e.kind === 'sprint') {
+    e.completed = toArray(e.completed);
+    e.launched = Boolean(e.launched);
+    e.progress = e.progress ?? null;
+    e.weather = e.weather ?? null;
+    e.sales = e.sales ?? 0;
+  }
+  if (e.kind === 'decision') e.removed = toArray(e.removed);
+  return e;
+}
+
+/**
+ * Reconstruit un état complet à partir d'un état relu depuis la base (Firebase ne stocke
+ * ni tableaux vides ni null) : mêmes champs et mêmes types que `newRound`.
+ */
+export function reviveRound(raw) {
+  if (!raw || !raw.mode) return null;
+  const base = newRound(raw.mode);
+  const out = {};
+  for (const [key, def] of Object.entries(base)) {
+    const v = raw[key];
+    if (Array.isArray(def)) out[key] = toArray(v);
+    else if (key === 'progress') out[key] = { ...def, ...(v ?? {}) };
+    else out[key] = v === undefined ? def : v;
+  }
+  out.log = toArray(raw.log).map(reviveEntry);
+  out.requests = toArray(raw.requests).map((r) => ({ ...r, removed: toArray(r.removed) }));
+  out.liveAtEnd = out.finished ? toArray(raw.liveAtEnd) : null;
+  return out;
+}
+
+/** Bilan d'une période reconstruit depuis le journal de l'état (mêmes champs utiles que `playSprint`). */
+export function reportFromState(state, sprint = state.sprint) {
+  const entries = state.log.filter((e) => e.sprint === sprint);
+  const main = entries.find((e) => e.kind === 'sprint');
+  if (!main) return null;
+  const requestEntry = entries.find((e) => e.kind === 'request');
+  const buildEnd = Math.min(state.lastBuildSprint, LAST_SPRINT);
+  return {
+    sprint,
+    sales: main.sales,
+    completed: main.completed.slice(),
+    launched: main.launched,
+    progress: main.progress,
+    weather: main.weather,
+    quotes: entries.filter((e) => e.kind === 'quote').map((e) => QUOTES.find((q) => q.id === e.quote)).filter(Boolean),
+    events: entries.filter((e) => e.kind === 'event').map((e) => EVENTS.find((x) => x.id === e.event)).filter(Boolean),
+    request: requestEntry ? feature(requestEntry.request) : null,
+    developmentOver: sprint >= buildEnd,
+  };
+}
+
+/** Résumé de fin du projet d'une manche terminée (mêmes champs que celui de `finishRound`). */
+export function finishSummary(state) {
+  if (!state.finished) return null;
+  const liveAtEnd = state.liveAtEnd ?? [];
+  return {
+    lastBuildSprint: state.lastBuildSprint,
+    launched: state.mode === MODES.cascade ? state.launched : liveAtEnd.length > 0,
+    liveCount: liveAtEnd.length,
+    doneOffline: state.done.filter((id) => !has(liveAtEnd, id)).length,
+    cumulative: state.cumulative,
+  };
 }
