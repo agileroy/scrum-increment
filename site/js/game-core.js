@@ -75,19 +75,34 @@ export function planBudget(state, recetteCost = state.recetteCost) {
   return PROJECT_CAPACITY - recetteCost;
 }
 
-// Total, dépassement, prérequis absents, validité et message pour une liste de fonctionnalités.
+/**
+ * Lots impossibles d'une liste : { id → premier lot manquant de sa chaîne de prérequis }.
+ * Exemple : sans la vitrine, la réservation et le paiement sont impossibles sans « Vitrine en ligne ».
+ */
+export function impossibleLots(items) {
+  const out = {};
+  for (const id of items) {
+    let req = feature(id).req;
+    while (req) {
+      if (!has(items, req)) { out[id] = req; break; }
+      req = feature(req).req;
+    }
+  }
+  return out;
+}
+
+// Total, dépassement, lots impossibles, validité et message pour une liste de fonctionnalités.
 function checkPlan(items, budget) {
   const total = items.reduce((sum, id) => sum + feature(id).cost, 0);
   const over = Math.max(0, total - budget);
-  const missing = items
-    .filter((id) => feature(id).req && !has(items, feature(id).req))
-    .map((id) => ({ id, req: feature(id).req }));
+  const impossible = impossibleLots(items);
+  const missing = Object.entries(impossible).map(([id, req]) => ({ id, req }));
   let message;
   if (items.length === 0) message = 'Le cahier des charges est vide : ajoutez au moins un lot.';
   else if (over > 0) message = `Le cahier des charges dépasse de ${over} point${over > 1 ? 's' : ''} : retirez au moins un lot.`;
   else if (missing.length) message = `« ${feature(missing[0].id).name} » nécessite « ${feature(missing[0].req).name} ».`;
   else message = 'Le cahier des charges tient dans le budget : la commanditaire est prête à signer.';
-  return { total, budget, over, missing, valid: items.length > 0 && over === 0 && missing.length === 0, message };
+  return { total, budget, over, missing, impossible, valid: items.length > 0 && over === 0 && missing.length === 0, message };
 }
 
 /** Statut du plan de la manche 1 : total, dépassement, prérequis absents, validité et message. */
@@ -159,8 +174,21 @@ export function featureState(state, id) {
   if (has(state.live, id)) return 'live';
   if (has(state.done, id)) return 'awaiting';
   if (state.progress[id] > 0) return 'in-progress';
-  if (f.req && !has(state.done, f.req)) return 'blocked';
   return 'todo';
+}
+
+/**
+ * Dépendance d'un élément dans une liste ordonnée (par défaut la liste travaillée) :
+ * « misplaced » s'il est placé au-dessus de son prérequis non terminé (l'équipe le sautera),
+ * « after » s'il est bien placé sous son prérequis non terminé, null sinon.
+ */
+export function dependencyState(state, id, list = workItems(state)) {
+  const req = feature(id).req;
+  if (!req || has(state.done, id) || has(state.done, req)) return null;
+  const i = list.indexOf(id);
+  const j = list.indexOf(req);
+  if (i < 0 || j < 0) return null;
+  return j > i ? 'misplaced' : 'after';
 }
 
 // Pertes de clients et ventes du Sprint `sprint`, avec ce qui est en ligne au début du Sprint.

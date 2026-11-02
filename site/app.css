@@ -167,6 +167,11 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
 .item.is-out { opacity: 0.5; }
 .item.is-live { border-color: var(--live); }
 .item.is-recette { border-style: dashed; }
+.item.is-impossible, .item.is-misplaced { border-color: var(--error); background: var(--warn-bg); }
+.item.is-impossible .item-name, .item.is-misplaced .item-name { color: var(--warn-text); }
+.item-alert { margin-top: 6px; color: var(--error); font-weight: 600; font-size: 0.88rem; }
+.chip.dep { background: var(--surface-2); color: var(--muted); }
+.removals .include.is-impossible { color: var(--warn-text); }
 .rank { font-weight: 800; font-size: 1.15rem; color: var(--crust); text-align: center; padding-top: 1px; }
 .item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .item-name { font-weight: 700; }

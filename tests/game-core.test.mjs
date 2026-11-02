@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   newRound, planStatus, toggleInPlan, moveFeature, validatePlan, playSprint, finishRound,
   roundResults, canMove, featureState, developmentOver, truthTable,
-  requestStatus, decideRequest, canRemove, periodWeeks, projectWeather, planStatus as status,
+  requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, periodWeeks, projectWeather, planStatus as status,
 } from '../site/js/game-core.js';
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
@@ -447,4 +447,62 @@ test('résultats : demandes en ligne en manche 2 quand on les remonte', () => {
   }
   const { results } = playAll(st);
   assert.ok(results.requestsLive.includes('plateaux'));
+});
+
+/* ---------- Dépendances ---------- */
+
+test('Décocher la réservation : paiement, livraison et click & collect impossibles', () => {
+  const st = planStatus(toggleInPlan(newRound('cascade'), 'resa'));
+  assert.deepEqual(st.impossible, { paiement: 'resa', livraison: 'resa', cc: 'resa' });
+  assert.equal(st.valid, false);
+});
+
+test('Décocher la vitrine : les huit autres lots impossibles sans la vitrine', () => {
+  const st = planStatus(toggleInPlan(newRound('cascade'), 'vitrine'));
+  assert.equal(Object.keys(st.impossible).length, 8);
+  assert.ok(Object.values(st.impossible).every((r) => r === 'vitrine'));
+  assert.match(st.message, /nécessite « Vitrine en ligne »/);
+});
+
+test('Ordre initial : rien de mal placé, paiement après la réservation', () => {
+  const s = newRound('increment');
+  assert.ok(s.order.every((id) => dependencyState(s, id) !== 'misplaced'));
+  assert.equal(dependencyState(s, 'paiement'), 'after');
+  assert.equal(dependencyState(s, 'vitrine'), null);
+});
+
+test('Paiement remonté trop haut : mal placé, et sauté par l\'équipe', () => {
+  const s = moveFeature(newRound('increment'), 'paiement', -1);
+  assert.equal(dependencyState(s, 'paiement'), 'misplaced');
+  assert.equal(dependencyState(s, 'resa'), 'after');
+});
+
+test('Prérequis terminé : plus de badge de dépendance', () => {
+  let s = newRound('increment');
+  s = playSprint(s).state; s = playSprint(s).state;
+  assert.ok(s.done.includes('resa'));
+  for (const id of ['paiement', 'livraison', 'cc']) assert.equal(dependencyState(s, id), null);
+});
+
+test('ordre du cahier des charges avant validation : lot mal placé détecté sur la liste retenue', () => {
+  let s = moveFeature(newRound('cascade'), 'paiement', -1);
+  const list = s.order.filter((id) => s.included.includes(id));
+  assert.equal(dependencyState(s, 'paiement', list), 'misplaced');
+});
+
+test('Retirer la réservation dans une demande : trois lots deviendraient impossibles', () => {
+  let s = newRound('cascade');
+  s = toggleInPlan(s, 'avis');
+  s.order = ['vitrine', 'fidelite', 'alerte', 'gateaux', 'resa', 'paiement', 'livraison', 'cc', 'avis'];
+  s = validatePlan(s);
+  const r = playSprint(s);
+  assert.ok(canRemove(r.state, 'resa'));
+  const st = requestStatus(r.state, ['resa']);
+  assert.deepEqual(Object.keys(st.impossible).sort(), ['cc', 'livraison', 'paiement']);
+  assert.equal(st.valid, false);
+});
+
+test('impossibleLots : chaîne complète', () => {
+  assert.deepEqual(impossibleLots(['paiement']), { paiement: 'resa' });
+  assert.deepEqual(impossibleLots(['resa', 'paiement']), { resa: 'vitrine', paiement: 'vitrine' });
 });

@@ -5,7 +5,7 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather,
+  requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather, dependencyState,
 } from './game-core.js';
 import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js';
 import { lexicon, logEntry, exploitationText } from './vocabulary.js';
@@ -39,9 +39,21 @@ function stateBadge(state, id) {
     case 'live': return '<span class="chip live">En ligne</span>';
     case 'awaiting': return `<span class="chip">${esc(lexicon(state.mode).awaiting)}</span>`;
     case 'in-progress': return '<span class="chip">En cours</span>';
-    case 'blocked': return `<span class="chip warn">Nécessite : ${esc(feature(f.req).name)}</span>`;
     default: return '';
   }
+}
+
+// Badge de dépendance : rouge si l'élément est placé avant son prérequis, neutre s'il est bien placé après.
+function dependencyHtml(state, id, list) {
+  const dep = dependencyState(state, id, list);
+  if (!dep) return { cls: '', chip: '', note: '' };
+  const req = feature(feature(id).req).name;
+  if (dep === 'after') return { cls: '', chip: `<span class="chip dep">Après « ${esc(req)} »</span>`, note: '' };
+  return {
+    cls: 'is-misplaced',
+    chip: `<span class="chip warn">Placé avant « ${esc(req)} »</span>`,
+    note: `<div class="item-alert">${esc(lexicon(state.mode).skipText(req))}</div>`,
+  };
 }
 
 function moveButtons(id, index, count) {
@@ -52,15 +64,26 @@ function moveButtons(id, index, count) {
   </div>`;
 }
 
-function planItemHtml(state, id, index) {
+function planItemHtml(state, id, index, impossible) {
   const f = feature(id);
   const inPlan = state.included.includes(id);
-  return `<li class="item ${inPlan ? '' : 'is-out'}">
+  const retained = state.order.filter((x) => state.included.includes(x));
+  let cls = inPlan ? '' : 'is-out';
+  let chip = '';
+  let note = '';
+  if (inPlan && impossible[id]) {
+    cls = 'is-impossible';
+    chip = `<span class="chip warn">Impossible sans « ${esc(feature(impossible[id]).name)} »</span>`;
+  } else if (inPlan) {
+    ({ cls, chip, note } = dependencyHtml(state, id, retained));
+  }
+  return `<li class="item ${cls}">
     <div class="rank">${index + 1}</div>
     <div>
-      <div class="item-head"><span class="item-name">${esc(f.name)}</span></div>
+      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
       <div class="item-meta"><span>${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${f.req ? `<span>Nécessite : ${esc(feature(f.req).name)}</span>` : ''}</div>
+      ${note}
     </div>
     <div class="item-controls">
       <label class="include"><input type="checkbox" data-toggle="${id}" ${inPlan ? 'checked' : ''}> Retenu</label>
@@ -78,12 +101,15 @@ function boardItemHtml(state, id, index, count) {
     : '<span>Ventes réelles : ?</span>';
   const chip = isRequest(id) ? `<span class="chip request">${esc(l.requestChip)}</span>` : '';
   const controls = canMove(state, id) ? moveButtons(id, index, count) : '';
-  return `<li class="item ${featureState(state, id) === 'live' ? 'is-live' : ''}">
+  const dep = dependencyHtml(state, id);
+  const cls = featureState(state, id) === 'live' ? 'is-live' : dep.cls;
+  return `<li class="item ${cls}">
     <div class="rank">${index + 1}</div>
     <div>
-      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}</div>
+      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
       <div class="item-meta"><span>${p} / ${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
+      ${dep.note}
       <div class="bar"><span style="width:${(p / f.cost) * 100}%"></span></div>
     </div>
     <div class="item-controls">${controls}</div>
@@ -117,7 +143,7 @@ function renderPlan() {
   $('plan-message').textContent = st.message;
   $('plan-message').closest('.plan-gauge').classList.toggle('is-invalid', !st.valid);
   $('validate-plan').disabled = !st.valid;
-  $('plan-list').innerHTML = s.order.map((id, i) => planItemHtml(s, id, i)).join('');
+  $('plan-list').innerHTML = s.order.map((id, i) => planItemHtml(s, id, i, st.impossible)).join('');
 }
 
 /* ---------------------------------------------------------------- Tableau */
@@ -250,10 +276,13 @@ function requestHtml() {
   h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${st.total} / ${st.budget} points</span></div>`;
   h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
   h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
+  const broken = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
+  if (broken.length) h += `<p class="item-alert">Deviendraient impossibles : ${broken.map((id) => esc(feature(id).name)).join(', ')}</p>`;
   h += st.removable.length
     ? `<fieldset class="removals"><legend>Retirer des lots</legend>${st.removable.map((id) => {
       const f = feature(id);
-      return `<label class="include"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${esc(f.name)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span></span></label>`;
+      const why = st.impossible[id] && !app.remove.includes(id) ? ` <span class="chip warn">Impossible sans « ${esc(feature(st.impossible[id]).name)} »</span>` : '';
+      return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${esc(f.name)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span>${why}</span></label>`;
     }).join('')}</fieldset>`
     : '<p class="muted">Tous les lots sont commencés : plus rien ne peut être retiré.</p>';
   h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Accepter (avenant)</button><button type="button" class="button button-ghost" data-refuse>Refuser</button></div>`;
