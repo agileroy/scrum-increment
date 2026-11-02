@@ -186,12 +186,18 @@ export function salesRate(state) {
   return points * EURO_PER_POINT * state.clientele;
 }
 
-/** Avancement du plan de la manche 1, recette comprise, en pourcentage entier. */
-export function planProgress(state) {
+/** Travail du plan de la manche 1, recette comprise : points faits et points à faire (travail découvert compris). */
+export function planWork(state) {
   const items = workItems(state);
   const total = items.reduce((sum, id) => sum + effectiveCost(state, id), 0) + state.recetteCost;
-  const doneSoFar = items.reduce((sum, id) => sum + Math.min(state.progress[id], effectiveCost(state, id)), 0) + state.recette;
-  return Math.round((doneSoFar / total) * 100);
+  const done = items.reduce((sum, id) => sum + Math.min(state.progress[id], effectiveCost(state, id)), 0) + state.recette;
+  return { done, total };
+}
+
+/** Avancement du plan de la manche 1, recette comprise, en pourcentage entier. */
+export function planProgress(state) {
+  const { done, total } = planWork(state);
+  return Math.round((done / total) * 100);
 }
 
 /** État d'une fonctionnalité pour l'affichage. */

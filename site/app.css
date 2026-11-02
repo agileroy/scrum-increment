@@ -257,6 +257,16 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .dialog-content .actions .button { margin-top: 0; }
 .journal .request-line { color: var(--accent); }
 .journal .decision-line { font-weight: 600; }
+.stats.stats-project { grid-template-columns: 2fr 1fr 1fr; }
+.stats.stats-project:has(> :nth-child(4)) { grid-template-columns: 2fr 1fr 1fr 1fr; }
+.tvw { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.tvw-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 48px; align-items: center; gap: 10px; font-size: 0.9rem; }
+.tvw-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.tvw-track { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.tvw-track span { display: block; height: 100%; transition: width 0.3s; }
+.tvw-time span { background: var(--muted); }
+.tvw-work span { background: var(--crust); }
+.tvw p { color: var(--muted); font-size: 0.82rem; }
 .discovery { padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-text); }
 .item-meta .extra, .extra { color: var(--warn-text); font-weight: 700; }
 .journal .discovery-line { color: var(--warn-text); }
@@ -384,6 +394,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 /* ---------------------------------------------------------------- Petits écrans */
 
 @media (max-width: 900px) {
+  .stats.stats-project, .stats.stats-project:has(> :nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tvw { grid-column: 1 / -1; }
   .board { grid-template-columns: minmax(0, 1fr); }
   .results-grid { grid-template-columns: minmax(0, 1fr); }
 }
@@ -398,7 +410,9 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .board-head .button { width: 100%; }
   .board-head > .team-bar { width: 100%; justify-content: stretch; }
   .host-head > .host-timer { width: 100%; }
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats, .stats.stats-project, .stats.stats-project:has(> :nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tvw { grid-column: 1 / -1; }
+  .tvw-row { grid-template-columns: 96px minmax(0, 1fr) 42px; }
   table { font-size: 0.85rem; }
   th, td { padding: 6px 4px; }
   th.num { white-space: normal; }

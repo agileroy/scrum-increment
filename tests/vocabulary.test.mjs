@@ -24,7 +24,8 @@ function allStrings(mode) {
     }
   }
   for (const w of ['sunny', 'stormy', 'delivered']) if (lex.weather) walk(lex.weather(w));
-  walk(lex.stats({}, { progress: 40, weather: 'sunny', live: 2, clientele: 90, cumulative: 1200 }));
+  walk(lex.stats({}, { progress: 40, weather: 'sunny', launched: true, live: 2, clientele: 90, cumulative: 1200 }));
+  if (lex.timeVsWork) out.push(lex.timeVsWork({ weeks: 6, totalWeeks: 12, done: 36, total: 72 }));
   for (const e of EVENTS) { out.push(lex.eventText(e), lex.eventLog(e)); }
   for (const r of REQUESTS) {
     out.push(lex.requestAnnounce(r));
@@ -92,4 +93,34 @@ test('les deux lexiques ont les mêmes clés de base', () => {
   const base = ['round', 'role', 'deadline', 'play', 'listTitle', 'item', 'journalTitle', 'requestChip', 'valuePer', 'stats', 'reportTitle', 'next', 'salesLine', 'eventText', 'eventLog', 'requestAnnounce', 'decision', 'periodLog', 'periodName', 'endOfDev', 'finishButton'];
   for (const k of base) for (const m of ['cascade', 'increment']) assert.ok(k in LEXICON[m], `${m}.${k}`);
   assert.equal(FEATURES.length, 9);
+});
+
+test('COPIL sans ventes ni clients avant la sortie (manche 1)', async () => {
+  const core = await import('../site/js/game-core.js');
+  let s = core.validatePlan(core.toggleInPlan(core.newRound('cascade'), 'avis'));
+  const strings = [];
+  while (!core.developmentOver(s)) {
+    s = core.playSprint(s).state;
+    if (s.pendingRequest) s = core.decideRequest(s, { accept: false });
+    for (const [v, label] of LEXICON.cascade.stats(s, { weather: core.projectWeather(s), launched: s.launched, cumulative: s.cumulative })) strings.push(`${v} ${label}`);
+  }
+  for (const entry of s.log) if (entry.kind === 'sprint') strings.push(logEntry('cascade', entry).text);
+  assert.equal(s.launched, false);
+  for (const str of strings) assert.doesNotMatch(str, /vente|client/i, str);
+});
+
+test('Après une sortie en manche 1, les ventes réapparaissent', async () => {
+  const core = await import('../site/js/game-core.js');
+  let s = core.newRound('cascade');
+  for (const id of s.order) if (!['vitrine', 'resa', 'alerte', 'gateaux'].includes(id)) s = core.toggleInPlan(s, id);
+  s = core.validatePlan(s);
+  while (!core.developmentOver(s)) {
+    s = core.playSprint(s).state;
+    if (s.pendingRequest) s = core.decideRequest(s, { accept: false });
+  }
+  assert.ok(s.launched);
+  const stats = LEXICON.cascade.stats(s, { weather: 'delivered', launched: true, cumulative: s.cumulative });
+  assert.ok(stats.some(([, label]) => label === 'Ventes cumulées'));
+  const last = s.log.filter((e) => e.kind === 'sprint').at(-1);
+  assert.match(logEntry('cascade', last).text, /Ventes : /);
 });

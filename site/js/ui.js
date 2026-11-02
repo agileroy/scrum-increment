@@ -7,9 +7,9 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather, dependencyState,
+  requestStatus, decideRequest, isRequest, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
-import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js?v=__VERSION__';
+import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
 import { lexicon, logEntry, exploitationText, discoveryText } from './vocabulary.js?v=__VERSION__';
 import { chartSvg, legendHtml, formatEuro } from './chart.js?v=__VERSION__';
 
@@ -111,9 +111,13 @@ function boardItemHtml(state, id, index, count) {
   const extra = state.extra?.[id] ?? 0;
   const cost = f.cost + extra;
   const p = Math.min(state.progress[id], cost);
-  const value = state.revealed.includes(id)
-    ? `<span class="value-known">Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} ${l.valuePer}</span>`
-    : '<span>Ventes réelles : ?</span>';
+  // Manche 1 : pas de « Ventes réelles » sur les lots (un projet ne suit pas les ventes).
+  let value = '';
+  if (state.mode === MODES.increment) {
+    value = state.revealed.includes(id)
+      ? `<span class="value-known">Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} ${l.valuePer}</span>`
+      : '<span>Ventes réelles : ?</span>';
+  }
   const chip = isRequest(id) ? `<span class="chip request">${esc(l.requestChip)}</span>` : '';
   const controls = canMove(state, id) ? moveButtons(id, index, count) : '';
   const dep = dependencyHtml(state, id);
@@ -188,17 +192,35 @@ function renderBoard() {
   $('list-title').textContent = l.listTitle;
   $('list-hint').textContent = l.listHint;
   $('journal-title').textContent = l.journalTitle;
-  $('board-stats').innerHTML = l.stats(s, {
-    progress: cascade ? planProgress(s) : null,
+  const tiles = l.stats(s, {
     weather: cascade ? projectWeather(s) : null,
+    launched: s.launched,
     live: s.live.length,
     clientele: Math.round(s.clientele * 100),
     cumulative: s.cumulative,
   }).map(([v, label]) => `<div class="stat"><strong>${esc(v)}</strong><span>${esc(label)}</span></div>`).join('');
+  $('board-stats').classList.toggle('stats-project', cascade);
+  $('board-stats').innerHTML = (cascade ? timeVsWorkHtml(s) : '') + tiles;
   const items = workItems(s);
   $('board-list').innerHTML = items.map((id, i) => boardItemHtml(s, id, i, items.length)).join('') + (cascade ? recetteHtml(s) : '');
   const lines = s.log.slice().reverse().map((fact) => logHtml(s.mode, fact)).filter(Boolean);
   $('journal').innerHTML = lines.length ? lines.join('') : `<p class="muted">${esc(l.journalEmpty)}</p>`;
+}
+
+/** Manche 1 : temps écoulé contre travail fait, le regard d'un COPIL. */
+function timeVsWorkHtml(state) {
+  const l = lexicon(state.mode);
+  const totalWeeks = PLANNED_SPRINTS * SPRINT_WEEKS;
+  const weeks = Math.min(state.sprint, PLANNED_SPRINTS) * SPRINT_WEEKS;
+  const timePct = Math.round((weeks / totalWeeks) * 100);
+  const work = planWork(state);
+  const workPct = planProgress(state);
+  const row = (label, pct, cls) => `<div class="tvw-row"><span>${label}</span><div class="tvw-track ${cls}"><span style="width:${pct}%"></span></div><b>${pct} %</b></div>`;
+  return `<div class="tvw" role="group" aria-label="Temps contre travail">
+    ${row('Temps écoulé', timePct, 'tvw-time')}
+    ${row('Travail fait', workPct, 'tvw-work')}
+    <p>${esc(l.timeVsWork({ weeks, totalWeeks, ...work }))}</p>
+  </div>`;
 }
 
 /* ---------------------------------------------------------------- Fenêtres */
@@ -219,14 +241,14 @@ function reportHtml(state, report, { team = false } = {}) {
   if (cascade) {
     const w = l.weather(report.weather);
     h += `<p class="weather weather-${report.weather}"><span class="weather-icon" aria-hidden="true">${w.icon}</span><span><strong>Météo du projet : ${esc(w.label)}.</strong> ${esc(w.text)}</span></p>`;
-    h += report.launched
-      ? `<p class="good"><strong>L'appli est en ligne !</strong> Les ${state.live.length} lots du cahier des charges sortent tous en même temps.</p>`
-      : `<p>Avancement du cahier des charges : <strong>${report.progress} %</strong></p>`;
-    h += `<p>${esc(l.salesLine(report.sales))}</p>`;
-    h += '<h3>Retours clients</h3>';
-    h += report.launched
-      ? '<p class="muted">Les premiers clients découvrent l\'appli.</p>'
-      : '<p class="muted">Aucun : l\'appli n\'est pas encore sortie.</p>';
+    // Un COPIL pilote un plan : ni ventes ni clients tant que l'appli n'est pas sortie.
+    const weeks = Math.min(report.sprint, PLANNED_SPRINTS) * SPRINT_WEEKS;
+    if (report.launched) {
+      h += `<p class="good"><strong>L'appli est en ligne !</strong> Les ${state.live.length} lots du cahier des charges sortent tous en même temps.</p>`;
+    } else {
+      h += `<p>Temps écoulé : <strong>${weeks} semaines sur ${PLANNED_SPRINTS * SPRINT_WEEKS}</strong> · Travail fait : <strong>${report.progress} %</strong></p>`;
+    }
+    if (report.sales > 0) h += `<p>${esc(l.salesLine(report.sales))}</p>`;
   } else {
     h += report.completed.length
       ? `<p>Mis en ligne : <strong>${report.completed.map((id) => esc(feature(id).name)).join(', ')}</strong></p>`

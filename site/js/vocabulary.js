@@ -43,13 +43,14 @@ const cascade = {
   recetteWaiting: 'Commence quand tous les lots sont terminés.',
   recetteAvenant: (pts) => `dont ${pts} points d'avenant`,
   weather: (w) => WEATHER[w],
-  stats: (s, { progress, weather, live, clientele, cumulative }) => [
-    [`${progress} %`, 'Avancement'],
+  // Pilotage de projet : pas de ventes ni de clients tant que l'appli n'est pas sortie
+  // (le bloc « Temps contre travail » est dessiné par ui.js).
+  stats: (s, { weather, launched, cumulative }) => [
     [`${WEATHER[weather].icon} ${WEATHER[weather].label}`, 'Météo du projet'],
     [`${TEAM_CAPACITY} pts`, 'Capacité toutes les 2 semaines'],
-    [`${clientele} %`, 'Clients potentiels'],
-    [euro(cumulative), 'Ventes cumulées'],
+    ...(launched ? [[euro(cumulative), 'Ventes cumulées']] : []),
   ],
+  timeVsWork: ({ weeks, totalWeeks, done, total }) => `${weeks} semaine${weeks > 1 ? 's' : ''} sur ${totalWeeks} · ${done} points sur ${total}, recette comprise`,
   reportTitle: (n) => `Compte rendu du COPIL ${n}`,
   next: (n) => `Avancer jusqu'au COPIL ${n}`,
   seeRequest: 'Voir la demande de la commanditaire',
@@ -120,7 +121,11 @@ export function logEntry(mode, entry) {
   const lex = lexicon(mode);
   switch (entry.kind) {
     case 'plan': return { kind: 'plan', text: lex.planLog(entry.total) };
-    case 'sprint': return { kind: 'sprint', label: lex.periodName(entry.sprint), text: `${lex.periodLog(entry)} Ventes : ${euro(entry.sales)}.` };
+    case 'sprint': {
+      // Manche 1 : pas de ventes dans le journal tant que l'appli ne rapporte rien.
+      const sales = mode === 'cascade' && !entry.sales ? '' : ` Ventes : ${euro(entry.sales)}.`;
+      return { kind: 'sprint', label: lex.periodName(entry.sprint), text: `${lex.periodLog(entry)}${sales}` };
+    }
     case 'quote': { const q = QUOTES.find((x) => x.id === entry.quote); return { kind: 'quote', text: q.text, who: q.who }; }
     case 'event': return { kind: 'event', label: 'Imprévu', text: lex.eventLog(EVENTS.find((e) => e.id === entry.event)) };
     case 'request': { const r = feature(entry.request); return { kind: 'request', label: `Demande de ${lex.stakeholder}`, text: `${r.name} : « ${r.ask} »` }; }
