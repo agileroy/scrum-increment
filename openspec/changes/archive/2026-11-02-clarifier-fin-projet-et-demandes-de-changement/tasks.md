@@ -14,7 +14,7 @@
 - [x] 3.2 Vérifier l'affichage à 360, 390, 1280 et 1440 px, en thème clair et sombre, dont la fenêtre de demande. Vérification : captures sans défilement horizontal.
 - [x] 3.3 Mettre à jour `README.md` (calendrier, demandes de changement) et `openspec/config.yaml` (tempo par le formateur retenu pour le mode collectif, demandes de changement). Vérification : `npm test` au vert et `openspec validate --specs` sans erreur après synchronisation.
 - [x] 3.4 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit. Fait le 2 novembre 2026 : workflow réussi, déploiement github-pages du commit bd7e45b.
-- [ ] 3.5 Faire jouer les deux manches par l'auteur. Vérification : validation explicite de l'auteur.
+- [x] 3.5 Faire jouer les deux manches par l'auteur. Vérification : validation explicite de l'auteur. Fait le 2 novembre 2026 : l'auteur a joué et demande l'archivage ; son retour sur le vocabulaire (COPIL plutôt que Sprints en manche 1) est traité dans le changement suivant.
 
 ## Workflow follow-up
 
