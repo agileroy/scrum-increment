@@ -14,12 +14,12 @@ Dans l'écran du cahier des charges, un lot retenu dont un prérequis, direct ou
 - **THEN** les huit autres lots s'affichent en rouge avec « Impossible sans « Vitrine en ligne » », y compris ceux qui dépendent de la réservation
 
 ### Requirement: Éléments mal placés
-Dans le Product Backlog (manche 2) et dans l'ordre du cahier des charges (manche 1, avant validation), un élément non terminé placé au-dessus d'un prérequis non terminé SHALL s'afficher en rouge avec « Placé avant « X » » et l'explication que l'équipe le sautera tant que X n'est pas terminé. Un élément placé sous son prérequis non terminé SHALL afficher un badge neutre « Après « X » ». Une fois le prérequis terminé, l'élément MUST NOT afficher de badge de dépendance.
+Dans le Product Backlog (manche 2) et dans l'ordre du cahier des charges (manche 1, avant validation), un élément non terminé placé au-dessus d'un prérequis non terminé SHALL s'afficher en rouge avec le badge court « Impossible sans « X » », sans autre explication. Un élément placé sous son prérequis non terminé SHALL afficher un badge neutre « Après « X » ». Une fois le prérequis terminé, l'élément MUST NOT afficher de badge de dépendance.
 
 #### Scenario: Paiement remonté trop haut
 - **GIVEN** la manche 2, Product Backlog dans l'ordre initial
 - **WHEN** le joueur remonte le paiement en ligne au-dessus de la réservation de pain
-- **THEN** le paiement s'affiche en rouge avec « Placé avant « Réservation de pain » »
+- **THEN** le paiement s'affiche en rouge avec « Impossible sans « Réservation de pain » »
 
 #### Scenario: Ordre initial
 - **GIVEN** la manche 2, avant le Sprint 1

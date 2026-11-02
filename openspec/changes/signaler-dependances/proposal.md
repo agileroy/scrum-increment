@@ -5,7 +5,7 @@ Retour de l'auteur : les dépendances entre fonctionnalités ne se voient qu'au 
 ## What Changes
 
 - **Lots impossibles** (cahier des charges et fenêtre de demande de changement, manche 1) : un lot retenu dont un prérequis, direct ou en chaîne, est décoché ou retiré s'affiche en rouge, avec « Impossible sans « X » ». Décocher la vitrine met donc en rouge tous les autres lots.
-- **Éléments mal placés** (Product Backlog en manche 2, et ordre du cahier des charges en manche 1) : un élément non terminé placé au-dessus d'un prérequis non terminé s'affiche en rouge, avec « Placé avant « X » » et une explication : l'équipe le sautera tant que X n'est pas terminé.
+- **Éléments mal placés** (Product Backlog en manche 2, et ordre du cahier des charges en manche 1) : un élément non terminé placé au-dessus d'un prérequis non terminé s'affiche en rouge, avec le même badge court « Impossible sans « X » » (choix de l'auteur, plus clair qu'une explication).
 - **Dépendance bien ordonnée** : badge neutre « Après « X » » tant que le prérequis n'est pas terminé, plus de rouge à tort. Une fois le prérequis terminé, plus de badge.
 - Les règles de validation et de construction ne changent pas : seul l'affichage change.
 

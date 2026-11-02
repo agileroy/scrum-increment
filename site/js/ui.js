@@ -43,17 +43,13 @@ function stateBadge(state, id) {
   }
 }
 
-// Badge de dépendance : rouge si l'élément est placé avant son prérequis, neutre s'il est bien placé après.
+// Badge de dépendance : rouge « Impossible sans » si l'élément est placé avant son prérequis, neutre s'il est bien placé après.
 function dependencyHtml(state, id, list) {
   const dep = dependencyState(state, id, list);
   if (!dep) return { cls: '', chip: '', note: '' };
   const req = feature(feature(id).req).name;
   if (dep === 'after') return { cls: '', chip: `<span class="chip dep">Après « ${esc(req)} »</span>`, note: '' };
-  return {
-    cls: 'is-misplaced',
-    chip: `<span class="chip warn">Placé avant « ${esc(req)} »</span>`,
-    note: `<div class="item-alert">${esc(lexicon(state.mode).skipText(req))}</div>`,
-  };
+  return { cls: 'is-misplaced', chip: `<span class="chip warn">Impossible sans « ${esc(req)} »</span>`, note: '' };
 }
 
 function moveButtons(id, index, count) {

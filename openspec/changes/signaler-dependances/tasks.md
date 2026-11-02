@@ -4,7 +4,7 @@
 
 ## 2. Interface
 
-- [x] 2.1 Faire évoluer `site/js/ui.js`, `site/js/vocabulary.js` et `site/app.css` : lots impossibles en rouge dans le cahier des charges, éléments mal placés en rouge avec explication, badge neutre « Après « X » », liste « Deviendraient impossibles » dans la fenêtre de demande. Vérification : liste de contrôle 3.1 et `tests/vocabulary.test.mjs` au vert.
+- [x] 2.1 Faire évoluer `site/js/ui.js`, `site/js/vocabulary.js` et `site/app.css` : lots impossibles en rouge dans le cahier des charges, éléments mal placés en rouge avec le badge court « Impossible sans « X » », badge neutre « Après « X » », liste « Deviendraient impossibles » dans la fenêtre de demande. Vérification : liste de contrôle 3.1 et `tests/vocabulary.test.mjs` au vert.
 
 ## 3. Vérification et publication
 
