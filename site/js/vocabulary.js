@@ -135,6 +135,28 @@ export function logEntry(mode, entry) {
   }
 }
 
+/** Nom d'une période du fil des décisions (0 : avant la première). */
+export function trailPeriod(mode, period) {
+  if (period === 0) return mode === 'cascade' ? 'Avant le premier COPIL' : 'Avant le premier Sprint';
+  return mode === 'cascade' ? `COPIL ${period}` : `Sprint ${period}`;
+}
+
+/** Un fait du fil des décisions mis en mots, dans le vocabulaire de la manche (jamais de ventes). */
+export function trailText(mode, fact) {
+  const lex = lexicon(mode);
+  const name = (id) => feature(id).name;
+  switch (fact.kind) {
+    case 'plan': return `Cahier des charges de ${fact.total} points validé${fact.dropped.length ? `, sans : ${names(fact.dropped)}` : ', avec tous les lots'}.`;
+    case 'status': return `Avancement ${fact.progress} %, météo ${WEATHER[fact.weather].label.toLowerCase()}.`;
+    case 'release': return "L'appli sort : tous les lots du cahier des charges sont en ligne.";
+    case 'live': return `Mis en ligne : ${names(fact.ids)}.`;
+    case 'moved': return `« ${name(fact.id)} » ${fact.to < fact.from ? 'remontée' : 'descendue'} du rang ${fact.from} au rang ${fact.to}.`;
+    case 'discovery': return `Travail sous-estimé : ${fact.target === 'recette' ? lex.recetteName : name(fact.target)} (+${fact.extra} points).`;
+    case 'decision': return lex.decision(fact);
+    default: throw new Error(`Fait inconnu : ${fact.kind}`);
+  }
+}
+
 /** Annonce d'une découverte de travail sous-estimé : « texte (+6 points) ». */
 export function discoveryText(mode, { target, extra }) {
   const u = UNDERESTIMATES.find((x) => x.target === target && (!x.mode || x.mode === mode));

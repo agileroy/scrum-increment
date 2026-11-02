@@ -174,7 +174,7 @@ export function validatePlan(state) {
   if (!status.valid) throw new Error(status.message);
   const next = clone(state);
   next.planValidated = true;
-  next.log.push({ sprint: 0, kind: 'plan', total: status.total });
+  next.log.push({ sprint: 0, kind: 'plan', total: status.total, dropped: FEATURES.map((f) => f.id).filter((id) => !has(next.included, id)) });
   return next;
 }
 
@@ -315,6 +315,7 @@ export function playSprint(state) {
   if (developmentOver(state)) throw new Error('Le développement est terminé.');
   if (state.pendingRequest) throw new Error('Une demande de changement attend une décision.');
   const next = clone(state);
+  const orderAtStart = workItems(state); // pour retrouver ce qui a bougé d'une période à l'autre
   next.sprint += 1;
   const sprint = next.sprint;
   const sales = earn(next, sprint);
@@ -325,7 +326,7 @@ export function playSprint(state) {
 
   const progress = next.mode === MODES.cascade ? planProgress(next) : null;
   const weather = next.mode === MODES.cascade ? projectWeather(next) : null;
-  next.log.push({ sprint, kind: 'sprint', completed: completed.slice(), launched, progress, weather, sales: Math.round(sales) });
+  next.log.push({ sprint, kind: 'sprint', completed: completed.slice(), launched, progress, weather, sales: Math.round(sales), order: orderAtStart });
   for (const target of discoveries) next.log.push({ sprint, kind: 'discovery', target, extra: next.extra[target] });
   for (const q of quotes) next.log.push({ sprint, kind: 'quote', quote: q.id });
   for (const e of events) next.log.push({ sprint, kind: 'event', event: e.id });
@@ -497,7 +498,9 @@ function reviveEntry(entry) {
     e.progress = e.progress ?? null;
     e.weather = e.weather ?? null;
     e.sales = e.sales ?? 0;
+    e.order = e.order === undefined ? null : toArray(e.order); // absent des parties commencées avant son ajout
   }
+  if (e.kind === 'plan') e.dropped = toArray(e.dropped);
   if (e.kind === 'decision') e.removed = toArray(e.removed);
   return e;
 }
@@ -542,6 +545,41 @@ export function reportFromState(state, sprint = state.sprint) {
     discoveries: entries.filter((e) => e.kind === 'discovery').map((e) => ({ target: e.target, extra: e.extra })),
     developmentOver: sprint >= buildEnd,
   };
+}
+
+/**
+ * Fil des décisions d'une équipe, en faits, période par période (0 = avant la première période) :
+ * [{ period, facts: [{ kind: 'plan' | 'moved' | 'discovery' | 'status' | 'release' | 'live' | 'decision', … }] }].
+ * Aucune vente : ce fil sert aux coulisses du formateur pendant la partie, puis au débrief.
+ */
+export function decisionTrail(state) {
+  const periods = new Map();
+  const at = (p) => { if (!periods.has(p)) periods.set(p, []); return periods.get(p); };
+  let previous = FEATURES.map((f) => f.id);
+  for (const e of state.log) {
+    if (e.kind === 'plan') at(0).push({ kind: 'plan', total: e.total, dropped: (e.dropped ?? []).slice() });
+    if (e.kind === 'sprint') {
+      if (state.mode === MODES.increment && e.order) {
+        for (const id of e.order) {
+          // une demande ajoutée depuis la période précédente part du bas de la liste
+          const from = previous.includes(id) ? previous.indexOf(id) : previous.length;
+          const to = e.order.indexOf(id);
+          if (Math.abs(from - to) >= 2) at(e.sprint).push({ kind: 'moved', id, from: from + 1, to: to + 1 });
+        }
+        previous = e.order.slice();
+      }
+      if (state.mode === MODES.cascade && !e.launched && e.progress !== null) at(e.sprint).push({ kind: 'status', progress: e.progress, weather: e.weather });
+      if (e.launched) at(e.sprint).push({ kind: 'release' });
+      if (state.mode === MODES.increment && e.completed.length) at(e.sprint).push({ kind: 'live', ids: e.completed.slice() });
+    }
+    if (e.kind === 'discovery') at(e.sprint).push({ kind: 'discovery', target: e.target, extra: e.extra });
+    if (e.kind === 'decision') {
+      const fact = { kind: 'decision', request: e.request, decision: e.decision, removed: (e.removed ?? []).slice() };
+      if (e.reason) fact.reason = e.reason;
+      at(e.sprint).push(fact);
+    }
+  }
+  return [...periods.entries()].sort((a, b) => a[0] - b[0]).map(([period, facts]) => ({ period, facts }));
 }
 
 /** Résumé de fin du projet d'une manche terminée (mêmes champs que celui de `finishRound`). */

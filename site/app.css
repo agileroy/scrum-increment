@@ -421,6 +421,23 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 #kpi.kpi-wide td, #kpi.kpi-wide thead th { min-width: 112px; }
 #kpi.kpi-wide tbody th { min-width: 150px; }
 
+/* ---------------------------------------------------------------- Coulisses et fil de la salle */
+
+.room-feed ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.room-feed time { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 6px; }
+.backstage { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; border-top: 1px dashed var(--border); }
+.backstage-toggle { align-self: flex-start; }
+.backstage.is-open { padding: 14px; border: 2px dashed var(--error); border-radius: var(--radius); background: var(--warn-bg); }
+.backstage-warning { color: var(--warn-text); font-weight: 600; }
+.trail { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
+.trail > li > strong { display: block; color: var(--crust); font-size: 0.85rem; margin-bottom: 2px; }
+.trail ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.trail .trail-discovery { color: var(--warn-text); }
+.trail .trail-decision { font-weight: 600; }
+.decisions-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.decisions-grid summary { cursor: pointer; }
+.decisions-grid summary h4 { display: inline; margin: 0; font-size: 1rem; }
+
 /* ---------------------------------------------------------------- Petits écrans */
 
 @media (max-width: 900px) {

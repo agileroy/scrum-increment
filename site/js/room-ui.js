@@ -10,8 +10,8 @@ import {
   MAX_TEAMS, MIN_TEAMS, TIMER_CHOICES, isValidCode, normalizeCode, teamName, teamMode, teamNumbers, teamMembers,
   isConnected, isReady, canBeReady, planReady, timeLeft, formatSeconds,
 } from './room-core.js?v=__VERSION__';
-import { MODES, reportFromState, finishSummary, roundResults, periodWeeks } from './game-core.js?v=__VERSION__';
-import { lexicon } from './vocabulary.js?v=__VERSION__';
+import { MODES, reportFromState, finishSummary, roundResults, periodWeeks, decisionTrail } from './game-core.js?v=__VERSION__';
+import { lexicon, trailText, trailPeriod } from './vocabulary.js?v=__VERSION__';
 import { PLANNED_SPRINTS, HORIZON_WEEKS } from './scenario.js?v=__VERSION__';
 import { formatEuro } from './chart.js?v=__VERSION__';
 
@@ -124,6 +124,9 @@ export async function startRoomMode() {
   let busy = false;
   let hostBusy = false;
   let deferredHost = false;
+  let backstage = false;          // coulisses du formateur : fermées par défaut, à ne pas projeter
+  let feed = [];                  // fil neutre de la salle : [{ at, text }]
+  let seenRoom = null;            // dernier état observé, pour déduire le fil neutre
   const soloQuestions = $('debrief-questions').innerHTML;
 
   if (!offline) store.onConnection((connected) => {
@@ -175,6 +178,10 @@ export async function startRoomMode() {
     $('timer-chip').hidden = true;
     $('replay').hidden = false;
     $('debrief-questions').innerHTML = soloQuestions;
+    $('decisions').hidden = true;
+    backstage = false;
+    feed = [];
+    seenRoom = null;
     document.body.dataset.mode = 'solo';
   }
 
@@ -326,6 +333,7 @@ export async function startRoomMode() {
 
   function renderHost() {
     app.session = null;
+    updateFeed();
     const meta = room.meta;
     if (meta.status === 'revealed') { renderCollectiveResults(); return; }
     ui.show('host', { keepScroll: true });
@@ -373,15 +381,60 @@ export async function startRoomMode() {
         }
         return teamCardHtml(n, members[n], count, status);
       }).join('')}</div>`;
+      h += `<section class="panel room-feed" aria-labelledby="feed-title"><h3 id="feed-title">Fil de la salle</h3>${feed.length
+        ? `<ul>${feed.slice(-5).reverse().map((f) => `<li><time>${esc(f.at)}</time> ${esc(f.text)}</li>`).join('')}</ul>`
+        : '<p class="muted">Rien pour l\'instant.</p>'}</section>`;
       h += '<div class="actions host-actions">';
       if (ended) h += '<button type="button" class="button button-primary button-large" data-reveal>Révéler les résultats</button>';
       else h += `<button type="button" class="button button-primary button-large" data-launch-period ${preparing.length || hostBusy ? 'disabled' : ''}>Lancer la période ${next}</button>`;
       h += '<button type="button" class="button button-ghost" data-delete-room>Supprimer la salle</button></div>';
       if (!ended && preparing.length) h += `<p class="hint">${preparing.length > 1 ? `Les équipes ${esc(listNames(preparing.map(teamName)))} préparent encore.` : `L'équipe ${esc(teamName(preparing[0]))} prépare encore.`}</p>`;
+      h += backstageHtml(count);
     }
     $('host-body').innerHTML = h;
     renderTimer();
     if (meta.status === 'lobby' && !$('host-qr').innerHTML) qrReady.then(() => { if ($('host-qr')) $('host-qr').innerHTML = qrSvg(urlFor(code), `${baseLabel}, salle ${code}`); });
+  }
+
+  /* Coulisses : le fil des décisions de chaque équipe, dans son vocabulaire (jamais de ventes). */
+  function trailHtml(n) {
+    const state = teamState(room, n);
+    if (!state) return '<p class="muted">Pas encore de décision.</p>';
+    const trail = decisionTrail(state).filter((p) => p.facts.length);
+    if (!trail.length) return '<p class="muted">Pas encore de décision.</p>';
+    return `<ol class="trail">${trail.slice().reverse().map((p) => `<li><strong>${esc(trailPeriod(state.mode, p.period))}</strong><ul>${p.facts.map((f) => `<li class="trail-${f.kind}">${esc(trailText(state.mode, f))}</li>`).join('')}</ul></li>`).join('')}</ol>`;
+  }
+
+  function backstageHtml(count) {
+    let h = `<section class="backstage ${backstage ? 'is-open' : ''}">`;
+    h += `<button type="button" class="button button-ghost backstage-toggle" data-backstage aria-expanded="${backstage}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/>${backstage ? '' : '<path d="M4 4l16 16"/>'}</svg>
+      ${backstage ? 'Fermer les coulisses' : 'Coulisses (à ne pas projeter)'}</button>`;
+    if (backstage) {
+      h += '<p class="hint backstage-warning">À ne pas projeter : les coulisses dévoilent la façon de travailler de chaque équipe. Elles se referment au lancement de la période.</p>';
+      h += `<div class="team-grid">${teamNumbers(count).map((n) => `<section class="panel team-card team-tone-${n}"><div class="team-card-head"><h3>${esc(teamName(n))}</h3><span class="chip">${esc(APPROACH[teamMode(n)].short)}</span></div>${trailHtml(n)}</section>`).join('')}</div>`;
+    }
+    return `${h}</section>`;
+  }
+
+  /* Fil neutre de la salle, déduit des changements observés (aucun mot propre à une approche). */
+  function updateFeed() {
+    const prev = seenRoom;
+    seenRoom = room;
+    if (!prev?.meta || !room?.meta || prev.meta.status === 'lobby' && room.meta.status === 'lobby') return;
+    const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const push = (text) => { feed.push({ at: now, text }); feed = feed.slice(-20); };
+    if (prev.meta.status === 'lobby' && room.meta.status === 'playing') push('Partie lancée : réflexion de la période 1.');
+    const period = room.meta.period ?? 0;
+    if ((prev.meta.period ?? 0) < period) push(room.meta.status === 'ended' ? `Période ${period} lancée : fin du projet.` : `Période ${period} lancée pour toutes les équipes.`);
+    else {
+      for (const n of teamNumbers(room.meta.teamCount)) {
+        const was = isReady(prev.teams?.[n], prev.meta.period ?? 0);
+        const is = isReady(room.teams?.[n], period);
+        if (!was && is) push(`${teamName(n)} est prête.`);
+        if (was && !is && !room.teams?.[n]?.state?.pendingRequest) push(`${teamName(n)} n'est plus prête.`);
+      }
+    }
   }
 
   async function hostRun(task) {
@@ -393,6 +446,7 @@ export async function startRoomMode() {
   $('host-body').addEventListener('click', async (event) => {
     const t = event.target.closest('button');
     if (!t || t.disabled || !room) return;
+    if (t.hasAttribute('data-backstage')) { backstage = !backstage; render(); return; }
     if (t.dataset.teams) hostRun(() => store.setTeamCount(code, room, Number(t.dataset.teams)));
     else if (t.dataset.timer !== undefined) hostRun(() => store.setTimer(code, Number(t.dataset.timer)));
     else if (t.dataset.removePlayer) {
@@ -408,8 +462,9 @@ export async function startRoomMode() {
         const who = waiting.length > 1 ? `Les équipes ${listNames(waiting)} ne sont pas prêtes.` : `L'équipe ${waiting[0]} n'est pas prête.`;
         if (!await confirmAction(`Lancer la période ${period + 1} ?`, `${who} La période sera jouée pour toutes les équipes.`, 'Lancer quand même')) return;
       }
+      backstage = false; // l'écran redevient neutre
       hostRun(() => store.launchPeriod(code, room));
-    } else if (t.hasAttribute('data-reveal')) hostRun(() => store.reveal(code));
+    } else if (t.hasAttribute('data-reveal')) { backstage = false; hostRun(() => store.reveal(code)); }
     else if (t.hasAttribute('data-delete-room')) {
       if (await confirmAction('Supprimer la salle', 'La partie et ses résultats seront effacés pour tout le monde.', 'Supprimer')) {
         const old = code;
@@ -588,6 +643,8 @@ export async function startRoomMode() {
     // keepScroll : pas de retour en haut de page à chaque mise à jour de la salle
     ui.renderComparison(columns, { title: `Résultats : ${plural(columns.length, 'équipe')}, deux façons de travailler`, intro, keepScroll: true });
     $('debrief-questions').innerHTML = DEBRIEF_TEAMS.map((q) => `<li>${esc(q)}</li>`).join('');
+    $('decisions').hidden = false;
+    $('decisions-body').innerHTML = columns.map((c) => `<details class="panel team-card team-tone-${c.team}" open><summary><h4>${esc(teamName(c.team))} · ${esc(APPROACH[teamMode(c.team)].short)}</h4></summary>${trailHtml(c.team)}</details>`).join('');
   }
 
   /* ------------------------------------------------------------ Entrée */
