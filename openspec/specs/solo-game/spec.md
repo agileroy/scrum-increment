@@ -84,12 +84,12 @@ Une fonctionnalité issue d'une demande SHALL être signalée comme « Demande d
 - **THEN** il y trouve la demande de la version anglaise et son refus
 
 ### Requirement: Accueil sans option
-L'accueil SHALL présenter l'histoire de Madame Lefèvre en quelques lignes, annoncer deux manches sur le même projet (d'abord en chef de projet, puis en Product Owner) avec une comparaison à la fin, et proposer un bouton pour commencer la manche 1. L'accueil MUST NOT proposer d'option de coupure, ni dévoiler les valeurs réelles ou les imprévus.
+L'accueil SHALL présenter l'histoire de Madame Lefèvre en quelques lignes et proposer trois entrées : « Animer une partie » (formateur), « Rejoindre une partie » (code de salle et prénom) et « Jouer seul », qui annonce deux manches sur le même projet (d'abord en chef de projet, puis en Product Owner) avec une comparaison à la fin. L'accueil MUST NOT proposer d'option de coupure, ni dévoiler les valeurs réelles ou les imprévus.
 
 #### Scenario: Rien à régler
 - **GIVEN** l'accueil
 - **WHEN** il s'affiche
-- **THEN** il ne contient ni case à cocher, ni mot sur la banque ou une coupure, et le bouton lance directement le cahier des charges de la manche 1
+- **THEN** il ne contient ni case à cocher, ni mot sur la banque ou une coupure, et « Jouer seul » lance directement le cahier des charges de la manche 1
 
 ### Requirement: Lots impossibles
 Dans l'écran du cahier des charges, un lot retenu dont un prérequis, direct ou en chaîne, n'est pas retenu SHALL s'afficher en rouge avec « Impossible sans « X » », X étant le premier lot manquant de la chaîne. Les lots décochés SHALL rester grisés, sans rouge. Le message et la validation SHALL continuer de refuser un cahier des charges qui contient un lot impossible.
