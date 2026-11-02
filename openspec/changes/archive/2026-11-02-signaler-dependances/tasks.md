@@ -11,7 +11,7 @@
 - [x] 3.1 Jouer dans un navigateur automatisé : décocher la réservation puis la vitrine, remonter le paiement au-dessus de la réservation, vérifier les badges neutres puis leur disparition, retirer la réservation dans une demande ; relecture des mots interdits par manche. Vérification : rouge exactement sur les lots attendus, aucune erreur dans la console.
 - [x] 3.2 Vérifier l'affichage à 360 et 1280 px, en thème clair et sombre. Vérification : captures sans défilement horizontal, rouge lisible dans les deux thèmes.
 - [x] 3.3 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit. Fait le 2 novembre 2026 : workflow réussi, déploiement github-pages du commit b75d129.
-- [ ] 3.4 Faire jouer l'auteur. Vérification : validation explicite de l'auteur.
+- [x] 3.4 Faire jouer l'auteur. Vérification : validation explicite de l'auteur. Fait le 2 novembre 2026 : l'auteur a joué, demandé le badge court puis le rouge en chaîne (intégrés), et enchaîne sur le glisser-déposer, traité dans le changement suivant.
 
 ## Workflow follow-up
 
