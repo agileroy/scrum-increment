@@ -13,7 +13,7 @@
 - [x] 3.1 Jouer dans un navigateur automatisé : demandes refusées dans les deux manches avec et sans coupure (chiffres de référence), acceptation refusée sans retrait, acceptation avec retrait, Échap sur une demande, parcours de référence avec les plateaux acceptés, textes de fin de projet sans « Sprint » après le développement. Vérification : aucune erreur dans la console, chiffres affichés égaux aux tests.
 - [x] 3.2 Vérifier l'affichage à 360, 390, 1280 et 1440 px, en thème clair et sombre, dont la fenêtre de demande. Vérification : captures sans défilement horizontal.
 - [x] 3.3 Mettre à jour `README.md` (calendrier, demandes de changement) et `openspec/config.yaml` (tempo par le formateur retenu pour le mode collectif, demandes de changement). Vérification : `npm test` au vert et `openspec validate --specs` sans erreur après synchronisation.
-- [ ] 3.4 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit.
+- [x] 3.4 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit. Fait le 2 novembre 2026 : workflow réussi, déploiement github-pages du commit bd7e45b.
 - [ ] 3.5 Faire jouer les deux manches par l'auteur. Vérification : validation explicite de l'auteur.
 
 ## Workflow follow-up
