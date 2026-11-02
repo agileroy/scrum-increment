@@ -14,8 +14,8 @@ Le compte rendu de COPIL (`reportHtml` dans `ui.js`) affiche toujours les ventes
 ## Decisions
 
 - **Règle d'affichage** : en manche 1, ventes et clients ne s'affichent que si `state.launched`. Le moteur n'est pas touché ; les résultats et la fin du projet continuent de les utiliser.
-- **Compte rendu de COPIL avant la sortie** : météo, avancement du cahier des charges, budget consommé (« 24 points sur 72 »), puis imprévus et demande. Plus de section « Retours clients ». Après la sortie : bandeau « L'appli est en ligne » et ventes de la période, toujours sans retours clients.
-- **Tuiles du tableau** : Avancement, Météo du projet, Capacité toutes les 2 semaines, Budget consommé (points sur 72, avenants compris dans la recette), Semaines écoulées (sur 12). Après la sortie, « Ventes cumulées » s'ajoute en sixième tuile, sans faire bouger les autres repères.
+- **Compte rendu de COPIL avant la sortie** : météo, temps écoulé contre travail fait (« 4 semaines sur 12 · 34 % du travail fait »), puis imprévus et demande. Plus de section « Retours clients ». Après la sortie : bandeau « L'appli est en ligne » et ventes de la période, toujours sans retours clients.
+- **Tuiles du tableau (option C retenue par l'auteur sur maquette)** : un bloc « Temps contre travail » à deux barres, « Temps écoulé » (semaines écoulées sur 12, en %) et « Travail fait » (avancement du plan, recette comprise, en %), avec en légende « 6 semaines sur 12 · 36 points sur 72, recette comprise » ; puis les tuiles « Météo du projet » et « Capacité toutes les 2 semaines ». Sur téléphone, le bloc prend toute la largeur et les deux tuiles se partagent la ligne suivante. Après la sortie, une tuile « Ventes cumulées » s'ajoute, sans faire bouger les autres repères.
 - **Lots** : en manche 1, plus de ligne « Ventes réelles » (la valeur réelle n'est de toute façon jamais révélée en manche 1).
 - **Journal** : « COPIL 3 : avancement 51 %, météo ensoleillé. » sans ventes ; après la sortie, « appli en ligne, ventes : 1 200 € ».
 - **Imprévu du concurrent** : le texte « elle perd des clients toutes les deux semaines » reste (c'est l'annonce de l'imprévu, la même pour les deux approches), mais aucun chiffre de clients ne suit dans la manche 1.
@@ -23,8 +23,8 @@ Le compte rendu de COPIL (`reportHtml` dans `ui.js`) affiche toujours les ventes
 ## Risks / Trade-offs
 
 - [Le joueur de manche 1 ne voit plus l'effet du concurrent] → c'est voulu : il le découvrira au débrief, comme un vrai projet qui n'a pas de produit en ligne.
-- [« Budget consommé » proche de « Avancement »] → l'un compte les points dépensés (recette comprise), l'autre le pourcentage du plan terminé ; l'auteur pourra n'en garder qu'un.
+- [Les deux barres restent proches jusqu'à la coupure] → voulu : c'est le faux sentiment de maîtrise d'un projet « dans les temps », que la coupure brise.
 
 ## Open Questions
 
-- Garder les ventes après la sortie en manche 1, ou les masquer jusqu'à la fin du projet ? (proposition : les afficher, c'est ce que voit la commanditaire)
+_Aucune : l'auteur a validé l'affichage des ventes après une sortie en manche 1 et l'option C des tuiles._

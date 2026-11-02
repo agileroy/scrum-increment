@@ -4,8 +4,8 @@ Deuxième remarque du test de l'auteur : en manche 1, le compte rendu de COPIL a
 
 ## What Changes
 
-- **Manche 1, tant que l'appli n'est pas sortie** : plus aucune mention des ventes ni des clients, ni dans le compte rendu de COPIL, ni dans le tableau, ni sur les lots, ni dans le journal. Le COPIL parle de ce qu'un COPIL suit : avancement, météo, points consommés sur le budget, semaines écoulées, imprévus et demandes de la commanditaire.
-- **Tuiles du tableau en manche 1** : « Avancement », « Météo du projet », « Capacité toutes les 2 semaines », et deux nouvelles tuiles de pilotage, « Budget consommé » (points dépensés sur 72) et « Semaines écoulées » (sur 12), à la place de « Clients potentiels » et « Ventes cumulées ».
+- **Manche 1, tant que l'appli n'est pas sortie** : plus aucune mention des ventes ni des clients, ni dans le compte rendu de COPIL, ni dans le tableau, ni sur les lots, ni dans le journal. Le COPIL parle de ce qu'un COPIL suit : temps écoulé contre travail fait, météo, imprévus et demandes de la commanditaire.
+- **Tuiles du tableau en manche 1** : un bloc « Temps contre travail » (deux barres : temps écoulé et travail fait), « Météo du projet » et « Capacité toutes les 2 semaines », à la place de « Avancement », « Clients potentiels » et « Ventes cumulées ».
 - **Après la sortie de l'appli en manche 1** (cahier des charges resserré) : les ventes et la ligne « L'appli est en ligne » réapparaissent, puisque la commanditaire voit alors son chiffre d'affaires ; toujours pas de retours clients (le cadre projet n'organise pas de Review).
 - **Fin du projet** : inchangée (ventes cumulées affichées), c'est le moment où le projet se termine et où la comparaison commence.
 - **Manche 2** : inchangée.
