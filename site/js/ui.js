@@ -14,7 +14,7 @@ import { chartSvg, legendHtml, formatEuro } from './chart.js';
 const $ = (id) => document.getElementById(id);
 const SCREENS = ['home', 'plan', 'board', 'transition', 'results'];
 
-const app = { cut: true, round: null, results: {}, afterDialog: null, remove: [] };
+const app = { round: null, results: {}, afterDialog: null, remove: [] };
 const compactQuery = window.matchMedia('(max-width: 560px)');
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -325,9 +325,8 @@ function drawChart() {
 
 export function init() {
   $('start').addEventListener('click', () => {
-    app.cut = $('opt-cut').checked;
     app.results = {};
-    app.round = newRound(MODES.cascade, { cut: app.cut });
+    app.round = newRound(MODES.cascade);
     renderPlan();
     show('plan');
   });
@@ -361,7 +360,7 @@ export function init() {
   $('play-sprint').addEventListener('click', onPlaySprint);
 
   $('start-round-2').addEventListener('click', () => {
-    app.round = newRound(MODES.increment, { cut: app.cut });
+    app.round = newRound(MODES.increment);
     renderBoard();
     show('board');
   });

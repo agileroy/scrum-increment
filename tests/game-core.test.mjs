@@ -8,8 +8,18 @@ import {
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
 
-function cascadeWithoutReviews(cut) {
-  let s = newRound('cascade', { cut });
+const LEAN = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite'];
+
+// Manche 1 avec un cahier des charges limité aux lots `keep`, validé.
+function cascadeWith(keep) {
+  let s = newRound('cascade');
+  for (const id of s.order) if (!keep.includes(id)) s = toggleInPlan(s, id);
+  return validatePlan(s);
+}
+
+// Manche 1 avec le cahier des charges de 61 points (tout sauf les avis clients).
+function cascadeWithoutReviews() {
+  let s = newRound('cascade');
   s = toggleInPlan(s, 'avis');
   return validatePlan(s);
 }
@@ -96,40 +106,38 @@ test('plan vide refusé', () => {
 });
 
 test('Plan figé une fois validé', () => {
-  const s = cascadeWithoutReviews(false);
+  const s = cascadeWithoutReviews();
   assert.equal(canMove(s, 'vitrine'), false);
   assert.throws(() => moveFeature(s, 'vitrine', 1));
   assert.throws(() => toggleInPlan(s, 'vitrine'));
 });
 
-test('Sortie au Sprint 6 : 8 fonctionnalités, premières ventes 2 semaines après le projet', () => {
-  const { reports, results, state } = playAll(cascadeWithoutReviews(false));
-  assert.equal(reports.length, 6);
-  assert.equal(reports[5].launched, true);
-  assert.ok(reports.slice(0, 5).every((r) => !r.launched && r.sales === 0));
-  assert.ok(reports.every((r) => r.quotes.length === 0));
-  assert.equal(results.liveAtEnd.length, 8);
-  assert.equal(results.firstSale, 7);
-  assert.deepEqual(periodWeeks(results.firstSale), [13, 14]);
-  assert.equal(state.recette, 8);
+test('Cahier des charges resserré : sortie au Sprint 4, avant la coupure', () => {
+  const { reports, results } = playAll(cascadeWith(LEAN));
+  assert.equal(reports.length, 5);
+  assert.equal(reports[3].launched, true);
+  assert.equal(results.liveAtEnd.length, 6);
+  assert.equal(results.firstSale, 5);
+  assert.deepEqual(periodWeeks(results.firstSale), [9, 10]);
 });
 
 test('fonctionnalités terminées hors ligne jusqu\'à la recette', () => {
-  let s = cascadeWithoutReviews(false);
+  let s = cascadeWithoutReviews();
   for (let i = 0; i < 3; i++) s = sprint(s).state;
   assert.ok(s.done.length > 0);
   assert.equal(s.live.length, 0);
   assert.equal(featureState(s, s.done[0]), 'awaiting');
 });
 
-test('Sortie tardive : 0,9⁴ des clients au Sprint 7', () => {
-  const { state } = playAll(cascadeWithoutReviews(false));
-  assert.ok(Math.abs(state.clientele - 0.9 ** 4) < 1e-12);
-  assert.equal(state.curve[6], Math.round(3600 * 0.9 ** 4));
+test('Sortie tardive : cahier des charges de 47 points, sorti au Sprint 5, 0,9³ des clients', () => {
+  const { reports, results, state } = playAll(cascadeWith([...LEAN, 'paiement']));
+  assert.equal(reports[4].launched, true);
+  assert.equal(results.firstSale, 6);
+  assert.ok(Math.abs(state.clientele - 0.9 ** 3) < 1e-12);
 });
 
-test('Appli jamais sortie avec la coupure', () => {
-  const { reports, results, summary } = playAll(cascadeWithoutReviews(true));
+test('Appli jamais sortie', () => {
+  const { reports, results, summary } = playAll(cascadeWithoutReviews());
   assert.equal(reports.length, 5);
   assert.equal(summary.launched, false);
   assert.ok(summary.doneOffline > 0);
@@ -170,7 +178,7 @@ test('Premiers retours dès le Sprint 1, quel que soit l\'ordre', () => {
 });
 
 test('Aucun retour avant la sortie (manche 1)', () => {
-  const r = playSprint(cascadeWithoutReviews(false));
+  const r = playSprint(cascadeWithoutReviews());
   assert.equal(r.report.nothingLive, true);
   assert.deepEqual(r.report.quotes, []);
 });
@@ -212,7 +220,7 @@ test('Indice qui disparaît : « gâteaux d\'anniversaire » absent une fois les
 /* ---------- Imprévus ---------- */
 
 test('concurrent annoncé à la Review du Sprint 2, dans les deux manches', () => {
-  for (const s of [newRound('increment'), cascadeWithoutReviews(false)]) {
+  for (const s of [newRound('increment'), cascadeWithoutReviews()]) {
     let r = sprint(s);
     assert.equal(r.report.events.length, 0);
     r = sprint(r.state);
@@ -220,37 +228,37 @@ test('concurrent annoncé à la Review du Sprint 2, dans les deux manches', () =
   }
 });
 
-test('Coupure désactivée : rien au Sprint 3, 6 Sprints de développement', () => {
-  let s = newRound('increment', { cut: false });
-  for (let i = 0; i < 3; i++) {
-    const r = playSprint(s);
-    s = r.state;
-    if (i === 2) assert.equal(r.report.events.length, 0);
+test('Aucun préavis et comptes rendus muets : rien sur la coupure aux Sprints 1 à 4', () => {
+  for (const start of [newRound('increment'), cascadeWithoutReviews()]) {
+    let s = start;
+    for (let i = 1; i <= 4; i++) {
+      const r = playSprint(s);
+      s = r.state.pendingRequest ? decideRequest(r.state, { accept: false }) : r.state;
+      assert.ok(!r.report.events.some((e) => e.id === 'coupure'), `Sprint ${i}`);
+      assert.equal(s.lastBuildSprint, 6);
+      assert.equal(r.report.developmentOver, false);
+    }
   }
-  assert.equal(s.lastBuildSprint, 6);
 });
 
-test('coupure activée : annoncée au Sprint 3, fin du développement au Sprint 5', () => {
-  let s = newRound('increment', { cut: true });
-  let r;
-  for (let i = 0; i < 3; i++) { r = playSprint(s); s = r.state; }
-  assert.deepEqual(r.report.events.map((e) => e.id), ['coupure']);
-  assert.equal(s.lastBuildSprint, 5);
-  s = playSprint(s).state;
-  r = playSprint(s);
-  assert.equal(r.report.developmentOver, true);
-  assert.throws(() => playSprint(r.state));
+test('La coupure tombe à la fin du Sprint 5, dans les deux manches', () => {
+  for (const start of [newRound('increment'), cascadeWithoutReviews()]) {
+    const { reports, state } = playDevelopment(start);
+    assert.equal(reports.length, 5);
+    assert.deepEqual(reports[4].events.map((e) => e.id), ['coupure']);
+    assert.equal(reports[4].developmentOver, true);
+    assert.equal(state.lastBuildSprint, 5);
+    assert.throws(() => playSprint(state));
+  }
 });
 
 /* ---------- Parcours de référence ---------- */
 
 const REFERENCE = [
-  ['manche 1, plan sans les avis, sans coupure', () => cascadeWithoutReviews(false), 9448],
-  ['manche 1, plan sans les avis, avec coupure', () => cascadeWithoutReviews(true), 0],
-  ['manche 2, ordre initial, sans coupure', () => newRound('increment', { cut: false }), 15300],
-  ['manche 2, ordre initial, avec coupure', () => newRound('increment', { cut: true }), 13300],
-  ['manche 2, à l\'écoute, sans coupure', () => ({ ...newRound('increment', { cut: false }), order: SMART_ORDER.slice() }), 25300],
-  ['manche 2, à l\'écoute, avec coupure', () => ({ ...newRound('increment', { cut: true }), order: SMART_ORDER.slice() }), 25300],
+  ['manche 1, cahier des charges de 61 points', () => cascadeWithoutReviews(), 0],
+  ['manche 1, cahier des charges resserré de 39 points', () => cascadeWith(LEAN), 16038],
+  ['manche 2, ordre initial', () => newRound('increment'), 13300],
+  ['manche 2, à l\'écoute', () => ({ ...newRound('increment'), order: SMART_ORDER.slice() }), 25300],
 ];
 
 for (const [name, start, expected] of REFERENCE) {
@@ -263,7 +271,7 @@ for (const [name, start, expected] of REFERENCE) {
 }
 
 test('indicateurs de la manche 2 dans l\'ordre initial', () => {
-  const { results } = playAll(newRound('increment', { cut: true }));
+  const { results } = playAll(newRound('increment'));
   assert.equal(results.firstSale, 2);
   assert.equal(results.invested, 10 * 500);
   assert.equal(results.liveAtEnd.length, 6);
@@ -273,8 +281,8 @@ test('indicateurs de la manche 2 dans l\'ordre initial', () => {
 /* ---------- Propriétés générales ---------- */
 
 test('déterminisme et état sérialisable', () => {
-  const a = playAll(cascadeWithoutReviews(false)).results;
-  const b = playAll(cascadeWithoutReviews(false)).results;
+  const a = playAll(cascadeWithoutReviews()).results;
+  const b = playAll(cascadeWithoutReviews()).results;
   assert.deepEqual(a, b);
   let s = newRound('increment');
   s = playSprint(s).state;
@@ -310,7 +318,7 @@ test('Révélation : réservation en tête, avis et version anglaise en dernier 
 /* ---------- Demandes de changement ---------- */
 
 test('manche 1 : la demande bloque le Sprint suivant jusqu\'à la décision', () => {
-  const r = playSprint(cascadeWithoutReviews(false));
+  const r = playSprint(cascadeWithoutReviews());
   assert.equal(r.report.request.id, 'anglais');
   assert.equal(r.state.pendingRequest, 'anglais');
   assert.throws(() => playSprint(r.state));
@@ -323,7 +331,7 @@ test('manche 1 : la demande bloque le Sprint suivant jusqu\'à la décision', ()
 });
 
 test('Accepter sans faire de place : 66 points pour un budget de 62', () => {
-  const s = playSprint(cascadeWithoutReviews(false)).state;
+  const s = playSprint(cascadeWithoutReviews()).state;
   const st = requestStatus(s, []);
   assert.equal(st.total, 66);
   assert.equal(st.budget, 62);
@@ -332,7 +340,7 @@ test('Accepter sans faire de place : 66 points pour un budget de 62', () => {
 });
 
 test('Faire de la place : retirer la livraison donne 52 points sur 62', () => {
-  const s = playSprint(cascadeWithoutReviews(false)).state;
+  const s = playSprint(cascadeWithoutReviews()).state;
   const st = requestStatus(s, ['livraison']);
   assert.equal(st.total, 52);
   assert.equal(st.budget, 62);
@@ -340,7 +348,7 @@ test('Faire de la place : retirer la livraison donne 52 points sur 62', () => {
 });
 
 test('Accepter en retirant : plateaux contre gâteaux, 58 points sur 62, recette à 10', () => {
-  let s = cascadeWithoutReviews(false);
+  let s = cascadeWithoutReviews();
   s = sprint(s).state; s = sprint(s).state;
   const r = playSprint(s);
   assert.equal(r.report.request.id, 'plateaux');
@@ -354,7 +362,7 @@ test('Accepter en retirant : plateaux contre gâteaux, 58 points sur 62, recette
 });
 
 test('Retraits possibles : une fonctionnalité commencée ne peut pas être retirée', () => {
-  let s = cascadeWithoutReviews(false);
+  let s = cascadeWithoutReviews();
   s = sprint(s).state; s = sprint(s).state;
   const r = playSprint(s); // fidélité commencée (1 point) à la fin du Sprint 3
   assert.ok(r.state.progress.fidelite > 0);
@@ -387,14 +395,14 @@ test('Version anglaise en ligne : un retour indique que personne ne l\'utilise',
 });
 
 test('les trois demandes arrivent aux Reviews 1, 2 et 3 dans les deux manches', () => {
-  for (const start of [newRound('increment'), cascadeWithoutReviews(true)]) {
+  for (const start of [newRound('increment'), cascadeWithoutReviews()]) {
     const { reports } = playDevelopment(start);
     assert.deepEqual(reports.map((r) => r.request?.id ?? null), ['anglais', 'promos', 'plateaux', null, null]);
   }
 });
 
 test('Coupure budgétaire : 10 semaines d\'exploitation après la cinquième période', () => {
-  const { results } = playAll(newRound('increment', { cut: true }));
+  const { results } = playAll(newRound('increment'));
   assert.equal(results.lastBuildSprint, 5);
   assert.deepEqual(periodWeeks(5), [9, 10]);
   assert.equal((10 - results.lastBuildSprint) * 2, 10);
@@ -405,48 +413,32 @@ test('Échéance et semaines : la troisième période couvre les semaines 5 et 6
   assert.deepEqual(periodWeeks(1), [1, 2]);
 });
 
-test('Orage à l\'annonce de la coupure', () => {
-  const { reports } = playDevelopment(cascadeWithoutReviews(true));
-  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'stormy', 'stormy', 'stormy']);
+test('Soleil jusqu\'à la coupure : orage au COPIL 5', () => {
+  const { reports } = playDevelopment(cascadeWithoutReviews());
+  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'sunny', 'sunny', 'stormy']);
 });
 
-test('Soleil sans coupure, puis « Livré »', () => {
-  const { reports } = playDevelopment(cascadeWithoutReviews(false));
-  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'sunny', 'sunny', 'sunny', 'delivered']);
+test('Livré avant la coupure', () => {
+  const { reports } = playDevelopment(cascadeWith(LEAN));
+  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'sunny', 'delivered', 'delivered']);
 });
 
 test('pas de météo en manche 2', () => {
   assert.equal(playSprint(newRound('increment')).report.weather, null);
-  assert.equal(projectWeather(cascadeWithoutReviews(false)), 'sunny');
+  assert.equal(projectWeather(cascadeWithoutReviews()), 'sunny');
 });
 
 test('journal en faits, sans phrase', () => {
-  const { state } = playDevelopment(newRound('increment', { cut: true }));
+  const { state } = playDevelopment(newRound('increment'));
   for (const entry of state.log) assert.ok(!('text' in entry), JSON.stringify(entry));
   assert.ok(state.log.some((l) => l.kind === 'quote' && typeof l.quote === 'string'));
   assert.ok(state.log.some((l) => l.kind === 'event' && l.event === 'coupure'));
   assert.ok(state.log.some((l) => l.kind === 'decision' && l.decision === 'backlog'));
 });
 
-test('Parcours de référence : plateaux acceptés contre la livraison rapportent plus qu\'un refus', () => {
-  const plan = () => {
-    let s = newRound('cascade', { cut: false });
-    s = toggleInPlan(s, 'avis');
-    // livraison en fin de plan
-    for (let i = 0; i < 8; i++) if (s.order.indexOf('livraison') < s.order.length - 1) s = moveFeature(s, 'livraison', 1);
-    return validatePlan(s);
-  };
-  const refuse = playAll(plan()).results;
-  const accept = playAll(plan(), (st) => (st.pendingRequest === 'plateaux' ? { accept: true, remove: ['livraison'] } : { accept: false })).results;
-  assert.deepEqual(accept.requestsLive, ['plateaux']);
-  assert.ok(!accept.liveAtEnd.includes('livraison'));
-  assert.ok(accept.cumulative > refuse.cumulative, `${accept.cumulative} > ${refuse.cumulative}`);
-  assert.equal(refuse.cumulative, 9448);
-  assert.equal(accept.cumulative, 10235);
-});
 
 test('résultats : demandes en ligne en manche 2 quand on les remonte', () => {
-  let st = newRound('increment', { cut: false });
+  let st = newRound('increment');
   while (!developmentOver(st)) {
     st = playSprint(st).state;
     if (st.order.includes('plateaux') && st.order.indexOf('plateaux') > 2 && !st.done.includes('plateaux')) {

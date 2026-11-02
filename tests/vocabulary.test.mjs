@@ -36,7 +36,7 @@ function allStrings(mode) {
   out.push(lex.periodLog({ progress: 40, weather: 'sunny', launched: false, completed: [] }));
   if (lex.neverReleased) out.push(lex.neverReleased(5, 6), lex.neverReleased(5, 1));
   // Journal d'une manche réellement jouée, avec coupure et demandes.
-  let s = newRound(mode, { cut: true });
+  let s = newRound(mode);
   if (mode === 'cascade') { s = validatePlan(toggleInPlan(s, 'avis')); out.push(planStatus(newRound(mode)).message); }
   while (!developmentOver(s)) {
     s = playSprint(s).state;
@@ -72,17 +72,20 @@ test('Capacité de la manche 2 : 10 points pour construire et 2 pour la Definiti
   assert.ok(stats.some(([v, l]) => v === '10 pts + 2' && /Definition of Done/.test(l)));
 });
 
-test('Annonce de la coupure en manche 1 : COPIL 5, sans Sprint', () => {
+test('Annonce de la coupure en manche 1 : sans préavis, maintenant, en l\'état, sans Sprint', () => {
   const coupure = EVENTS.find((e) => e.id === 'coupure');
-  assert.match(LEXICON.cascade.eventText(coupure), /COPIL 5/);
-  assert.doesNotMatch(LEXICON.cascade.eventText(coupure), /Sprint/);
+  const text = LEXICON.cascade.eventText(coupure);
+  assert.match(text, /sans préavis/);
+  assert.match(text, /maintenant, en l'état/);
+  assert.doesNotMatch(text, /Sprint/);
+  assert.match(LEXICON.cascade.eventLog(coupure), /COPIL 5/);
 });
 
 test('fin du projet : exploitation sans Sprint ni COPIL', () => {
   const text = exploitationText(5, 20, 2);
   assert.match(text, /10 semaines/);
   assert.doesNotMatch(text, /Sprint|COPIL/);
-  assert.equal(LEXICON.cascade.endOfDev(5), "Le projet s'arrête au COPIL 5.");
+  assert.equal(LEXICON.cascade.endOfDev(5), "Le projet s'arrête au COPIL 5, en l'état.");
 });
 
 test('les deux lexiques ont les mêmes clés de base', () => {

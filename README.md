@@ -12,19 +12,20 @@ Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que s
 - **Manche 2, en Product Owner** : un incrément à chaque Sprint de 2 semaines, 10 points pour construire et 2 pour respecter la Definition of Done. Avant chaque Sprint, le joueur réordonne le Product Backlog. Chaque fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant ; la Sprint Review apporte des retours clients qui révèlent la vraie valeur des fonctionnalités et donnent des indices.
 - **Intuition contre réalité** : chaque fonctionnalité affiche l'intuition de Mme Lefèvre (étoiles) ; sa valeur réelle (ventes par Sprint) est cachée. La livraison et le paiement, jugés indispensables, rapportent peu ; la réservation de pain, les gâteaux sur mesure et l'alerte « fournée chaude » rapportent beaucoup.
 - **Demandes de changement** : au bout de 2, 4 et 6 semaines (COPIL 1 à 3 en manche 1, Sprint Reviews 1 à 3 en manche 2), Mme Lefèvre demande une nouvelle fonctionnalité (version anglaise, promotions flash, plateaux pour les entreprises), avec son intuition et une valeur réelle cachée. En manche 1, l'équipe accepte ou refuse : le budget ne bouge pas, donc accepter coûte la fonctionnalité plus 2 points d'avenant (ajoutés à la recette) et oblige à retirer des fonctionnalités pas encore commencées. La décision se prend sur des opinions. En manche 2, la même demande arrive en bas du Product Backlog, sans avenant.
-- **Imprévus** : au bout de 4 semaines, la boulangerie concurrente lance sa commande en ligne, et chaque quinzaine sans appli fait perdre 10 % des clients potentiels. Facultatif (case à cocher à l'accueil) : au bout de 6 semaines, la banque réduit le prêt et le développement s'arrête après 10 semaines.
+- **Imprévus** : au bout de 4 semaines, la boulangerie concurrente lance sa commande en ligne, et chaque quinzaine sans appli fait perdre 10 % des clients potentiels.
+- **Coupure sans préavis** : dans toutes les parties, à la fin de la cinquième période (COPIL 5 ou Sprint 5), la banque coupe le prêt et tout s'arrête immédiatement, en l'état : ce qui est en ligne y reste, ce qui attend la recette ne sortira pas. Rien ne l'annonce avant, ni l'accueil ni les bilans : la météo de la manche 1 reste au soleil jusqu'au COPIL 4.
 - **Deux vocabulaires** : la manche 1 parle gestion de projet (chef de projet, commanditaire, COPIL, cahier des charges, lots, avenant), la manche 2 parle Scrum (Product Owner, Sprint, Product Backlog, Sprint Review, Definition of Done). L'écran de transition fait la bascule, et aucune manche n'emploie les mots de l'autre (vérifié par les tests).
-- **Fin du projet et exploitation** : le développement s'arrête après 12 semaines (ou 10 avec la coupure). Ensuite, ni COPIL ni Sprint : la boulangerie vit avec ce qui est en ligne pendant des semaines d'exploitation, jusqu'à 20 semaines après le lancement du projet.
+- **Fin du projet et exploitation** : la coupure arrête le développement après 10 semaines, au lieu des 12 prévues. Ensuite, ni COPIL ni Sprint : la boulangerie vit avec ce qui est en ligne pendant des semaines d'exploitation, jusqu'à 20 semaines après le lancement du projet.
 - **Résultats** : l'écran superpose les deux courbes de ventes cumulées sur 20 semaines (axe en semaines, commun aux deux manches), avec la ligne « Fin du projet » et la zone d'exploitation, compare des indicateurs (premier euro, argent investi avant le premier euro, fonctionnalités en ligne et peu utilisées, demandes de Mme Lefèvre mises en ligne, ventes cumulées), révèle « intuition contre réalité » et propose des questions de débrief.
 
-Ordres de grandeur, joués et vérifiés par les tests (ventes cumulées après 20 semaines ; demandes refusées en manche 1 et laissées en bas du Product Backlog en manche 2, sauf mention) :
+Ordres de grandeur, joués et vérifiés par les tests (ventes cumulées après 20 semaines ; demandes refusées en manche 1 et laissées en bas du Product Backlog en manche 2) :
 
-| Parcours | Sans coupure | Avec coupure |
-|---|---|---|
-| Manche 1, plan sans les avis clients | 9 448 € | 0 € |
-| Manche 1, livraison en fin de plan, plateaux acceptés en retirant la livraison | 10 235 € | — |
-| Manche 2, Product Backlog jamais réordonné | 15 300 € | 13 300 € |
-| Manche 2, à l'écoute des retours clients | 25 300 € | 25 300 € |
+| Parcours | Ventes |
+|---|---|
+| Manche 1, cahier des charges de 61 points (tout sauf les avis clients) | 0 € : l'appli ne sort jamais |
+| Manche 1, cahier des charges resserré de 39 points (vitrine, réservation, alerte, gâteaux, click & collect, fidélité) | 16 038 € : sortie au COPIL 4, avant la coupure |
+| Manche 2, Product Backlog jamais réordonné | 13 300 € |
+| Manche 2, à l'écoute des retours clients | 25 300 € |
 
 Le moteur est déterministe : deux parties jouées de la même façon donnent les mêmes Reviews et les mêmes chiffres, ce qui permet au formateur de préparer son débrief.
 

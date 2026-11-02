@@ -65,8 +65,8 @@ const cascade = {
   planLog: (total) => `Cahier des charges de ${total} points validé et signé par la commanditaire.`,
   periodLog: (f) => `avancement ${f.progress} %, météo ${WEATHER[f.weather].label.toLowerCase()}${f.launched ? ', appli en ligne' : ''}.`,
   periodName: (n) => `COPIL ${n}`,
-  endOfDev: (n) => `Le projet s'arrête au COPIL ${n}.`,
-  neverReleased: (n, offline) => `Le projet s'arrête au COPIL ${n}, et l'appli n'est jamais sortie : ${plural(offline, 'lot terminé ne sert', 'lots terminés ne servent')} à aucun client.`,
+  endOfDev: (n) => `Le projet s'arrête au COPIL ${n}, en l'état.`,
+  neverReleased: (n, offline) => `Le projet s'arrête au COPIL ${n}, en l'état, et l'appli n'est jamais sortie : ${plural(offline, 'lot terminé ne sert', 'lots terminés ne servent')} à aucun client.`,
   finishButton: 'Passer à la manche 2',
 };
 
@@ -101,7 +101,7 @@ const increment = {
   planLog: () => '',
   periodLog: (f) => (f.completed.length ? `${names(f.completed)} en ligne.` : 'élément en cours.'),
   periodName: (n) => `Sprint ${n}`,
-  endOfDev: (n) => `Le développement s'arrête après le Sprint ${n}.`,
+  endOfDev: (n) => `Le développement s'arrête après le Sprint ${n}, en l'état.`,
   finishButton: 'Voir les résultats',
 };
 

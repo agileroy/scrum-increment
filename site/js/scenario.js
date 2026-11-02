@@ -91,7 +91,7 @@ export const QUOTES_PER_REVIEW = 3;
  */
 export const EVENTS = [
   {
-    id: 'concurrent', after: 2, optional: false,
+    id: 'concurrent', after: 2,
     title: 'Nouvelle du quartier',
     text: {
       cascade: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients toutes les deux semaines.",
@@ -103,15 +103,16 @@ export const EVENTS = [
     },
   },
   {
-    id: 'coupure', after: 3, optional: true, lastBuildSprint: 5,
+    // Toujours présente, jamais annoncée avant : à la fin de la cinquième période, tout s'arrête en l'état.
+    id: 'coupure', after: 5, lastBuildSprint: 5,
     title: 'Coup dur',
     text: {
-      cascade: "La banque réduit le prêt : le projet s'arrêtera au COPIL 5.",
-      increment: "La banque réduit le prêt : le développement s'arrêtera après le Sprint 5.",
+      cascade: "La banque coupe le prêt, sans préavis : le projet s'arrête maintenant, en l'état.",
+      increment: "La banque coupe le prêt, sans préavis : le développement s'arrête maintenant, en l'état.",
     },
     log: {
-      cascade: "La banque réduit le prêt : le projet s'arrête au COPIL 5.",
-      increment: "La banque réduit le prêt : le développement s'arrête après le Sprint 5.",
+      cascade: "La banque coupe le prêt sans préavis : le projet s'arrête au COPIL 5, en l'état.",
+      increment: "La banque coupe le prêt sans préavis : le développement s'arrête après le Sprint 5, en l'état.",
     },
   },
 ];

@@ -64,14 +64,13 @@ test('retours clients : fonctionnalités connues, un retour par fonctionnalité 
   for (const id of ids.filter((x) => x !== 'vitrine')) assert.ok(QUOTES.some((q) => q.need === id && !q.notLive), id);
 });
 
-test('imprévus : concurrent à la Review du Sprint 2, coupure facultative au Sprint 3', () => {
+test('imprévus : concurrent à la fin de la période 2, coupure toujours à la fin de la période 5', () => {
   const concurrent = EVENTS.find((e) => e.id === 'concurrent');
   const coupure = EVENTS.find((e) => e.id === 'coupure');
   assert.equal(concurrent.after, 2);
-  assert.equal(concurrent.optional, false);
-  assert.equal(coupure.after, 3);
-  assert.equal(coupure.optional, true);
+  assert.equal(coupure.after, 5);
   assert.equal(coupure.lastBuildSprint, 5);
+  assert.ok(EVENTS.every((e) => !('optional' in e)));
 });
 
 test('calendrier : Sprints de 2 semaines, 20 semaines, 10 périodes', () => {

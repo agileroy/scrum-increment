@@ -28,12 +28,11 @@ export function feature(id) {
 const clone = (state) => JSON.parse(JSON.stringify(state));
 const has = (list, id) => list.includes(id);
 
-/** Nouvelle manche. `cut` active la coupure budgétaire. */
-export function newRound(mode, { cut = true } = {}) {
+/** Nouvelle manche. La coupure budgétaire fait partie du scénario : toujours là, jamais annoncée avant. */
+export function newRound(mode) {
   if (!Object.values(MODES).includes(mode)) throw new Error(`Manche inconnue : ${mode}`);
   return {
     mode,
-    cut: Boolean(cut),
     sprint: 0,
     lastBuildSprint: PLANNED_SPRINTS,
     planValidated: mode === MODES.increment,
@@ -247,7 +246,7 @@ export function playSprint(state) {
   const sales = earn(next, sprint);
   const { completed, launched } = build(next);
   const quotes = review(next);
-  const events = EVENTS.filter((e) => e.after === sprint && (!e.optional || next.cut));
+  const events = EVENTS.filter((e) => e.after === sprint);
   for (const e of events) if (e.lastBuildSprint) next.lastBuildSprint = Math.min(next.lastBuildSprint, e.lastBuildSprint);
 
   const progress = next.mode === MODES.cascade ? planProgress(next) : null;

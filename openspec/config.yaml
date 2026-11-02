@@ -10,7 +10,8 @@ context: |
   Deux façons de livrer sont comparées : une seule livraison à la fin (plan figé au départ, recette et mise en
   production finales) et un incrément utilisable à chaque Sprint (Product Backlog réordonnable, Sprint Review
   avec retours clients qui révèlent la valeur réelle). Les mêmes imprévus frappent les deux : concurrent,
-  coupure budgétaire facultative, et trois demandes de changement de Mme Lefèvre (en manche 1 : accepter par
+  coupure budgétaire systématique et sans préavis (à la fin de la cinquième période, tout s'arrête en l'état ;
+  rien ne l'annonce avant), et trois demandes de changement de Mme Lefèvre (en manche 1 : accepter par
   avenant en retirant des fonctionnalités, budget fixe, ou refuser ; en manche 2 : ajout au Product Backlog).
   Calendrier : un Sprint dure 2 semaines ; après le développement, on parle de semaines d'exploitation, jamais
   de Sprints, jusqu'à 20 semaines après le lancement. La fin du projet est la même pour les deux manches.
