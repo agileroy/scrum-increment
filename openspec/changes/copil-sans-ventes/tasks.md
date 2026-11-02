@@ -5,5 +5,5 @@
 
 ## 2. Vérification et publication
 
-- [ ] 2.1 Parcours de référence inchangés (moteur intact), relecture à l'écran en solo et en mode démo. Vérification : `npm test`, captures du compte rendu de COPIL avant et après la sortie.
-- [ ] 2.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.
+- [x] 2.1 Parcours de référence inchangés (moteur intact), relecture à l'écran en solo et en mode démo. Vérification : `npm test`, captures du compte rendu de COPIL avant et après la sortie.
+- [x] 2.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.

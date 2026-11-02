@@ -10,5 +10,5 @@
 
 ## 3. Vérification et publication
 
-- [ ] 3.1 Partie complète en mode démo, thèmes clair et sombre. Vérification : console sans erreur, captures.
-- [ ] 3.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.
+- [x] 3.1 Partie complète en mode démo, thèmes clair et sombre. Vérification : console sans erreur, captures.
+- [x] 3.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.

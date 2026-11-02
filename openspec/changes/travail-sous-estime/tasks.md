@@ -10,5 +10,5 @@
 
 ## 3. Vérification et publication
 
-- [ ] 3.1 Partie complète en solo et en mode démo. Vérification : captures des annonces, console sans erreur.
-- [ ] 3.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.
+- [x] 3.1 Partie complète en solo et en mode démo. Vérification : captures des annonces, console sans erreur.
+- [x] 3.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.

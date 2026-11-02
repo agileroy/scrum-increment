@@ -9,5 +9,5 @@
 
 ## 3. Vérification et publication
 
-- [ ] 3.1 Relire à l'écran (solo et mode démo) et vérifier l'affichage sans défilement horizontal. Vérification : captures.
-- [ ] 3.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.
+- [x] 3.1 Relire à l'écran (solo et mode démo) et vérifier l'affichage sans défilement horizontal. Vérification : captures.
+- [x] 3.2 Pousser sur `main` et vérifier la publication. Vérification : workflow réussi.
