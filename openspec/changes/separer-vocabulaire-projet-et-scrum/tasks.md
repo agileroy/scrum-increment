@@ -13,7 +13,7 @@
 - [x] 3.1 Jouer dans un navigateur automatisé : parcours de référence, demandes, coupure, et relecture du texte de chaque écran et fenêtre de la manche 1 (aucun « Sprint », « Product Backlog », « Sprint Review », « Definition of Done », « Product Owner ») et de la manche 2 (aucun « COPIL », « cahier des charges », « chef de projet », « lot », « avenant »). Vérification : aucune erreur dans la console, aucun mot interdit, chiffres égaux aux tests.
 - [x] 3.2 Vérifier l'affichage à 360, 390, 1280 et 1440 px, en thème clair et sombre. Vérification : captures sans défilement horizontal.
 - [x] 3.3 Mettre à jour `README.md` (vocabulaire des manches, météo). Vérification : `npm test` au vert, `openspec validate` sans erreur.
-- [ ] 3.4 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit.
+- [x] 3.4 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit. Fait le 2 novembre 2026 : workflow réussi, déploiement github-pages du commit 1e2e663.
 - [ ] 3.5 Faire jouer les deux manches par l'auteur. Vérification : validation explicite de l'auteur.
 
 ## Workflow follow-up
