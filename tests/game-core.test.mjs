@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   newRound, planStatus, toggleInPlan, moveFeature, validatePlan, playSprint, finishRound,
   roundResults, canMove, featureState, developmentOver, truthTable,
+  requestStatus, decideRequest, canRemove, periodLabel, planStatus as status,
 } from '../site/js/game-core.js';
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
@@ -13,18 +14,25 @@ function cascadeWithoutReviews(cut) {
   return validatePlan(s);
 }
 
-function playDevelopment(state) {
+// Joue un Sprint ; en manche 1, tranche la demande éventuelle avec `decide` (refus par défaut).
+function sprint(state, decide = () => ({ accept: false })) {
+  const r = playSprint(state);
+  if (r.state.pendingRequest) r.state = decideRequest(r.state, decide(r.state));
+  return r;
+}
+
+function playDevelopment(state, decide) {
   const reports = [];
   while (!developmentOver(state)) {
-    const r = playSprint(state);
+    const r = sprint(state, decide);
     state = r.state;
     reports.push(r.report);
   }
   return { state, reports };
 }
 
-function playAll(state) {
-  const { state: s, reports } = playDevelopment(state);
+function playAll(state, decide) {
+  const { state: s, reports } = playDevelopment(state, decide);
   const { state: done, summary } = finishRound(s);
   return { state: done, reports, summary, results: roundResults(done) };
 }
@@ -94,7 +102,7 @@ test('Plan figé une fois validé', () => {
   assert.throws(() => toggleInPlan(s, 'vitrine'));
 });
 
-test('Sortie au Sprint 6 : 8 fonctionnalités, premières ventes au Sprint 7', () => {
+test('Sortie au Sprint 6 : 8 fonctionnalités, premières ventes 2 semaines après le projet', () => {
   const { reports, results, state } = playAll(cascadeWithoutReviews(false));
   assert.equal(reports.length, 6);
   assert.equal(reports[5].launched, true);
@@ -102,12 +110,13 @@ test('Sortie au Sprint 6 : 8 fonctionnalités, premières ventes au Sprint 7', (
   assert.ok(reports.every((r) => r.quotes.length === 0));
   assert.equal(results.liveAtEnd.length, 8);
   assert.equal(results.firstSale, 7);
+  assert.equal(periodLabel(results.firstSale, results.lastBuildSprint), '2 semaines après le projet');
   assert.equal(state.recette, 8);
 });
 
 test('fonctionnalités terminées hors ligne jusqu\'à la recette', () => {
   let s = cascadeWithoutReviews(false);
-  for (let i = 0; i < 3; i++) s = playSprint(s).state;
+  for (let i = 0; i < 3; i++) s = sprint(s).state;
   assert.ok(s.done.length > 0);
   assert.equal(s.live.length, 0);
   assert.equal(featureState(s, s.done[0]), 'awaiting');
@@ -148,7 +157,8 @@ test('déplacement : fonctionnalité terminée figée, les autres bougent', () =
   assert.throws(() => moveFeature(s, 'vitrine', 1));
   const moved = moveFeature(s, 'alerte', -1);
   assert.equal(moved.order.indexOf('alerte'), s.order.indexOf('alerte') - 1);
-  assert.equal(moveFeature(s, 'alerte', 1), s); // déjà en bas
+  const last = s.order.at(-1);
+  assert.equal(moveFeature(s, last, 1), s); // déjà en bas
 });
 
 test('Premiers retours dès le Sprint 1, quel que soit l\'ordre', () => {
@@ -203,9 +213,9 @@ test('Indice qui disparaît : « gâteaux d\'anniversaire » absent une fois les
 
 test('concurrent annoncé à la Review du Sprint 2, dans les deux manches', () => {
   for (const s of [newRound('increment'), cascadeWithoutReviews(false)]) {
-    let r = playSprint(s);
+    let r = sprint(s);
     assert.equal(r.report.events.length, 0);
-    r = playSprint(r.state);
+    r = sprint(r.state);
     assert.deepEqual(r.report.events.map((e) => e.id), ['concurrent']);
   }
 });
@@ -288,9 +298,134 @@ test('fin de manche : uniquement après le développement, une seule fois', () =
   assert.throws(() => finishRound(state));
 });
 
-test('Révélation : réservation en tête, avis en dernier à 0 €', () => {
+test('Révélation : réservation en tête, avis et version anglaise en dernier à 0 €', () => {
   const t = truthTable();
+  assert.equal(t.length, 12);
   assert.equal(t[0].id, 'resa');
-  assert.equal(t.at(-1).id, 'avis');
-  assert.equal(t.at(-1).sales, 0);
+  assert.deepEqual(t.slice(-2).map((x) => x.id).sort(), ['anglais', 'avis']);
+  assert.ok(t.slice(-2).every((x) => x.sales === 0));
+  assert.deepEqual(t.filter((x) => x.requested).map((x) => x.id).sort(), ['anglais', 'plateaux', 'promos']);
+});
+
+/* ---------- Demandes de changement ---------- */
+
+test('manche 1 : la demande bloque le Sprint suivant jusqu\'à la décision', () => {
+  const r = playSprint(cascadeWithoutReviews(false));
+  assert.equal(r.report.request.id, 'anglais');
+  assert.equal(r.state.pendingRequest, 'anglais');
+  assert.throws(() => playSprint(r.state));
+  const refused = decideRequest(r.state, { accept: false });
+  assert.equal(refused.pendingRequest, null);
+  assert.deepEqual(refused.included, r.state.included);
+  assert.equal(refused.recetteCost, 8);
+  assert.ok(refused.log.some((l) => l.kind === 'decision' && /refusée/.test(l.text)));
+  assert.ok(playSprint(refused));
+});
+
+test('Accepter sans faire de place : 66 points pour un budget de 62', () => {
+  const s = playSprint(cascadeWithoutReviews(false)).state;
+  const st = requestStatus(s, []);
+  assert.equal(st.total, 66);
+  assert.equal(st.budget, 62);
+  assert.equal(st.valid, false);
+  assert.throws(() => decideRequest(s, { accept: true }));
+});
+
+test('Faire de la place : retirer la livraison donne 52 points sur 62', () => {
+  const s = playSprint(cascadeWithoutReviews(false)).state;
+  const st = requestStatus(s, ['livraison']);
+  assert.equal(st.total, 52);
+  assert.equal(st.budget, 62);
+  assert.equal(st.valid, true);
+});
+
+test('Accepter en retirant : plateaux contre gâteaux, 58 points sur 62, recette à 10', () => {
+  let s = cascadeWithoutReviews(false);
+  s = sprint(s).state; s = sprint(s).state;
+  const r = playSprint(s);
+  assert.equal(r.report.request.id, 'plateaux');
+  assert.ok(canRemove(r.state, 'gateaux'));
+  const next = decideRequest(r.state, { accept: true, remove: ['gateaux'] });
+  assert.equal(status(next).total, 58);
+  assert.equal(status(next).budget, 62);
+  assert.equal(next.recetteCost, 10);
+  assert.equal(next.included.at(-1), 'plateaux');
+  assert.ok(!next.included.includes('gateaux'));
+});
+
+test('Retraits possibles : une fonctionnalité commencée ne peut pas être retirée', () => {
+  let s = cascadeWithoutReviews(false);
+  s = sprint(s).state; s = sprint(s).state;
+  const r = playSprint(s); // fidélité commencée (1 point) à la fin du Sprint 3
+  assert.ok(r.state.progress.fidelite > 0);
+  assert.equal(canRemove(r.state, 'fidelite'), false);
+  const st = requestStatus(r.state, ['fidelite']);
+  assert.equal(st.valid, false);
+  assert.ok(!st.removable.includes('fidelite'));
+  assert.throws(() => decideRequest(r.state, { accept: true, remove: ['fidelite'] }));
+});
+
+test('Demande dans le Product Backlog (manche 2)', () => {
+  const r = playSprint(newRound('increment'));
+  assert.equal(r.report.request.id, 'anglais');
+  assert.equal(r.state.pendingRequest, null);
+  assert.equal(r.state.order.at(-1), 'anglais');
+  assert.ok(canMove(r.state, 'anglais'));
+  assert.equal(r.state.recetteCost, 8);
+  const moved = moveFeature(r.state, 'anglais', -1);
+  assert.equal(moved.order.at(-2), 'anglais');
+});
+
+test('Version anglaise en ligne : un retour indique que personne ne l\'utilise', () => {
+  let s = newRound('increment');
+  s = playSprint(s).state;
+  s.order = ['vitrine', 'anglais', ...s.order.filter((x) => !['vitrine', 'anglais'].includes(x))];
+  s = playSprint(s).state;
+  assert.ok(s.live.includes('anglais'));
+  const r = playSprint({ ...s, shownQuotes: s.shownQuotes.concat(['resa-ok', 'pas-livre', 'croissants', 'tradition', 'anniv']) });
+  assert.ok(r.report.quotes.some((q) => q.id === 'anglais-ok'));
+});
+
+test('les trois demandes arrivent aux Reviews 1, 2 et 3 dans les deux manches', () => {
+  for (const start of [newRound('increment'), cascadeWithoutReviews(true)]) {
+    const { reports } = playDevelopment(start);
+    assert.deepEqual(reports.map((r) => r.request?.id ?? null), ['anglais', 'promos', 'plateaux', null, null]);
+  }
+});
+
+test('Coupure budgétaire : 10 semaines d\'exploitation après le Sprint 5', () => {
+  const { results } = playAll(newRound('increment', { cut: true }));
+  assert.equal(results.lastBuildSprint, 5);
+  assert.deepEqual([6, 7, 8, 9, 10].map((p) => periodLabel(p, 5, { short: true })), ['+2 sem.', '+4 sem.', '+6 sem.', '+8 sem.', '+10 sem.']);
+  assert.equal(periodLabel(5, 5, { short: true }), 'S5');
+  assert.equal(periodLabel(10, 5), '10 semaines après le projet');
+});
+
+test('Parcours de référence : plateaux acceptés contre la livraison rapportent plus qu\'un refus', () => {
+  const plan = () => {
+    let s = newRound('cascade', { cut: false });
+    s = toggleInPlan(s, 'avis');
+    // livraison en fin de plan
+    for (let i = 0; i < 8; i++) if (s.order.indexOf('livraison') < s.order.length - 1) s = moveFeature(s, 'livraison', 1);
+    return validatePlan(s);
+  };
+  const refuse = playAll(plan()).results;
+  const accept = playAll(plan(), (st) => (st.pendingRequest === 'plateaux' ? { accept: true, remove: ['livraison'] } : { accept: false })).results;
+  assert.deepEqual(accept.requestsLive, ['plateaux']);
+  assert.ok(!accept.liveAtEnd.includes('livraison'));
+  assert.ok(accept.cumulative > refuse.cumulative, `${accept.cumulative} > ${refuse.cumulative}`);
+  assert.equal(refuse.cumulative, 9448);
+  assert.equal(accept.cumulative, 10235);
+});
+
+test('résultats : demandes en ligne en manche 2 quand on les remonte', () => {
+  let st = newRound('increment', { cut: false });
+  while (!developmentOver(st)) {
+    st = playSprint(st).state;
+    if (st.order.includes('plateaux') && st.order.indexOf('plateaux') > 2 && !st.done.includes('plateaux')) {
+      while (canMove(st, 'plateaux') && st.order.indexOf('plateaux') > st.done.length) st = moveFeature(st, 'plateaux', -1);
+    }
+  }
+  const { results } = playAll(st);
+  assert.ok(results.requestsLive.includes('plateaux'));
 });

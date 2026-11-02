@@ -10,8 +10,11 @@ context: |
   Deux façons de livrer sont comparées : une seule livraison à la fin (plan figé au départ, recette et mise en
   production finales) et un incrément utilisable à chaque Sprint (Product Backlog réordonnable, Sprint Review
   avec retours clients qui révèlent la valeur réelle). Les mêmes imprévus frappent les deux : concurrent,
-  coupure budgétaire facultative. La fin compare les courbes de ventes cumulées et des indicateurs, puis guide
-  le débrief.
+  coupure budgétaire facultative, et trois demandes de changement de Mme Lefèvre (en manche 1 : accepter par
+  avenant en retirant des fonctionnalités, budget fixe, ou refuser ; en manche 2 : ajout au Product Backlog).
+  Calendrier : un Sprint dure 2 semaines ; après le développement, on parle de semaines d'exploitation, jamais
+  de Sprints, jusqu'à 20 semaines après le lancement. La fin du projet est la même pour les deux manches.
+  La fin compare les courbes de ventes cumulées et des indicateurs, puis guide le débrief.
   Mécanique volontairement sans cartes : les jeux frères roles-responsabilites et scrum-events en utilisent déjà.
   En séance collective, la comparaison reste cachée aux participants jusqu'à la fin : chaque équipe croit
   travailler sur le même projet que les autres.
@@ -22,7 +25,9 @@ context: |
   termes gardés en anglais : Product Goal, Sprint Goal, refinement (du Product Backlog).
   Hébergement : site statique sur GitHub Pages (https://agileroy.github.io/scrum-increment/), sans serveur.
   Version solo d'abord ; un mode collectif en temps réel suivra, sur le modèle des jeux frères : formateur sur
-  écran projeté, participants sur téléphone avec code de salle ou QR code, Firebase Realtime Database (offre
+  écran projeté, participants sur téléphone avec code de salle ou QR code. En mode collectif, le formateur
+  donne le tempo (timebox par Sprint, Sprint lancé pour toutes les équipes en même temps), pour que les deux
+  façons de livrer aient le même temps de réflexion. Temps réel : Firebase Realtime Database (offre
   gratuite, connexion anonyme) dans le projet partagé avec roles-responsabilites, scrum-events, poker-planning,
   matrice-competences, wheel-of-chance et moving-motivators ; database.rules.json devra rester identique dans
   tous ces dépôts. L'état de partie est donc fait d'objets JSON simples, sérialisables tels quels.

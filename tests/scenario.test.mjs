@@ -1,8 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FEATURES, QUOTES, EVENTS, PLAN_BUDGET, EURO_PER_POINT } from '../site/js/scenario.js';
+import {
+  FEATURES, QUOTES, EVENTS, REQUESTS, PLAN_BUDGET, EURO_PER_POINT, SPRINT_WEEKS, HORIZON_WEEKS, LAST_SPRINT,
+} from '../site/js/scenario.js';
 
 const ids = FEATURES.map((f) => f.id);
+const allIds = [...ids, ...REQUESTS.map((r) => r.id)];
 const byId = Object.fromEntries(FEATURES.map((f) => [f.id, f]));
 
 test('neuf fonctionnalités aux identifiants uniques', () => {
@@ -51,8 +54,8 @@ test('retours clients : fonctionnalités connues, un retour par fonctionnalité 
   const qids = QUOTES.map((q) => q.id);
   assert.equal(new Set(qids).size, qids.length);
   for (const q of QUOTES) {
-    assert.ok(ids.includes(q.need), q.id);
-    if (q.notLive) assert.ok(ids.includes(q.notLive), q.id);
+    assert.ok(allIds.includes(q.need), q.id);
+    if (q.notLive) assert.ok(allIds.includes(q.notLive), q.id);
     assert.ok(q.text && q.who, q.id);
   }
   // chaque fonctionnalité a au moins un retour qui la concerne une fois en ligne ;
@@ -69,4 +72,34 @@ test('imprévus : concurrent à la Review du Sprint 2, coupure facultative au Sp
   assert.equal(coupure.after, 3);
   assert.equal(coupure.optional, true);
   assert.equal(coupure.lastBuildSprint, 5);
+});
+
+test('calendrier : Sprints de 2 semaines, 20 semaines, 10 périodes', () => {
+  assert.equal(SPRINT_WEEKS, 2);
+  assert.equal(HORIZON_WEEKS, 20);
+  assert.equal(LAST_SPRINT, 10);
+});
+
+test('demandes de changement : après les Sprints 1, 2 et 3, identifiants et prérequis valides', () => {
+  assert.deepEqual(REQUESTS.map((r) => r.after), [1, 2, 3]);
+  assert.equal(new Set(allIds).size, allIds.length);
+  for (const r of REQUESTS) {
+    assert.ok(r.name && r.desc && r.ask, r.id);
+    assert.ok(Number.isInteger(r.cost) && r.cost > 0, r.id);
+    assert.ok(ids.includes(r.req), r.id);
+    assert.ok(QUOTES.some((q) => q.need === r.id && !q.notLive), `retour pour ${r.id}`);
+  }
+});
+
+test('Opinions trompeuses', () => {
+  const four = REQUESTS.filter((r) => r.stars === 4);
+  assert.equal(four.length, 2);
+  for (const r of four) assert.ok(r.value * EURO_PER_POINT <= 100, r.id);
+  const best = REQUESTS.slice().sort((a, b) => b.value - a.value)[0];
+  assert.equal(best.stars, 2);
+});
+
+test('les retours des demandes viennent après les autres', () => {
+  const firstRequestQuote = QUOTES.findIndex((q) => REQUESTS.some((r) => r.id === q.need));
+  assert.ok(QUOTES.slice(firstRequestQuote).every((q) => REQUESTS.some((r) => r.id === q.need)));
 });

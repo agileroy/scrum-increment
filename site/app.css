@@ -111,7 +111,8 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
   box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
 }
 .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.count { color: var(--muted); font-weight: 600; }
+.count { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.nowrap { white-space: nowrap; }
 
 .button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -132,6 +133,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
 }
 .chip.live { background: var(--live-soft); color: var(--live-text); }
 .chip.warn { background: var(--warn-bg); color: var(--warn-text); }
+.chip.request { background: var(--accent-soft); color: var(--accent); }
 
 .screen { padding-top: 8px; display: flex; flex-direction: column; gap: 16px; }
 .screen-head { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
@@ -218,6 +220,15 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
 .quote footer { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
 .news { padding: 10px 14px; border-radius: 10px; background: var(--news-bg); color: var(--news-text); }
 .good { padding: 10px 14px; border-radius: 10px; background: var(--live-soft); color: var(--live-text); }
+.request-box { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent-soft); display: flex; flex-direction: column; gap: 6px; }
+.hint.is-error { color: var(--error); font-weight: 600; }
+.removals { border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.removals legend { font-weight: 650; padding: 0 4px; }
+.removals .include { white-space: normal; min-height: 40px; font-size: 0.95rem; align-items: center; }
+.removals .include input { flex: none; }
+.dialog-content .actions .button { margin-top: 0; }
+.journal .request-line { color: var(--accent); }
+.journal .decision-line { font-weight: 600; }
 .bad { padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-text); }
 
 /* ---------------------------------------------------------------- Résultats */
@@ -225,6 +236,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
 .chart svg { display: block; width: 100%; height: auto; }
 .chart .grid { stroke: var(--grid-line); }
 .chart .axis { fill: var(--muted); font-size: 12px; font-family: var(--font); }
+.chart .ops-zone { fill: var(--surface-2); opacity: 0.7; }
+.chart .frontier { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.chart .frontier-label { fill: var(--text); font-size: 12px; font-weight: 700; font-family: var(--font); }
+.chart .ops-label { fill: var(--muted); font-size: 12px; font-style: italic; font-family: var(--font); }
 .chart .curve { fill: none; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
 .chart .curve-1, .legend .curve-1 { stroke: var(--curve-1); }
 .chart .curve-2, .legend .curve-2 { stroke: var(--curve-2); }
@@ -262,4 +277,9 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   table { font-size: 0.85rem; }
   th, td { padding: 6px 4px; }
+  th.num { white-space: normal; }
+  #truth .stars { font-size: 0.72rem; letter-spacing: 0; }
+  #truth .chip { font-size: 0.7rem; padding: 1px 6px; }
+  .chart .axis { font-size: 15px; }
+  .chart .frontier-label, .chart .ops-label { font-size: 14px; }
 }

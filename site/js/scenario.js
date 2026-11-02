@@ -9,16 +9,24 @@ export const EURO_PER_POINT = 100;
 export const COST_PER_POINT = 500;
 /** Nombre de Sprints de développement prévus au budget. */
 export const PLANNED_SPRINTS = 6;
-/** Dernier Sprint simulé (les ventes continuent sans développement jusque-là). */
-export const LAST_SPRINT = 10;
+/** Durée d'un Sprint, et de chaque période d'exploitation après le projet, en semaines. */
+export const SPRINT_WEEKS = 2;
+/** Durée couverte par la partie, à partir du lancement du projet. */
+export const HORIZON_WEEKS = 20;
+/** Nombre de périodes simulées (Sprints de développement, puis périodes d'exploitation). */
+export const LAST_SPRINT = HORIZON_WEEKS / SPRINT_WEEKS;
 /** Capacité par Sprint de l'équipe (12 points dans les deux manches). */
 export const TEAM_CAPACITY = 12;
 /** Manche 2 : points consacrés à finir proprement à chaque Sprint. */
 export const DONE_COST = 2;
 /** Manche 1 : recette et mise en production finales. */
 export const RECETTE = 8;
-/** Manche 1 : points disponibles pour les fonctionnalités du plan. */
-export const PLAN_BUDGET = PLANNED_SPRINTS * TEAM_CAPACITY - RECETTE;
+/** Manche 1 : points de recette ajoutés par chaque demande de changement acceptée. */
+export const AVENANT = 2;
+/** Manche 1 : capacité totale du projet, recette comprise. */
+export const PROJECT_CAPACITY = PLANNED_SPRINTS * TEAM_CAPACITY;
+/** Manche 1 : points disponibles pour les fonctionnalités du plan, sans avenant. */
+export const PLAN_BUDGET = PROJECT_CAPACITY - RECETTE;
 /** Part de clients potentiels gardée à chaque Sprint sans appli, une fois le concurrent arrivé. */
 export const CLIENT_LOSS = 0.9;
 
@@ -55,6 +63,23 @@ export const QUOTES = [
   { id: 'fidelite-ok', need: 'fidelite',                        who: 'Jean, client fidèle',           text: "Le 10e pain offert, c'est sympa, même si je venais déjà tous les jours." },
   { id: 'livraison-ok',need: 'livraison',                       who: 'Sophie, cliente du soir',       text: "La livraison ? Je n'ai jamais essayé, je passe devant tous les jours." },
   { id: 'avis-ok',     need: 'avis',                            who: 'Mme Petit, retraitée',          text: 'Des avis ? Tout le quartier connaît la boulangerie, personne ne les lit.' },
+  // Retours sur les demandes de changement, après les autres pour ne pas changer l'ordre des Reviews existantes.
+  { id: 'anglais-ok',  need: 'anglais',                         who: 'Karim, infirmier',              text: "Une version anglaise ? Ici, tout le monde parle français, et les touristes ne passent pas par notre rue." },
+  { id: 'promos-ok',   need: 'promos',                          who: 'Jean, client fidèle',           text: "J'ai reçu trois promos flash cette semaine. J'achète quand même toujours la même baguette." },
+  { id: 'plateaux-ok', need: 'plateaux',                        who: "Nadia, cabinet d'avocats voisin", text: "Les plateaux du vendredi pour toute l'équipe : on recommande chaque semaine !" },
+];
+
+/**
+ * Demandes de changement de Mme Lefèvre : de nouvelles fonctionnalités, annoncées dans la Sprint Review
+ * du Sprint `after`, identiques dans les deux manches. Même format que FEATURES, plus `after` et `ask`.
+ */
+export const REQUESTS = [
+  { id: 'anglais',  name: 'Version anglaise',              desc: "L'appli traduite pour les touristes",       cost: 5, stars: 4, value: 0, req: 'vitrine', after: 1,
+    ask: "L'été, il y a des touristes dans le quartier : il nous faut absolument l'appli en anglais !" },
+  { id: 'promos',   name: 'Promotions flash',              desc: 'Des réductions envoyées aux clients',        cost: 6, stars: 4, value: 1, req: 'vitrine', after: 2,
+    ask: 'La Mie Dorée a son appli : contre-attaquons avec des promotions flash, ça fera venir du monde !' },
+  { id: 'plateaux', name: 'Plateaux pour les entreprises', desc: 'Commander des plateaux petit-déjeuner',      cost: 6, stars: 2, value: 4, req: 'vitrine', after: 3,
+    ask: "Le cabinet d'avocats d'à côté m'a demandé des plateaux petit-déjeuner. Je ne sais pas si ça vaut vraiment le coup…" },
 ];
 
 /** Au plus ce nombre de nouveaux retours par Sprint Review. */

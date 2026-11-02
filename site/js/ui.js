@@ -4,18 +4,21 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   workItems, featureState, buildCapacity, playSprint, finishRound, roundResults, truthTable,
+  requestStatus, decideRequest, isRequest, periodLabel,
 } from './game-core.js';
-import { EURO_PER_POINT, RECETTE, LAST_SPRINT, DONE_COST } from './scenario.js';
+import { EURO_PER_POINT, LAST_SPRINT, DONE_COST, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS } from './scenario.js';
 import { chartSvg, legendHtml, formatEuro } from './chart.js';
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ['home', 'plan', 'board', 'transition', 'results'];
 const ROUND_LABEL = { [MODES.cascade]: 'Manche 1', [MODES.increment]: 'Manche 2' };
 
-const app = { cut: true, round: null, results: {}, afterDialog: null };
+const app = { cut: true, round: null, results: {}, afterDialog: null, remove: [] };
+const compactQuery = window.matchMedia('(max-width: 560px)');
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+const requestChip = (id) => (isRequest(id) ? '<span class="chip request">Demande de Mme Lefèvre</span>' : '');
 const stars = (n) => `<span class="stars" aria-label="Intuition de Mme Lefèvre : ${n} sur 5">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
 
 function show(name) {
@@ -73,7 +76,7 @@ function boardItemHtml(state, id, index, count) {
   return `<li class="item ${st === 'live' ? 'is-live' : ''}">
     <div class="rank">${index + 1}</div>
     <div>
-      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${STATE_BADGE[st](f)}</div>
+      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${requestChip(id)}${STATE_BADGE[st](f)}</div>
       <div class="item-desc">${esc(f.desc)}</div>
       <div class="item-meta"><span>${p} / ${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
       <div class="bar"><span style="width:${(p / f.cost) * 100}%"></span></div>
@@ -89,8 +92,8 @@ function recetteHtml(state) {
     <div>
       <div class="item-head"><span class="item-name">Recette et mise en production</span>${state.launched ? '<span class="chip live">Appli en ligne</span>' : ''}</div>
       <div class="item-desc">${ready ? 'Toutes les fonctionnalités du plan sont terminées.' : 'Commence quand tout le reste du plan est terminé.'}</div>
-      <div class="item-meta"><span>${state.recette} / ${RECETTE} pts</span></div>
-      <div class="bar"><span style="width:${(state.recette / RECETTE) * 100}%"></span></div>
+      <div class="item-meta"><span>${state.recette} / ${state.recetteCost} pts</span>${state.recetteCost > 8 ? `<span>dont ${state.recetteCost - 8} points d'avenant</span>` : ''}</div>
+      <div class="bar"><span style="width:${(state.recette / state.recetteCost) * 100}%"></span></div>
     </div>
     <div class="item-controls"></div>
   </li>`;
@@ -115,6 +118,8 @@ function renderPlan() {
 
 function logHtml(entry) {
   if (entry.kind === 'quote') return `<p class="quote-line">« ${esc(entry.text)} » — ${esc(entry.who)}</p>`;
+  if (entry.kind === 'request') return `<p class="request-line"><strong>Demande de Mme Lefèvre :</strong> ${esc(entry.text)}</p>`;
+  if (entry.kind === 'decision') return `<p class="decision-line">${esc(entry.text)}</p>`;
   if (entry.kind === 'event') return `<p class="event-line"><strong>Imprévu :</strong> ${esc(entry.text)}</p>`;
   if (entry.kind === 'sprint') return `<p><strong>Sprint ${entry.sprint}</strong> : ${esc(entry.text)} Ventes : ${formatEuro(entry.sales)}.</p>`;
   return `<p>${esc(entry.text)}</p>`;
@@ -180,19 +185,29 @@ function reportHtml(state, report) {
     const extra = cascade && e.lastBuildSprint ? ' Le comité maintient le plan signé.' : '';
     h += `<p class="news"><strong>${esc(e.title)} :</strong> ${esc(e.text)}${extra}</p>`;
   }
-  h += `<button type="button" class="button button-primary" data-close>${report.developmentOver ? 'Fin du développement' : `Préparer le Sprint ${report.sprint + 1}`}</button>`;
+  if (report.request) {
+    const r = report.request;
+    h += `<div class="request-box"><p><strong>Mme Lefèvre a une demande :</strong> « ${esc(r.ask)} »</p>`;
+    h += cascade
+      ? `<p>${esc(r.name)} : ${r.cost} points, plus ${AVENANT} points d'avenant. Le comité doit trancher avant le Sprint suivant.</p></div>`
+      : `<p><strong>${esc(r.name)}</strong> est ajoutée en bas du Product Backlog : à vous de l'ordonner.</p></div>`;
+  }
+  let next = report.developmentOver ? 'Fin du projet' : `Préparer le Sprint ${report.sprint + 1}`;
+  if (cascade && report.request) next = 'Voir la demande de Mme Lefèvre';
+  h += `<button type="button" class="button button-primary" data-close>${next}</button>`;
   return h;
 }
 
 function finishHtml(state, summary) {
-  let h = '<h2 id="dialog-title">Fin du développement</h2>';
+  let h = `<h2 id="dialog-title">Fin du projet</h2><p>Le développement s'arrête après le Sprint ${summary.lastBuildSprint}.</p>`;
   if (state.mode === MODES.cascade && !summary.launched) {
     h += `<p class="bad"><strong>Le projet s'arrête après le Sprint ${summary.lastBuildSprint}.</strong> L'appli n'est jamais sortie : ${plural(summary.doneOffline, 'fonctionnalité terminée')} ne ${summary.doneOffline > 1 ? 'servent' : 'sert'} à aucun client.</p>`;
   } else {
     h += `<p class="good">L'appli tourne avec <strong>${plural(summary.liveCount, 'fonctionnalité')}</strong>.</p>`;
   }
-  h += `<p>Les Sprints suivants se jouent sans développement, jusqu'au Sprint ${LAST_SPRINT} : la boulangerie vit avec ce qui est en ligne.</p>`;
-  h += `<p>Ventes cumulées au Sprint ${LAST_SPRINT} : <strong>${formatEuro(summary.cumulative)}</strong></p>`;
+  const weeks = (LAST_SPRINT - summary.lastBuildSprint) * SPRINT_WEEKS;
+  h += `<p>Place à l'exploitation : ${weeks} semaines sans développement, jusqu'à ${HORIZON_WEEKS} semaines après le lancement du projet. La boulangerie vit avec ce qui est en ligne.</p>`;
+  h += `<p>Ventes cumulées après ${HORIZON_WEEKS} semaines : <strong>${formatEuro(summary.cumulative)}</strong></p>`;
   h += `<button type="button" class="button button-primary" data-close>${state.mode === MODES.cascade ? 'Passer à la manche 2' : 'Voir les résultats'}</button>`;
   return h;
 }
@@ -212,7 +227,50 @@ function onPlaySprint() {
   const { state, report } = playSprint(app.round);
   app.round = state;
   renderBoard();
-  openDialog(reportHtml(state, report), report.developmentOver ? finishCurrentRound : null);
+  let after = report.developmentOver ? finishCurrentRound : null;
+  if (state.pendingRequest) after = () => { app.remove = []; openRequestDialog(); };
+  openDialog(reportHtml(state, report), after);
+}
+
+/* ---------------------------------------------------------------- Demande de changement (manche 1) */
+
+function requestHtml() {
+  const s = app.round;
+  const r = feature(s.pendingRequest);
+  const st = requestStatus(s, app.remove);
+  let h = `<h2 id="dialog-title">Demande de changement</h2>`;
+  h += `<blockquote class="quote">« ${esc(r.ask)} »<footer>Madame Lefèvre</footer></blockquote>`;
+  h += `<p><strong>${esc(r.name)}</strong> (${esc(r.desc)}) : ${r.cost} points, intuition ${stars(r.stars)}.</p>`;
+  h += `<p class="muted">Accepter, c'est signer un avenant : ${AVENANT} points de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du plan des fonctionnalités pas encore commencées.</p>`;
+  h += `<div class="panel-head"><strong>Plan avec la demande</strong><span class="count">${st.total} / ${st.budget} points</span></div>`;
+  h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
+  h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
+  h += st.removable.length
+    ? `<fieldset class="removals"><legend>Retirer du plan</legend>${st.removable.map((id) => {
+      const f = feature(id);
+      return `<label class="include"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${esc(f.name)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span></span></label>`;
+    }).join('')}</fieldset>`
+    : '<p class="muted">Toutes les fonctionnalités du plan sont commencées : plus rien ne peut être retiré.</p>';
+  h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Accepter (avenant)</button><button type="button" class="button button-ghost" data-refuse>Refuser</button></div>`;
+  return h;
+}
+
+function openRequestDialog() {
+  openDialog(requestHtml(), null);
+}
+
+function refreshRequestDialog() {
+  const focused = document.activeElement?.dataset?.remove;
+  $('dialog-body').innerHTML = `<div class="dialog-content">${requestHtml()}</div>`;
+  if (focused) $('dialog-body').querySelector(`[data-remove="${focused}"]`)?.focus();
+}
+
+function decide(accept) {
+  app.round = decideRequest(app.round, { accept, remove: accept ? app.remove : [] });
+  app.remove = [];
+  app.afterDialog = null;
+  $('dialog').close();
+  renderBoard();
 }
 
 /* ---------------------------------------------------------------- Résultats */
@@ -224,23 +282,38 @@ function renderResults() {
     { kind: 1, label: 'Manche 1 : une seule livraison à la fin', values: a.curve },
     { kind: 2, label: 'Manche 2 : un incrément à chaque Sprint', values: b.curve },
   ];
-  $('chart').innerHTML = chartSvg(series);
+  const frontier = a.lastBuildSprint;
+  const periods = a.curve.map((_, i) => i + 1);
+  app.chart = { series, frontier, periods };
+  drawChart();
   $('legend').innerHTML = legendHtml(series);
-  const first = (r) => (r.firstSale ? `Sprint ${r.firstSale}` : 'Jamais');
+  const first = (r) => (r.firstSale ? periodLabel(r.firstSale, r.lastBuildSprint) : 'Jamais');
   const invested = (r) => `${formatEuro(r.invested)}${r.neverSold ? ' (sans retour)' : ''}`;
   const low = (r) => (r.liveAtEnd.length ? `${r.lowUse.length} sur ${r.liveAtEnd.length}` : '—');
   const rows = [
     ['Premier euro encaissé', first(a), first(b)],
     ['Investi avant le premier euro', invested(a), invested(b)],
-    ['Fonctionnalités en ligne à la fin du développement', a.liveAtEnd.length, b.liveAtEnd.length],
+    ['Fonctionnalités en ligne à la fin du projet', a.liveAtEnd.length, b.liveAtEnd.length],
     ['Fonctionnalités en ligne peu utilisées', low(a), low(b)],
-    [`Ventes cumulées au Sprint ${LAST_SPRINT}`, `<strong>${formatEuro(a.cumulative)}</strong>`, `<strong>${formatEuro(b.cumulative)}</strong>`],
+    ['Demandes de Mme Lefèvre mises en ligne', a.requestsLive.length, b.requestsLive.length],
+    [`Ventes cumulées après ${HORIZON_WEEKS} semaines`, `<strong>${formatEuro(a.cumulative)}</strong>`, `<strong>${formatEuro(b.cumulative)}</strong>`],
   ];
   $('kpi').innerHTML = '<thead><tr><th scope="col"><span hidden>Indicateur</span></th><th scope="col">Manche 1</th><th scope="col">Manche 2</th></tr></thead><tbody>'
     + rows.map(([l, x, y]) => `<tr><th scope="row">${l}</th><td>${x}</td><td>${y}</td></tr>`).join('') + '</tbody>';
   $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / Sprint</th></tr></thead><tbody>'
-    + truthTable().map((t) => `<tr><td>${esc(t.name)}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
+    + truthTable().map((t) => `<tr><td>${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
   show('results');
+}
+
+function drawChart() {
+  if (!app.chart) return;
+  const { series, frontier, periods } = app.chart;
+  $('chart').innerHTML = chartSvg(series, {
+    axis: periods.map((p) => periodLabel(p, frontier, { short: true })),
+    names: periods.map((p) => periodLabel(p, frontier)),
+    frontier,
+    compact: compactQuery.matches,
+  });
 }
 
 /* ---------------------------------------------------------------- Démarrage */
@@ -290,15 +363,31 @@ export function init() {
 
   $('replay').addEventListener('click', () => {
     app.round = null;
+    app.chart = null;
     show('home');
   });
 
   const dialog = $('dialog');
-  dialog.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) dialog.close(); });
+  dialog.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) dialog.close();
+    else if (e.target.closest('[data-accept]:not(:disabled)')) decide(true);
+    else if (e.target.closest('[data-refuse]')) decide(false);
+  });
+  dialog.addEventListener('change', (e) => {
+    const id = e.target.dataset.remove;
+    if (!id) return;
+    app.remove = e.target.checked ? [...app.remove, id] : app.remove.filter((x) => x !== id);
+    refreshRequestDialog();
+  });
+  // Échap ne doit pas trancher une demande de changement à la place du joueur.
+  dialog.addEventListener('cancel', (e) => { if (app.round?.pendingRequest && !app.afterDialog) e.preventDefault(); });
+  compactQuery.addEventListener('change', drawChart);
   // Fermer la fenêtre (bouton ou Échap) poursuit toujours la partie.
   dialog.addEventListener('close', () => {
     const next = app.afterDialog;
     app.afterDialog = null;
     if (next) next();
+    // Si le navigateur ferme quand même la fenêtre d'une demande (Échap répété), on la rouvre.
+    else if (app.round?.pendingRequest) openRequestDialog();
   });
 }

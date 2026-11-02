@@ -4,7 +4,10 @@
 
 export const formatEuro = (n) => `${Math.round(n).toLocaleString('fr-FR')} €`;
 
-const W = 640, H = 300, LEFT = 78, RIGHT = 16, TOP = 14, BOTTOM = 34;
+const LAYOUT = {
+  wide: { W: 640, H: 320, LEFT: 78, RIGHT: 34, TOP: 40, BOTTOM: 34 },
+  compact: { W: 420, H: 300, LEFT: 84, RIGHT: 18, TOP: 46, BOTTOM: 44 },
+};
 
 // Graduation « ronde » au-dessus du maximum : 1, 2, 2,5 ou 5 × une puissance de 10, en quatre pas.
 function niceTop(max) {
@@ -22,25 +25,50 @@ function mark(kind, x, y, title) {
 }
 
 /**
- * series : [{ kind: 1 | 2, label, values: [cumul S1…Sn] }]
+ * series : [{ kind: 1 | 2, label, values: [cumul de chaque période] }]
+ * options :
+ *   axis : libellé court de chaque période (« S3 », « +4 sem. ») ;
+ *   names : libellé long de chaque période, pour le survol (« Sprint 3 », « 4 semaines après le projet ») ;
+ *   frontier : nombre de Sprints de développement (ligne « Fin du projet » après cette période) ;
+ *   compact : mise en page pour téléphone.
  * Renvoie le SVG du graphique.
  */
-export function chartSvg(series) {
+export function chartSvg(series, { axis, names, frontier, compact = false }) {
+  const { W, H, LEFT, RIGHT, TOP, BOTTOM } = compact ? LAYOUT.compact : LAYOUT.wide;
   const n = Math.max(...series.map((s) => s.values.length));
   const top = niceTop(Math.max(...series.flatMap((s) => s.values)));
   const x = (i) => LEFT + (i * (W - LEFT - RIGHT)) / (n - 1);
   const y = (v) => TOP + (H - TOP - BOTTOM) * (1 - v / top);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées par Sprint, une courbe par manche">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur 20 semaines, une courbe par manche, avec la fin du projet après le Sprint ${frontier}">`;
+
+  // Zone d'exploitation et frontière « Fin du projet », sous les courbes.
+  if (frontier < n) {
+    const xf = (x(frontier - 1) + x(frontier)) / 2;
+    svg += `<rect class="ops-zone" x="${xf}" y="${TOP - 6}" width="${W - RIGHT - xf}" height="${H - BOTTOM - TOP + 6}"/>`;
+    svg += `<line class="frontier" x1="${xf}" x2="${xf}" y1="4" y2="${H - BOTTOM}"/>`;
+    svg += `<text class="frontier-label" x="${xf - 6}" y="16" text-anchor="end">Fin du projet</text>`;
+    svg += compact
+      ? `<text class="ops-label" x="${xf + 6}" y="16"><tspan>Exploitation,</tspan><tspan x="${xf + 6}" dy="14">plus de développement</tspan></text>`
+      : `<text class="ops-label" x="${xf + 8}" y="16">Exploitation, plus de développement</text>`;
+  }
+
   for (let k = 0; k <= 4; k++) {
     const v = (top * k) / 4;
     svg += `<line class="grid" x1="${LEFT}" x2="${W - RIGHT}" y1="${y(v)}" y2="${y(v)}"/>`;
     svg += `<text class="axis" x="${LEFT - 8}" y="${y(v) + 4}" text-anchor="end">${formatEuro(v)}</text>`;
   }
-  for (let i = 0; i < n; i++) svg += `<text class="axis" x="${x(i)}" y="${H - 10}" text-anchor="middle">S${i + 1}</text>`;
+  for (let i = 0; i < n; i++) {
+    const label = axis[i];
+    // Sur téléphone, « +4 sem. » passe sur deux lignes pour ne pas chevaucher ses voisins.
+    const m = compact && label.match(/^(\+\d+) (sem\.)$/);
+    svg += m
+      ? `<text class="axis" x="${x(i)}" y="${H - 24}" text-anchor="middle"><tspan>${m[1]}</tspan><tspan x="${x(i)}" dy="13">${m[2]}</tspan></text>`
+      : `<text class="axis" x="${x(i)}" y="${H - 12}" text-anchor="middle">${label}</text>`;
+  }
   for (const s of series) {
     const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
     svg += `<polyline class="curve curve-${s.kind}" points="${pts}"/>`;
-    s.values.forEach((v, i) => { svg += mark(s.kind, x(i), y(v), `${s.label}, Sprint ${i + 1} : ${formatEuro(v)}`); });
+    s.values.forEach((v, i) => { svg += mark(s.kind, x(i), y(v), `${s.label}, ${names[i]} : ${formatEuro(v)}`); });
   }
   return `${svg}</svg>`;
 }

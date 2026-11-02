@@ -6,25 +6,28 @@
 
 ## Principe
 
-Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 6 Sprints. Le joueur mène le même projet deux fois, avec le même budget, les mêmes fonctionnalités et les mêmes imprévus ; seule la façon de livrer change.
+Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 6 Sprints de 2 semaines. Le joueur mène le même projet deux fois, avec le même budget, les mêmes fonctionnalités et les mêmes imprévus ; seule la façon de livrer change.
 
 - **Manche 1, une seule livraison à la fin** : le comité veut un plan complet et contractuel (6 Sprints de 12 points, dont 8 points de recette et de mise en production finales). Le plan proposé dépasse de 2 points : il faut renoncer à quelque chose. Ensuite, l'avancement progresse, le comité est rassuré… mais il n'y a ni vente ni retour client avant la sortie.
 - **Manche 2, un incrément à chaque Sprint** : 10 points pour construire et 2 pour finir proprement. Avant chaque Sprint, le joueur réordonne le Product Backlog. Chaque fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant ; la Sprint Review apporte des retours clients qui révèlent la vraie valeur des fonctionnalités et donnent des indices.
 - **Intuition contre réalité** : chaque fonctionnalité affiche l'intuition de Mme Lefèvre (étoiles) ; sa valeur réelle (ventes par Sprint) est cachée. La livraison et le paiement, jugés indispensables, rapportent peu ; la réservation de pain, les gâteaux sur mesure et l'alerte « fournée chaude » rapportent beaucoup.
+- **Demandes de changement** : aux Sprint Reviews des Sprints 1, 2 et 3, Mme Lefèvre demande une nouvelle fonctionnalité (version anglaise, promotions flash, plateaux pour les entreprises), avec son intuition et une valeur réelle cachée. En manche 1, l'équipe accepte ou refuse : le budget ne bouge pas, donc accepter coûte la fonctionnalité plus 2 points d'avenant (ajoutés à la recette) et oblige à retirer des fonctionnalités pas encore commencées. La décision se prend sur des opinions. En manche 2, la même demande arrive en bas du Product Backlog, sans avenant.
 - **Imprévus** : à la Review du Sprint 2, la boulangerie concurrente lance sa commande en ligne, et chaque Sprint sans appli fait perdre 10 % des clients potentiels. Facultatif (case à cocher à l'accueil) : à la Review du Sprint 3, la banque réduit le prêt et le développement s'arrête après le Sprint 5.
-- **Résultats** : les ventes continuent sans développement jusqu'au Sprint 10, puis l'écran superpose les deux courbes de ventes cumulées, compare des indicateurs (premier euro, argent investi avant le premier euro, fonctionnalités en ligne et peu utilisées, ventes cumulées), révèle « intuition contre réalité » et propose des questions de débrief.
+- **Fin du projet et exploitation** : le développement s'arrête après le Sprint 6 (ou 5 avec la coupure). Ensuite, plus de Sprints : la boulangerie vit avec ce qui est en ligne pendant des semaines d'exploitation, jusqu'à 20 semaines après le lancement du projet.
+- **Résultats** : l'écran superpose les deux courbes de ventes cumulées sur 20 semaines, avec la ligne « Fin du projet » et la zone d'exploitation, compare des indicateurs (premier euro, argent investi avant le premier euro, fonctionnalités en ligne et peu utilisées, demandes de Mme Lefèvre mises en ligne, ventes cumulées), révèle « intuition contre réalité » et propose des questions de débrief.
 
-Ordres de grandeur, joués et vérifiés par les tests (ventes cumulées au Sprint 10) :
+Ordres de grandeur, joués et vérifiés par les tests (ventes cumulées après 20 semaines ; demandes refusées en manche 1 et laissées en bas du Product Backlog en manche 2, sauf mention) :
 
 | Parcours | Sans coupure | Avec coupure |
 |---|---|---|
 | Manche 1, plan sans les avis clients | 9 448 € | 0 € |
+| Manche 1, livraison en fin de plan, plateaux acceptés en retirant la livraison | 10 235 € | — |
 | Manche 2, Product Backlog jamais réordonné | 15 300 € | 13 300 € |
 | Manche 2, à l'écoute des retours clients | 25 300 € | 25 300 € |
 
 Le moteur est déterministe : deux parties jouées de la même façon donnent les mêmes Reviews et les mêmes chiffres, ce qui permet au formateur de préparer son débrief.
 
-Cette première version se joue seul. Un mode collectif en temps réel (salle, code, équipes, comparaison cachée jusqu'à la fin) est prévu, sur le modèle des jeux frères.
+Cette première version se joue seul. Un mode collectif en temps réel est prévu, sur le modèle des jeux frères : salle, code, équipes, comparaison cachée jusqu'à la fin, et tempo donné par le formateur (timebox par Sprint, Sprint lancé pour toutes les équipes en même temps).
 
 ## Réseau d'entreprise
 
@@ -34,8 +37,8 @@ Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages : jouer hors VPN.
 
 Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, sans aucun service tiers (polices système, ni CDN, ni traceur).
 
-- `site/js/scenario.js` : données du scénario (fonctionnalités, retours clients, imprévus, constantes) ;
-- `site/js/game-core.js` : logique métier pure et déterministe (plan, Sprints, construction dans l'ordre, prérequis, mises en ligne, ventes, clients perdus, coupure, résultats), testée avec Node.js ; l'état d'une manche est un objet JSON simple ;
+- `site/js/scenario.js` : données du scénario (fonctionnalités, demandes de changement, retours clients, imprévus, calendrier, constantes) ;
+- `site/js/game-core.js` : logique métier pure et déterministe (plan, Sprints, construction dans l'ordre, prérequis, mises en ligne, demandes de changement et avenants, ventes, clients perdus, coupure, calendrier, résultats), testée avec Node.js ; l'état d'une manche est un objet JSON simple ;
 - `site/js/chart.js` : graphique SVG des ventes cumulées ;
 - `site/js/ui.js` : écrans et fenêtres ; `site/js/theme.js` : thème clair ou sombre ; `site/js/app.js` : point d'entrée.
 
