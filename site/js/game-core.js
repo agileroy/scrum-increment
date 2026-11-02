@@ -141,6 +141,21 @@ export function moveFeature(state, id, direction) {
   return next;
 }
 
+/**
+ * Place une fonctionnalité au rang `index` de la liste (0 = en haut), mêmes règles que les flèches.
+ * Les éléments terminés restent où ils sont et peuvent être enjambés.
+ */
+export function moveFeatureTo(state, id, index) {
+  if (!canMove(state, id)) throw new Error('Cette fonctionnalité ne peut pas changer de rang.');
+  const from = state.order.indexOf(id);
+  const to = Math.max(0, Math.min(state.order.length - 1, Math.trunc(index)));
+  if (from < 0 || from === to) return state;
+  const next = clone(state);
+  next.order.splice(from, 1);
+  next.order.splice(to, 0, id);
+  return next;
+}
+
 /** Manche 1 : valide le plan, qui ne peut plus changer ensuite. */
 export function validatePlan(state) {
   if (!editablePlan(state)) throw new Error('Aucun plan à valider.');

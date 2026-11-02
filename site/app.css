@@ -190,6 +190,16 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
 }
 .move button:hover:not(:disabled) { border-color: var(--crust); }
 .move button:disabled { opacity: 0.3; cursor: default; }
+.move .grip { cursor: grab; touch-action: none; font-size: 1.2rem; color: var(--muted); }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none; }
+.item { position: relative; }
+.item.drag-source { opacity: 0.35; }
+.drag-ghost { position: fixed; z-index: 20; margin: 0; pointer-events: none; opacity: 1; box-shadow: 0 12px 30px rgb(0 0 0 / 0.25); }
+.item.drop-before::before, .item.drop-after::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--accent);
+}
+.item.drop-before::before { top: -8px; }
+.item.drop-after::after { bottom: -8px; }
 .include { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; min-height: 32px; cursor: pointer; white-space: nowrap; }
 .include input { width: 18px; height: 18px; accent-color: var(--accent); }
 

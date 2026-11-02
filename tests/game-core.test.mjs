@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   newRound, planStatus, toggleInPlan, moveFeature, validatePlan, playSprint, finishRound,
   roundResults, canMove, featureState, developmentOver, truthTable,
-  requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, periodWeeks, projectWeather, planStatus as status,
+  requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, moveFeatureTo, periodWeeks, projectWeather, planStatus as status,
 } from '../site/js/game-core.js';
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
@@ -515,4 +515,34 @@ test('Rouge en chaîne : réservation avant la vitrine, paiement et livraison en
   assert.equal(dependencyState(s, 'livraison'), 'misplaced');
   assert.equal(dependencyState(s, 'cc'), 'misplaced');
   assert.equal(dependencyState(s, 'fidelite'), 'after');
+});
+
+/* ---------- Glisser-déposer ---------- */
+
+test('Remonter de plusieurs rangs : l\'alerte du rang 9 au rang 3', () => {
+  const s = newRound('increment');
+  const before = JSON.stringify(s);
+  const next = moveFeatureTo(s, 'alerte', 2);
+  assert.deepEqual(next.order.slice(0, 4), ['vitrine', 'resa', 'alerte', 'paiement']);
+  assert.equal(next.order.length, s.order.length);
+  assert.equal(JSON.stringify(s), before);
+});
+
+test('Badges mis à jour : le paiement glissé tout en haut est mal placé', () => {
+  const next = moveFeatureTo(newRound('increment'), 'paiement', 0);
+  assert.equal(next.order[0], 'paiement');
+  assert.equal(dependencyState(next, 'paiement'), 'misplaced');
+});
+
+test('moveFeatureTo : bornes, même rang, règles des flèches', () => {
+  const s = newRound('increment');
+  assert.equal(moveFeatureTo(s, 'resa', 1), s);
+  assert.equal(moveFeatureTo(s, 'vitrine', -5).order[0], 'vitrine');
+  assert.equal(moveFeatureTo(s, 'vitrine', 99).order.at(-1), 'vitrine');
+  const played = playSprint(s).state;
+  assert.throws(() => moveFeatureTo(played, 'vitrine', 3));
+  const moved = moveFeatureTo(played, 'alerte', 0);
+  assert.equal(moved.order[0], 'alerte');
+  assert.throws(() => moveFeatureTo(cascadeWithoutReviews(), 'alerte', 0));
+  assert.equal(moveFeatureTo(newRound('cascade'), 'alerte', 0).order[0], 'alerte');
 });

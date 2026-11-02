@@ -4,7 +4,7 @@
 
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
-  workItems, featureState, playSprint, finishRound, roundResults, truthTable,
+  moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
   requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather, dependencyState,
 } from './game-core.js';
 import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js';
@@ -55,6 +55,7 @@ function dependencyHtml(state, id, list) {
 function moveButtons(id, index, count) {
   const name = esc(feature(id).name);
   return `<div class="move">
+    <button type="button" class="grip" data-drag="${id}" aria-label="Déplacer « ${name} » (glisser-déposer)" title="Glisser pour déplacer">⠿</button>
     <button type="button" data-move="${id}" data-dir="-1" aria-label="Monter « ${name} »" ${index === 0 ? 'disabled' : ''}>↑</button>
     <button type="button" data-move="${id}" data-dir="1" aria-label="Descendre « ${name} »" ${index === count - 1 ? 'disabled' : ''}>↓</button>
   </div>`;
@@ -73,7 +74,7 @@ function planItemHtml(state, id, index, impossible) {
   } else if (inPlan) {
     ({ cls, chip, note } = dependencyHtml(state, id, retained));
   }
-  return `<li class="item ${cls}">
+  return `<li class="item ${cls}" data-id="${id}">
     <div class="rank">${index + 1}</div>
     <div>
       <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}</div>
@@ -99,7 +100,7 @@ function boardItemHtml(state, id, index, count) {
   const controls = canMove(state, id) ? moveButtons(id, index, count) : '';
   const dep = dependencyHtml(state, id);
   const cls = featureState(state, id) === 'live' ? 'is-live' : dep.cls;
-  return `<li class="item ${cls}">
+  return `<li class="item ${cls}" data-id="${id}">
     <div class="rank">${index + 1}</div>
     <div>
       <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
@@ -346,6 +347,110 @@ function drawChart() {
   });
 }
 
+/* ---------------------------------------------------------------- Glisser-déposer */
+// Comme dans scrum-events : événements Pointer (souris, stylet, doigt), suivis sur toute la fenêtre ;
+// seule la poignée lance le geste, au-delà de 6 px ; une ligne d'insertion montre le rang d'arrivée.
+
+const DRAG_THRESHOLD = 6;
+const AUTO_SCROLL_EDGE = 60;
+let drag = null; // { id, list, render, pointerId, startX, startY, ghost, source, target, offsetY }
+
+function clearDropMarks(list) {
+  list.querySelectorAll('.drop-before, .drop-after').forEach((li) => li.classList.remove('drop-before', 'drop-after'));
+}
+
+// Rang d'arrivée (dans l'ordre complet) sous le pointeur, ou null hors de la liste.
+function dropTarget(event) {
+  const rect = drag.list.getBoundingClientRect();
+  if (event.clientX < rect.left - 40 || event.clientX > rect.right + 40 || event.clientY < rect.top - 40 || event.clientY > rect.bottom + 40) return null;
+  const rows = [...drag.list.querySelectorAll('li[data-id]')];
+  if (!rows.length) return null;
+  let row = rows.find((li) => { const r = li.getBoundingClientRect(); return event.clientY >= r.top && event.clientY <= r.bottom; });
+  let after;
+  if (row) {
+    const r = row.getBoundingClientRect();
+    after = event.clientY > r.top + r.height / 2;
+  } else if (event.clientY < rows[0].getBoundingClientRect().top) { row = rows[0]; after = false; }
+  else if (event.clientY > rows.at(-1).getBoundingClientRect().bottom) { row = rows.at(-1); after = true; }
+  else return drag.target; // entre deux lignes : on garde la dernière position
+  const order = app.round.order;
+  let index = order.indexOf(row.dataset.id) + (after ? 1 : 0);
+  if (order.indexOf(drag.id) < index) index -= 1;
+  return { index, row, after };
+}
+
+function onDragMove(event) {
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  if (!drag.ghost) {
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < DRAG_THRESHOLD) return;
+    const r = drag.source.getBoundingClientRect();
+    const ghost = drag.source.cloneNode(true);
+    ghost.classList.add('drag-ghost');
+    ghost.removeAttribute('data-id');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.style.width = `${r.width}px`;
+    ghost.style.left = `${r.left}px`;
+    drag.offsetY = event.clientY - r.top;
+    document.body.append(ghost);
+    document.body.classList.add('is-dragging');
+    drag.source.classList.add('drag-source');
+    drag.ghost = ghost;
+  }
+  event.preventDefault();
+  drag.ghost.style.top = `${event.clientY - drag.offsetY}px`;
+  if (event.clientY < AUTO_SCROLL_EDGE) window.scrollBy(0, -12);
+  else if (event.clientY > window.innerHeight - AUTO_SCROLL_EDGE) window.scrollBy(0, 12);
+  drag.target = dropTarget(event);
+  clearDropMarks(drag.list);
+  if (drag.target) drag.target.row.classList.add(drag.target.after ? 'drop-after' : 'drop-before');
+}
+
+function onDragEnd(event) {
+  if (!drag || (event.pointerId !== undefined && event.pointerId !== drag.pointerId)) return;
+  const { id, ghost, render, list } = drag;
+  const target = ghost && event.type === 'pointerup' ? dropTarget(event) : null;
+  endDrag();
+  if (!target) return;
+  app.round = moveFeatureTo(app.round, id, target.index);
+  render();
+  list.querySelector(`[data-drag="${id}"]`)?.focus();
+}
+
+function endDrag() {
+  if (!drag) return;
+  drag.ghost?.remove();
+  drag.source?.classList.remove('drag-source');
+  clearDropMarks(drag.list);
+  document.body.classList.remove('is-dragging');
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragEnd);
+  window.removeEventListener('pointercancel', onDragEnd);
+  window.removeEventListener('keydown', onDragKey);
+  drag = null;
+}
+
+function onDragKey(event) {
+  if (event.key === 'Escape') { event.preventDefault(); endDrag(); }
+}
+
+function enableDrag(listId, render) {
+  const list = $(listId);
+  list.addEventListener('pointerdown', (event) => {
+    const grip = event.target.closest('[data-drag]');
+    if (!grip || event.button > 0 || drag) return;
+    event.preventDefault();
+    drag = {
+      id: grip.dataset.drag, list, render, pointerId: event.pointerId,
+      startX: event.clientX, startY: event.clientY, ghost: null, target: null,
+      source: grip.closest('li'),
+    };
+    window.addEventListener('pointermove', onDragMove, { passive: false });
+    window.addEventListener('pointerup', onDragEnd);
+    window.addEventListener('pointercancel', onDragEnd);
+    window.addEventListener('keydown', onDragKey);
+  });
+}
+
 /* ---------------------------------------------------------------- Démarrage */
 
 export function init() {
@@ -375,6 +480,9 @@ export function init() {
       $(list).querySelector(`button[data-move="${id}"][data-dir="${dir}"]:not(:disabled)`)?.focus();
     });
   }
+
+  enableDrag('plan-list', renderPlan);
+  enableDrag('board-list', renderBoard);
 
   $('validate-plan').addEventListener('click', () => {
     app.round = validatePlan(app.round);
