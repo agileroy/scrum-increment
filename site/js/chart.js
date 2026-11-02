@@ -17,15 +17,17 @@ function niceTop(max) {
   return step * 4;
 }
 
-function mark(kind, x, y, title) {
+const toneClass = (s) => (s.team ? ` team-${s.team}` : '');
+
+function mark(s, x, y, title) {
   const tip = `<title>${title}</title>`;
-  return kind === 1
-    ? `<rect class="mark-1" x="${x - 4.5}" y="${y - 4.5}" width="9" height="9" rx="1.5">${tip}</rect>`
-    : `<circle class="mark-2" cx="${x}" cy="${y}" r="5">${tip}</circle>`;
+  return s.kind === 1
+    ? `<rect class="mark-1${toneClass(s)}" x="${x - 4.5}" y="${y - 4.5}" width="9" height="9" rx="1.5">${tip}</rect>`
+    : `<circle class="mark-2${toneClass(s)}" cx="${x}" cy="${y}" r="5">${tip}</circle>`;
 }
 
 /**
- * series : [{ kind: 1 | 2, label, values: [cumul de chaque période] }]
+ * series : [{ kind: 1 | 2, label, values: [cumul de chaque période], team?: 1 à 6 (couleur de l'équipe) }]
  * options :
  *   axis : libellé court de chaque période (« 6 sem. ») ;
  *   names : libellé long de chaque période, pour le survol (« semaines 5 et 6 ») ;
@@ -39,7 +41,7 @@ export function chartSvg(series, { axis, names, frontier, compact = false }) {
   const top = niceTop(Math.max(...series.flatMap((s) => s.values)));
   const x = (i) => LEFT + (i * (W - LEFT - RIGHT)) / (n - 1);
   const y = (v) => TOP + (H - TOP - BOTTOM) * (1 - v / top);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur 20 semaines, une courbe par manche, avec la fin du projet après ${frontier * 2} semaines">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur 20 semaines, une courbe par ${series.some((s) => s.team) ? 'équipe' : 'manche'}, avec la fin du projet après ${frontier * 2} semaines">`;
 
   // Zone d'exploitation et frontière « Fin du projet », sous les courbes.
   if (frontier < n) {
@@ -67,8 +69,8 @@ export function chartSvg(series, { axis, names, frontier, compact = false }) {
   }
   for (const s of series) {
     const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
-    svg += `<polyline class="curve curve-${s.kind}" points="${pts}"/>`;
-    s.values.forEach((v, i) => { svg += mark(s.kind, x(i), y(v), `${s.label}, ${names[i]} : ${formatEuro(v)}`); });
+    svg += `<polyline class="curve curve-${s.kind}${toneClass(s)}" points="${pts}"/>`;
+    s.values.forEach((v, i) => { svg += mark(s, x(i), y(v), `${s.label}, ${names[i]} : ${formatEuro(v)}`); });
   }
   return `${svg}</svg>`;
 }
@@ -78,8 +80,8 @@ export function legendHtml(series) {
   return series.map((s) => {
     const dash = s.kind === 1 ? ' stroke-dasharray="7 5"' : '';
     const m = s.kind === 1
-      ? '<rect class="mark-1" x="14.5" y="4.5" width="9" height="9" rx="1.5"/>'
-      : '<circle class="mark-2" cx="19" cy="9" r="5"/>';
-    return `<span><svg width="38" height="18" aria-hidden="true"><line class="curve-${s.kind}" x1="2" x2="36" y1="9" y2="9" stroke-width="3"${dash}/>${m}</svg>${s.label}</span>`;
+      ? `<rect class="mark-1${toneClass(s)}" x="14.5" y="4.5" width="9" height="9" rx="1.5"/>`
+      : `<circle class="mark-2${toneClass(s)}" cx="19" cy="9" r="5"/>`;
+    return `<span><svg width="38" height="18" aria-hidden="true"><line class="curve-${s.kind}${toneClass(s)}" x1="2" x2="36" y1="9" y2="9" stroke-width="3"${dash}/>${m}</svg>${s.label}</span>`;
   }).join('');
 }

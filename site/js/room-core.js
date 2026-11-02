@@ -1,7 +1,7 @@
 // Logique pure de la salle collective : code, prénoms, équipes, état « prêt », chrono.
 // Ni DOM ni base : testée avec Node.js, utilisée par room-store.js et room-ui.js.
 
-import { MODES } from './game-core.js';
+import { MODES } from './game-core.js?v=__VERSION__';
 
 export const MAX_PLAYERS = 30;
 export const MIN_TEAMS = 2;

@@ -25,20 +25,24 @@ context: |
   Scrum Master, Developers, Scrum Team, Product Backlog, Sprint Review, Definition of Done, Increment ;
   termes gardés en anglais : Product Goal, Sprint Goal, refinement (du Product Backlog).
   Hébergement : site statique sur GitHub Pages (https://agileroy.github.io/scrum-increment/), sans serveur.
-  Version solo d'abord ; un mode collectif en temps réel suivra, sur le modèle des jeux frères : formateur sur
-  écran projeté, participants sur téléphone avec code de salle ou QR code. En mode collectif, le formateur
-  donne le tempo (timebox par Sprint, Sprint lancé pour toutes les équipes en même temps), pour que les deux
-  façons de livrer aient le même temps de réflexion. Temps réel : Firebase Realtime Database (offre
+  Deux façons de jouer : seul (les deux manches à la suite), ou en mode collectif sur le modèle des jeux frères :
+  formateur sur écran projeté, participants sur téléphone avec code de salle ou QR code, 2 à 6 équipes jouant en
+  parallèle (impaires « projet », paires « Scrum », sans le savoir), chaque membre agissant sur l'état partagé
+  de son équipe. Le formateur donne le tempo (chrono facultatif, période lancée pour toutes les équipes en même
+  temps) et son écran reste neutre jusqu'à la révélation. Le mode démo (?demo) joue le mode collectif sans
+  Firebase, sur une base locale partagée entre onglets. Temps réel : Firebase Realtime Database (offre
   gratuite, connexion anonyme) dans le projet partagé avec roles-responsabilites, scrum-events, poker-planning,
   matrice-competences, wheel-of-chance et moving-motivators ; database.rules.json devra rester identique dans
   tous ces dépôts. L'état de partie est donc fait d'objets JSON simples, sérialisables tels quels.
-  Aucun autre service tiers (ni police web, ni CDN, ni traceur, ni publicité). N'utiliser que HTTPS (port 443).
+  Firebase n'est chargé qu'en mode collectif ; le jeu seul ne charge rien d'externe. Aucun autre service tiers
+  (ni police web, ni CDN, ni traceur, ni publicité). N'utiliser que HTTPS (port 443).
   Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages et Firebase : le jeu se joue hors VPN.
   Stack : HTML/CSS/JavaScript vanilla en modules ES, sans framework ni étape de build (dossier site/).
   Identité visuelle des jeux frères : mêmes couleurs de base, polices système, thème clair et sombre avec
   bouton de bascule mémorisé.
   Architecture : site/js/scenario.js contient les données du scénario ; site/js/game-core.js la logique métier
-  pure (sans DOM), testée avec Node.js ; site/js/ui.js gère l'interface.
+  pure (sans DOM), testée avec Node.js ; site/js/ui.js gère l'interface ; room-core.js, room-store.js et
+  room-ui.js le mode collectif.
   Interface en français, sans compte.
   Tests : lanceur intégré de Node.js (npm test), à faire évoluer avec chaque changement de comportement ;
   la publication GitHub Actions est bloquée si un test échoue.

@@ -1,20 +1,23 @@
-// Interface du jeu solo : écrans, listes et fenêtres.
+// Interface du jeu : écrans, listes et fenêtres, en solo et pour une équipe du mode collectif.
 // Aucune règle de jeu ici (tout vient de game-core.js), et aucun mot propre à une manche
 // (tout vient de vocabulary.js) : l'interface met en page.
+// Toute action du joueur passe par act(fn) : en solo, fn s'applique à l'état local ; en équipe
+// (app.session, posé par room-ui.js), elle s'applique aussi tout de suite à l'écran, puis à l'état partagé.
 
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
   requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather, dependencyState,
-} from './game-core.js';
-import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js';
-import { lexicon, logEntry, exploitationText } from './vocabulary.js';
-import { chartSvg, legendHtml, formatEuro } from './chart.js';
+} from './game-core.js?v=__VERSION__';
+import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js?v=__VERSION__';
+import { lexicon, logEntry, exploitationText } from './vocabulary.js?v=__VERSION__';
+import { chartSvg, legendHtml, formatEuro } from './chart.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
-const SCREENS = ['home', 'plan', 'board', 'transition', 'results'];
+const SCREENS = ['home', 'plan', 'board', 'transition', 'results', 'host', 'wait', 'role'];
 
-const app = { round: null, results: {}, afterDialog: null, remove: [] };
+// session : null en solo ; en équipe { label, commit(fn), renderBar() } fourni par room-ui.js.
+const app = { round: null, results: {}, afterDialog: null, remove: [], session: null, dialogKind: null, onIdle: null, silentCloses: 0 };
 const compactQuery = window.matchMedia('(max-width: 560px)');
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -22,13 +25,27 @@ const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const lex = () => lexicon(app.round.mode);
 const stars = (n) => `<span class="stars" aria-label="Intuition de Mme Lefèvre : ${n} sur 5">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
 
-function show(name) {
+const roundLabel = () => (app.session ? app.session.label : lex().round);
+
+function show(name, { keepScroll = false } = {}) {
+  const changed = $(`screen-${name}`).hidden;
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== name;
   const chip = $('round-chip');
-  const inRound = ['plan', 'board'].includes(name) && app.round;
+  const inRound = ['plan', 'board'].includes(name) && app.round && !app.session;
   chip.hidden = !inRound;
-  if (inRound) chip.textContent = lex().round;
-  window.scrollTo(0, 0);
+  if (inRound) chip.textContent = roundLabel();
+  if (changed || !keepScroll) window.scrollTo(0, 0);
+}
+
+/** Action du joueur : appliquée à l'écran tout de suite, et à l'état partagé en équipe. */
+function act(fn, render) {
+  let next;
+  try { next = fn(app.round); } catch { return false; }
+  if (!next || next === app.round) return false;
+  app.round = next;
+  render?.();
+  app.session?.commit(fn);
+  return true;
 }
 
 /* ---------------------------------------------------------------- Lots et éléments */
@@ -137,6 +154,7 @@ function renderPlan() {
   meter.classList.toggle('over', st.over > 0);
   meter.firstElementChild.style.width = `${Math.min(100, (st.total / st.budget) * 100)}%`;
   $('plan-message').textContent = st.message;
+  $('plan-chip').textContent = `${roundLabel()} · Avant le premier COPIL`;
   $('plan-message').closest('.plan-gauge').classList.toggle('is-invalid', !st.valid);
   $('validate-plan').disabled = !st.valid;
   $('plan-list').innerHTML = s.order.map((id, i) => planItemHtml(s, id, i, st.impossible)).join('');
@@ -157,9 +175,12 @@ function renderBoard() {
   const l = lex();
   const cascade = s.mode === MODES.cascade;
   const next = Math.min(s.sprint + 1, s.lastBuildSprint);
-  $('board-chip').textContent = l.round;
+  $('board-chip').textContent = roundLabel();
   $('board-title').textContent = `${l.deadline(next, s.lastBuildSprint)} · ${l.deadlineWeeks(next)}`;
   $('play-sprint').textContent = l.play(next);
+  $('play-sprint').hidden = Boolean(app.session);
+  $('team-bar').hidden = !app.session;
+  app.session?.renderBar();
   $('list-title').textContent = l.listTitle;
   $('list-hint').textContent = l.listHint;
   $('journal-title').textContent = l.journalTitle;
@@ -178,15 +199,16 @@ function renderBoard() {
 
 /* ---------------------------------------------------------------- Fenêtres */
 
-function openDialog(html, afterClose) {
+function openDialog(html, afterClose, kind = 'info') {
   app.afterDialog = afterClose ?? null;
+  app.dialogKind = kind;
   $('dialog-body').innerHTML = `<div class="dialog-content">${html}</div>`;
   const dialog = $('dialog');
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
   dialog.querySelector('.button')?.focus();
 }
 
-function reportHtml(state, report) {
+function reportHtml(state, report, { team = false } = {}) {
   const l = lexicon(state.mode);
   const cascade = state.mode === MODES.cascade;
   let h = `<h2 id="dialog-title">${esc(l.reportTitle(report.sprint))}</h2>`;
@@ -219,13 +241,13 @@ function reportHtml(state, report) {
     const r = report.request;
     h += `<div class="request-box"><p><strong>Demande de ${esc(l.stakeholder)} :</strong> « ${esc(r.ask)} »</p><p>${esc(l.requestAnnounce(r))}</p></div>`;
   }
-  let next = report.developmentOver ? 'Fin du projet' : l.next(report.sprint + 1);
+  let next = report.developmentOver ? 'Fin du projet' : (team ? 'Revenir au tableau' : l.next(report.sprint + 1));
   if (cascade && report.request) next = l.seeRequest;
   h += `<button type="button" class="button button-primary" data-close>${esc(next)}</button>`;
   return h;
 }
 
-function finishHtml(state, summary) {
+function finishHtml(state, summary, button = lexicon(state.mode).finishButton) {
   const l = lexicon(state.mode);
   let h = `<h2 id="dialog-title">Fin du projet</h2>`;
   if (state.mode === MODES.cascade && !summary.launched) {
@@ -236,7 +258,7 @@ function finishHtml(state, summary) {
   }
   h += `<p>${esc(exploitationText(summary.lastBuildSprint, HORIZON_WEEKS, SPRINT_WEEKS))}</p>`;
   h += `<p>Ventes cumulées après ${HORIZON_WEEKS} semaines : <strong>${formatEuro(summary.cumulative)}</strong></p>`;
-  h += `<button type="button" class="button button-primary" data-close>${esc(l.finishButton)}</button>`;
+  h += `<button type="button" class="button button-primary" data-close>${esc(button)}</button>`;
   return h;
 }
 
@@ -256,7 +278,7 @@ function onPlaySprint() {
   renderBoard();
   let after = report.developmentOver ? finishCurrentRound : null;
   if (state.pendingRequest) after = () => { app.remove = []; openRequestDialog(); };
-  openDialog(reportHtml(state, report), after);
+  openDialog(reportHtml(state, report), after, 'report');
 }
 
 /* ---------------------------------------------------------------- Demande de changement (manche 1) */
@@ -286,21 +308,34 @@ function requestHtml() {
 }
 
 function openRequestDialog() {
-  openDialog(requestHtml(), null);
+  openDialog(requestHtml(), null, 'request');
 }
 
 function refreshRequestDialog() {
+  const st = requestStatus(app.round, []);
+  app.remove = app.remove.filter((id) => st.removable.includes(id));
   const focused = document.activeElement?.dataset?.remove;
   $('dialog-body').innerHTML = `<div class="dialog-content">${requestHtml()}</div>`;
   if (focused) $('dialog-body').querySelector(`[data-remove="${focused}"]`)?.focus();
 }
 
 function decide(accept) {
-  app.round = decideRequest(app.round, { accept, remove: accept ? app.remove : [] });
+  const id = app.round.pendingRequest;
+  const remove = accept ? app.remove : [];
+  // Sur l'état le plus récent : rien si la demande a déjà été tranchée par un autre membre de l'équipe.
+  act((s) => (s.pendingRequest === id ? decideRequest(s, { accept, remove }) : s), renderBoard);
   app.remove = [];
   app.afterDialog = null;
+  if (!app.round.pendingRequest) $('dialog').close();
+}
+
+/** Ferme la fenêtre sans enchaîner (l'événement « close » arrive plus tard : il est ignoré). */
+function closeDialog() {
+  app.afterDialog = null;
+  app.dialogKind = null;
+  if (!$('dialog').open) return;
+  app.silentCloses += 1;
   $('dialog').close();
-  renderBoard();
 }
 
 /* ---------------------------------------------------------------- Résultats */
@@ -310,29 +345,42 @@ const firstWeek = (period) => periodWeeks(period)[0];
 function renderResults() {
   const a = app.results[MODES.cascade];
   const b = app.results[MODES.increment];
-  const series = [
-    { kind: 1, label: 'Manche 1 : projet, une livraison à la fin', values: a.curve },
-    { kind: 2, label: 'Manche 2 : Scrum, un incrément à chaque Sprint', values: b.curve },
-  ];
-  app.chart = { series, frontier: a.lastBuildSprint, periods: a.curve.map((_, i) => i + 1) };
+  renderComparison([
+    { kind: 1, label: 'Manche 1 : projet, une livraison à la fin', head: 'Manche 1 · Projet', results: a },
+    { kind: 2, label: 'Manche 2 : Scrum, un incrément à chaque Sprint', head: 'Manche 2 · Scrum', results: b },
+  ], { title: 'Un projet, puis Scrum : deux courbes' });
+}
+
+/**
+ * Écran de résultats : une courbe et une colonne d'indicateurs par entrée de `columns`
+ * ([{ kind: 1 | 2, label, head, results, team? }]), dans l'ordre donné.
+ */
+function renderComparison(columns, { title, intro = '', keepScroll = false }) {
+  const series = columns.map((c) => ({ kind: c.kind, label: c.label, values: c.results.curve, team: c.team }));
+  const frontier = columns[0].results.lastBuildSprint;
+  app.chart = { series, frontier, periods: columns[0].results.curve.map((_, i) => i + 1) };
+  $('results-title').textContent = title;
+  $('results-intro').innerHTML = intro;
+  $('results-intro').hidden = !intro;
   drawChart();
   $('legend').innerHTML = legendHtml(series);
   const first = (r) => (r.firstSale ? `Dès la semaine ${firstWeek(r.firstSale)}` : 'Jamais');
   const invested = (r) => `${formatEuro(r.invested)}${r.neverSold ? ' (sans retour)' : ''}`;
   const low = (r) => (r.liveAtEnd.length ? `${r.lowUse.length} sur ${r.liveAtEnd.length}` : '—');
   const rows = [
-    ['Premier euro encaissé', first(a), first(b)],
-    ['Investi avant le premier euro', invested(a), invested(b)],
-    ['Fonctionnalités en ligne à la fin du projet', a.liveAtEnd.length, b.liveAtEnd.length],
-    ['Fonctionnalités en ligne peu utilisées', low(a), low(b)],
-    ['Demandes de Mme Lefèvre mises en ligne', a.requestsLive.length, b.requestsLive.length],
-    [`Ventes cumulées après ${HORIZON_WEEKS} semaines`, `<strong>${formatEuro(a.cumulative)}</strong>`, `<strong>${formatEuro(b.cumulative)}</strong>`],
+    ['Premier euro encaissé', first],
+    ['Investi avant le premier euro', invested],
+    ['Fonctionnalités en ligne à la fin du projet', (r) => r.liveAtEnd.length],
+    ['Fonctionnalités en ligne peu utilisées', low],
+    ['Demandes de Mme Lefèvre mises en ligne', (r) => r.requestsLive.length],
+    [`Ventes cumulées après ${HORIZON_WEEKS} semaines`, (r) => `<strong>${formatEuro(r.cumulative)}</strong>`],
   ];
-  $('kpi').innerHTML = '<thead><tr><th scope="col"><span hidden>Indicateur</span></th><th scope="col">Manche 1 · Projet</th><th scope="col">Manche 2 · Scrum</th></tr></thead><tbody>'
-    + rows.map(([label, x, y]) => `<tr><th scope="row">${label}</th><td>${x}</td><td>${y}</td></tr>`).join('') + '</tbody>';
+  $('kpi').innerHTML = `<thead><tr><th scope="col"><span hidden>Indicateur</span></th>${columns.map((c) => `<th scope="col">${esc(c.head)}</th>`).join('')}</tr></thead><tbody>`
+    + rows.map(([label, cell]) => `<tr><th scope="row">${label}</th>${columns.map((c) => `<td>${cell(c.results)}</td>`).join('')}</tr>`).join('') + '</tbody>';
+  $('kpi').classList.toggle('kpi-wide', columns.length > 2);
   $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th></tr></thead><tbody>'
     + truthTable().map((t) => `<tr><td>${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
-  show('results');
+  show('results', { keepScroll });
 }
 
 function drawChart() {
@@ -427,8 +475,7 @@ function onDragEnd(event) {
   const target = ghost && event.type === 'pointerup' ? dropTarget(event.clientX, event.clientY) : null;
   endDrag();
   if (!target) return;
-  app.round = moveFeatureTo(app.round, id, target.index);
-  render();
+  act((st) => moveFeatureTo(st, id, target.index), render);
   list.querySelector(`button[data-move="${id}"]:not(:disabled)`)?.focus();
 }
 
@@ -449,6 +496,7 @@ function endDrag() {
   window.removeEventListener('pointercancel', onDragEnd);
   window.removeEventListener('keydown', onDragKey);
   drag = null;
+  app.onIdle?.(); // rendu d'une mise à jour de l'équipe arrivée pendant le geste
 }
 
 function onDragKey(event) {
@@ -483,6 +531,7 @@ document.addEventListener('touchmove', onTouchMove, { passive: false });
 
 export function init() {
   $('start').addEventListener('click', () => {
+    app.session = null;
     app.results = {};
     app.round = newRound(MODES.cascade);
     renderPlan();
@@ -492,8 +541,7 @@ export function init() {
   $('plan-list').addEventListener('change', (e) => {
     const id = e.target.dataset.toggle;
     if (!id) return;
-    app.round = toggleInPlan(app.round, id);
-    renderPlan();
+    act((st) => toggleInPlan(st, id), renderPlan);
   });
 
   for (const [list, render] of [['plan-list', renderPlan], ['board-list', renderBoard]]) {
@@ -502,8 +550,7 @@ export function init() {
       if (!btn || btn.disabled) return;
       const id = btn.dataset.move;
       const dir = Number(btn.dataset.dir);
-      app.round = moveFeature(app.round, id, dir);
-      render();
+      act((st) => moveFeature(st, id, dir), render);
       // garder le focus sur le même bouton de la fonctionnalité déplacée
       $(list).querySelector(`button[data-move="${id}"][data-dir="${dir}"]:not(:disabled)`)?.focus();
     });
@@ -513,12 +560,10 @@ export function init() {
   enableDrag('board-list', renderBoard);
 
   $('validate-plan').addEventListener('click', () => {
-    app.round = validatePlan(app.round);
-    renderBoard();
-    show('board');
+    if (act(validatePlan, renderBoard)) show('board');
   });
 
-  $('play-sprint').addEventListener('click', onPlaySprint);
+  $('play-sprint').addEventListener('click', () => { if (!app.session) onPlaySprint(); });
 
   $('start-round-2').addEventListener('click', () => {
     app.round = newRound(MODES.increment);
@@ -549,10 +594,18 @@ export function init() {
   compactQuery.addEventListener('change', drawChart);
   // Fermer la fenêtre (bouton ou Échap) poursuit toujours la partie.
   dialog.addEventListener('close', () => {
+    if (app.silentCloses > 0) { app.silentCloses -= 1; return; }
     const next = app.afterDialog;
     app.afterDialog = null;
+    app.dialogKind = null;
     if (next) next();
     // Si le navigateur ferme quand même la fenêtre d'une demande (Échap répété), on la rouvre.
     else if (app.round?.pendingRequest) openRequestDialog();
   });
 }
+
+/** Ce que room-ui.js réutilise pour le jeu d'une équipe et les résultats collectifs. */
+export const ui = {
+  app, $, esc, plural, show, act, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
+  openRequestDialog, refreshRequestDialog, renderComparison, isDragging: () => Boolean(drag),
+};

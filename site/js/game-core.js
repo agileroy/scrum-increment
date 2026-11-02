@@ -7,7 +7,7 @@ import {
   FEATURES, REQUESTS, QUOTES, QUOTES_PER_REVIEW, EVENTS, EURO_PER_POINT, COST_PER_POINT,
   PLANNED_SPRINTS, LAST_SPRINT, TEAM_CAPACITY, DONE_COST, RECETTE, AVENANT, PROJECT_CAPACITY,
   CLIENT_LOSS, COMPETITOR_FROM, SPRINT_WEEKS,
-} from './scenario.js';
+} from './scenario.js?v=__VERSION__';
 
 export const MODES = { cascade: 'cascade', increment: 'increment' };
 

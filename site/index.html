@@ -26,6 +26,9 @@
     <h1 class="brand"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>Fournée</h1>
     <div class="topbar-actions">
       <span class="round-chip" id="round-chip" hidden></span>
+      <span class="round-chip" id="room-chip" hidden></span>
+      <span class="round-chip timer-chip" id="timer-chip" role="timer" hidden></span>
+      <span class="me-name" id="me-name" hidden></span>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Passer en thème sombre" title="Passer en thème sombre">
         <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
         <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
@@ -33,21 +36,44 @@
     </div>
   </header>
 
+  <p class="banner" id="banner" role="status" hidden></p>
   <main>
     <!-- Accueil -->
     <section class="screen home" id="screen-home">
       <p class="home-intro">Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 12 semaines de développement. Sa seule question : <strong>« Quand est-ce que ça me rapporte ? »</strong></p>
+      <div class="home-grid">
+      <section class="panel home-card" aria-labelledby="home-host-title">
+        <h2 id="home-host-title">Animer une partie</h2>
+        <p class="muted">Pour le formateur : l'écran projeté donne le tempo, les participants jouent en équipes sur leur téléphone. De 2 à 6 équipes, 30 participants au plus.</p>
+        <button type="button" class="button button-primary button-large" id="create-room">Animer une partie</button>
+        <p class="hint is-error" id="create-error" role="alert"></p>
+      </section>
+      <section class="panel home-card" aria-labelledby="home-join-title">
+        <h2 id="home-join-title">Rejoindre une partie</h2>
+        <form class="join-form" id="join-form" novalidate>
+          <p class="join-room" id="join-room" hidden></p>
+          <label class="field" id="code-field">Code de la salle
+            <input id="code-input" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="4" inputmode="text" placeholder="ABCD">
+          </label>
+          <label class="field">Votre prénom
+            <input id="name-input" name="name" autocomplete="given-name" maxlength="20">
+          </label>
+          <button type="submit" class="button button-primary button-large" id="join-submit">Rejoindre</button>
+          <p class="hint is-error" id="join-error" role="alert"></p>
+        </form>
+      </section>
       <section class="panel home-card" aria-labelledby="home-solo-title">
         <h2 id="home-solo-title">Jouer seul</h2>
         <p class="muted">Deux manches sur le même projet, avec le même budget et les mêmes imprévus : d'abord en chef de projet, puis en Product Owner. Seule la façon de travailler change. À la fin, on compare.</p>
         <button type="button" class="button button-primary button-large" id="start">Commencer la manche 1</button>
       </section>
+      </div>
     </section>
 
     <!-- Manche 1 : plan -->
     <section class="screen" id="screen-plan" hidden>
       <div class="screen-head">
-        <span class="chip">Manche 1 · Projet · Avant le premier COPIL</span>
+        <span class="chip" id="plan-chip">Manche 1 · Projet · Avant le premier COPIL</span>
         <h2 class="title">Le cahier des charges</h2>
         <p class="lead">Vous êtes chef de projet. La commanditaire, Madame Lefèvre, veut un cahier des charges complet avant de lancer le projet : 12 semaines, avec un COPIL toutes les 2 semaines. L'équipe abat 12 points tous les 15 jours, soit 72 points, dont 8 réservés à la recette et à la mise en production finales. Choisissez les lots et leur ordre. Une fois validé, le cahier des charges est contractuel : tout changement demandé en cours de route passera par un avenant.</p>
       </div>
@@ -68,6 +94,11 @@
           <h2 class="title" id="board-title"></h2>
         </div>
         <button type="button" class="button button-primary button-large" id="play-sprint"></button>
+        <div class="team-bar" id="team-bar" hidden>
+          <p class="team-timer" id="team-timer" hidden></p>
+          <p class="team-status" id="team-status" role="status"></p>
+          <button type="button" class="button button-primary button-large" id="team-ready"></button>
+        </div>
       </div>
       <div class="stats" id="board-stats"></div>
       <div class="board">
@@ -120,8 +151,9 @@
     <section class="screen" id="screen-results" hidden>
       <div class="screen-head">
         <span class="chip">Résultats</span>
-        <h2 class="title">Un projet, puis Scrum : deux courbes</h2>
+        <h2 class="title" id="results-title">Un projet, puis Scrum : deux courbes</h2>
       </div>
+      <div class="approaches" id="results-intro" hidden></div>
       <section class="panel" aria-labelledby="chart-title">
         <h3 id="chart-title">Ventes cumulées sur 20 semaines</h3>
         <div class="chart" id="chart"></div>
@@ -139,7 +171,7 @@
       </div>
       <section class="panel" aria-labelledby="debrief-title">
         <h3 id="debrief-title">Pour le débrief</h3>
-        <ol class="questions">
+        <ol class="questions" id="debrief-questions">
           <li>À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu'est-ce qui l'a permis ?</li>
           <li>Pourquoi le Scrum Guide demande-t-il qu'un Increment soit utilisable ? Que se passe-t-il quand il ne l'est pas ?</li>
           <li>Qu'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l'ordre du Product Backlog ?</li>
@@ -152,10 +184,57 @@
         <button type="button" class="button button-ghost" id="replay">Rejouer</button>
       </section>
     </section>
+
+    <!-- Mode collectif : écran du formateur -->
+    <section class="screen" id="screen-host" hidden>
+      <div id="host-body"></div>
+    </section>
+
+    <!-- Mode collectif : attente et messages du participant -->
+    <section class="screen" id="screen-wait" hidden>
+      <div class="screen-head">
+        <span class="chip" id="wait-chip" hidden></span>
+        <h2 class="title" id="wait-title"></h2>
+        <p class="lead" id="wait-text"></p>
+      </div>
+      <div id="wait-extra"></div>
+    </section>
+
+    <!-- Mode collectif : rôle d'une équipe Scrum avant le premier Sprint -->
+    <section class="screen" id="screen-role" hidden>
+      <div class="screen-head">
+        <span class="chip" id="role-chip"></span>
+        <h2 class="title">Vous êtes le Product Owner</h2>
+        <p class="lead">Madame Lefèvre lance son appli avec une équipe Scrum. Votre équipe tient le rôle de Product Owner : vous ordonnez le Product Backlog pour que chaque Sprint rapporte le plus possible. Chaque Sprint dure 2 semaines et se termine par une version utilisable, mise en ligne pour les clients.</p>
+      </div>
+      <div class="panel">
+        <h3>Les règles</h3>
+        <ul class="rules">
+          <li>Capacité : 12 points par Sprint, dont 2 pour respecter la Definition of Done (tests, mise en ligne). Il reste 10 points pour construire.</li>
+          <li>Avant chaque Sprint, vous pouvez réordonner le Product Backlog : l'équipe prend les éléments par le haut.</li>
+          <li>Une fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant.</li>
+          <li>À chaque Sprint Review, les clients donnent leur avis et la vraie valeur des fonctionnalités en ligne apparaît.</li>
+          <li>Mme Lefèvre aura de nouvelles idées en cours de route : elles arrivent en bas du Product Backlog.</li>
+          <li>Quand votre Product Backlog est prêt, appuyez sur « Nous sommes prêts ». Le formateur lance les Sprints.</li>
+        </ul>
+      </div>
+      <div class="actions"><button type="button" class="button button-primary button-large" id="role-ok">Voir le Product Backlog</button></div>
+    </section>
   </main>
 
   <dialog class="dialog" id="dialog" aria-labelledby="dialog-title">
     <div id="dialog-body"></div>
+  </dialog>
+
+  <dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog" class="dialog-content">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+      <div class="actions">
+        <button type="submit" value="ok" class="button button-primary" id="confirm-ok"></button>
+        <button type="submit" value="cancel" class="button button-ghost">Annuler</button>
+      </div>
+    </form>
   </dialog>
 </body>
 </html>

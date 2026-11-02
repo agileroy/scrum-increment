@@ -29,7 +29,11 @@ Ordres de grandeur, joués et vérifiés par les tests (ventes cumulées après 
 
 Le moteur est déterministe : deux parties jouées de la même façon donnent les mêmes Reviews et les mêmes chiffres, ce qui permet au formateur de préparer son débrief.
 
-Cette première version se joue seul. Un mode collectif en temps réel est prévu, sur le modèle des jeux frères : salle, code, équipes, comparaison cachée jusqu'à la fin, et tempo donné par le formateur (timebox par Sprint, Sprint lancé pour toutes les équipes en même temps).
+## Deux façons de jouer
+
+- **Jouer seul** : les deux manches l'une après l'autre, puis la comparaison. Rien n'est chargé hors du site.
+- **En séance (mode collectif)** : le formateur clique sur « Animer une partie » et projette son écran (code de salle, adresse et QR code). Les participants rejoignent depuis leur téléphone avec le code et leur prénom, et sont répartis dans 2 à 6 équipes (Croissant, Baguette, Brioche, Éclair, Chouquette, Fougasse). Les équipes jouent en parallèle : les impaires en « projet » (manche 1), les paires en « Scrum » (manche 2), sans le savoir. Chaque membre agit sur le jeu de son équipe depuis son téléphone (état partagé en temps réel). Le formateur règle un chrono facultatif (1, 2 ou 3 minutes), voit quelles équipes sont prêtes, puis lance chaque période pour toutes les équipes en même temps ; une demande de changement non tranchée est refusée d'office. Son écran reste neutre (« Période 3 sur 6 », « Prête », « En réflexion ») jusqu'à la révélation, qui affiche sur tous les écrans les courbes de toutes les équipes, leurs approches et les indicateurs par équipe.
+- **Mode démo** : avec `?demo` dans l'adresse (par exemple `http://localhost:8765/?demo`), le mode collectif tourne sans Firebase, sur une base locale partagée entre les onglets du même navigateur : un onglet formateur, plusieurs onglets participants.
 
 ## Réseau d'entreprise
 
@@ -37,19 +41,25 @@ Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages : jouer hors VPN.
 
 ## Architecture
 
-Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, sans aucun service tiers (polices système, ni CDN, ni traceur).
+Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, polices système, ni CDN ni traceur. Seul le mode collectif utilise un service tiers : Firebase Realtime Database (connexion anonyme), dans le projet partagé avec les jeux frères ; le jeu seul ne charge rien d'externe.
 
 - `site/js/scenario.js` : données du scénario (fonctionnalités, demandes de changement, retours clients, imprévus, calendrier, constantes) ;
 - `site/js/game-core.js` : logique métier pure et déterministe (plan, Sprints, construction dans l'ordre, prérequis, mises en ligne, demandes de changement et avenants, ventes, clients perdus, coupure, calendrier, résultats), testée avec Node.js ; l'état d'une manche est un objet JSON simple ;
 - `site/js/vocabulary.js` : vocabulaire de chaque manche ; toutes les phrases propres à une manche sont ici, le moteur ne produit que des faits ;
 - `site/js/chart.js` : graphique SVG des ventes cumulées ;
-- `site/js/ui.js` : écrans et fenêtres ; `site/js/theme.js` : thème clair ou sombre ; `site/js/app.js` : point d'entrée.
+- `site/js/ui.js` : écrans et fenêtres, réutilisés par une équipe du mode collectif (toute action passe par `act(fn)`) ; `site/js/theme.js` : thème clair ou sombre ; `site/js/app.js` : point d'entrée, qui ne charge le mode collectif qu'à la demande ;
+- `site/js/room-core.js` : logique pure de la salle (code, prénoms, équipes, état « prêt », chrono) ;
+- `site/js/room-store.js` : actions sur la base (salle, équipes, transactions d'équipe, lancement des périodes, révélation) ;
+- `site/js/room-ui.js` : écran du formateur et écrans des participants ;
+- `site/js/firebase-db.js` (seul module qui parle à Firebase), `site/js/memory-db.js` (même interface en mémoire, pour les tests et le mode démo), `site/js/firebase-config.js` ;
+- `site/vendor/qrcode-generator-1.4.4.js` : QR code de la salle (licence MIT) ;
+- `database.rules.json` : règles de sécurité de la base partagée, branche `incrementGame` ; le fichier doit rester identique dans les 7 dépôts qui partagent le projet Firebase, et se publie à la main dans la console Firebase (Realtime Database, onglet Règles).
 
 ## Développement
 
 ```
-npm test                                          # scénario et moteur, dont les parcours de référence
-python3 -m http.server 8765 --directory site      # puis http://localhost:8765/
+npm test                                          # scénario, moteur, salle, base en mémoire et règles
+python3 -m http.server 8765 --directory site      # puis http://localhost:8765/ (ou /?demo pour le mode collectif sans Firebase)
 ```
 
 Chaque push sur `main` lance les tests puis publie `site/` sur GitHub Pages ; un test en échec bloque la publication. Une retouche du scénario qui change l'histoire racontée par les courbes fait échouer les tests des parcours de référence.

@@ -4,12 +4,12 @@
 
 import {
   newRound, reviveRound, playSprint, finishRound, decideRequest, developmentOver,
-} from './game-core.js';
+} from './game-core.js?v=__VERSION__';
 import {
   ROOM_TTL_MS, TIMER_CHOICES, MAX_PLAYERS, generateCode, isValidCode, normalizeCode, normalizeName, validateName,
   nameKey, teamMode, teamNumbers, clampTeamCount, smallestTeam, rebalance, activePlayers, everyTeamHasPlayers,
   planReady, canBeReady,
-} from './room-core.js';
+} from './room-core.js?v=__VERSION__';
 
 export const ROOT = 'incrementGame';
 const roomPath = (code) => `${ROOT}/rooms/${code}`;

@@ -2,8 +2,8 @@
 // Toutes les phrases propres à une manche sont ici ; ui.js n'en contient aucune.
 // tests/vocabulary.test.mjs vérifie qu'aucune manche n'emploie les mots de l'autre.
 
-import { feature, periodWeeks } from './game-core.js';
-import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT } from './scenario.js';
+import { feature, periodWeeks } from './game-core.js?v=__VERSION__';
+import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT } from './scenario.js?v=__VERSION__';
 
 const euro = (n) => `${Math.round(n).toLocaleString('fr-FR')} €`;
 const plural = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
