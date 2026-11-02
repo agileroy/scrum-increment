@@ -1,0 +1,38 @@
+schema: spec-driven
+
+# Project context: constraints an agent cannot infer from the code.
+context: |
+  Rédiger tous les artefacts OpenSpec (proposal, design, specs, tasks) en français.
+  Jeu de formation Scrum « Fournée » : faire vivre la valeur de l'incrément (Increment) par une simulation.
+  Madame Lefèvre, boulangère de quartier, fait développer une appli de commande en ligne, avec un budget de
+  6 Sprints. Les joueurs ordonnent les fonctionnalités et lancent les Sprints ; chaque fonctionnalité a une
+  « intuition » visible (ce que croit Mme Lefèvre) et une valeur réelle cachée (les ventes qu'elle génère).
+  Deux façons de livrer sont comparées : une seule livraison à la fin (plan figé au départ, recette et mise en
+  production finales) et un incrément utilisable à chaque Sprint (Product Backlog réordonnable, Sprint Review
+  avec retours clients qui révèlent la valeur réelle). Les mêmes imprévus frappent les deux : concurrent,
+  coupure budgétaire facultative. La fin compare les courbes de ventes cumulées et des indicateurs, puis guide
+  le débrief.
+  Mécanique volontairement sans cartes : les jeux frères roles-responsabilites et scrum-events en utilisent déjà.
+  En séance collective, la comparaison reste cachée aux participants jusqu'à la fin : chaque équipe croit
+  travailler sur le même projet que les autres.
+  Le moteur est déterministe (aucun tirage au hasard) : les chiffres du scénario sont réglés pour que les courbes
+  racontent l'histoire, et les parcours de référence sont figés dans les tests.
+  Vocabulaire de la traduction française officielle du Scrum Guide 2020 (novembre 2020) : Product Owner,
+  Scrum Master, Developers, Scrum Team, Product Backlog, Sprint Review, Definition of Done, Increment ;
+  termes gardés en anglais : Product Goal, Sprint Goal, refinement (du Product Backlog).
+  Hébergement : site statique sur GitHub Pages (https://agileroy.github.io/scrum-increment/), sans serveur.
+  Version solo d'abord ; un mode collectif en temps réel suivra, sur le modèle des jeux frères : formateur sur
+  écran projeté, participants sur téléphone avec code de salle ou QR code, Firebase Realtime Database (offre
+  gratuite, connexion anonyme) dans le projet partagé avec roles-responsabilites, scrum-events, poker-planning,
+  matrice-competences, wheel-of-chance et moving-motivators ; database.rules.json devra rester identique dans
+  tous ces dépôts. L'état de partie est donc fait d'objets JSON simples, sérialisables tels quels.
+  Aucun autre service tiers (ni police web, ni CDN, ni traceur, ni publicité). N'utiliser que HTTPS (port 443).
+  Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages et Firebase : le jeu se joue hors VPN.
+  Stack : HTML/CSS/JavaScript vanilla en modules ES, sans framework ni étape de build (dossier site/).
+  Identité visuelle des jeux frères : mêmes couleurs de base, polices système, thème clair et sombre avec
+  bouton de bascule mémorisé.
+  Architecture : site/js/scenario.js contient les données du scénario ; site/js/game-core.js la logique métier
+  pure (sans DOM), testée avec Node.js ; site/js/ui.js gère l'interface.
+  Interface en français, sans compte.
+  Tests : lanceur intégré de Node.js (npm test), à faire évoluer avec chaque changement de comportement ;
+  la publication GitHub Actions est bloquée si un test échoue.
