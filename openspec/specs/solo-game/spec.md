@@ -1,17 +1,9 @@
 # solo-game Specification
 
 ## Purpose
-Parcours du joueur seul, de l'accueil aux résultats : option de coupure, plan de la manche 1, tableau de Sprint, fenêtres de fin de Sprint, manche 2 et enchaînement.
+Parcours du joueur seul, de l'accueil aux résultats : plan de la manche 1, tableau de Sprint, fenêtres de fin de Sprint, manche 2 et enchaînement.
 
 ## Requirements
-
-### Requirement: Accueil
-L'accueil SHALL présenter l'histoire de Madame Lefèvre en quelques lignes, annoncer deux manches sur le même projet (d'abord en chef de projet, puis en Product Owner) avec une comparaison à la fin, proposer l'option « Coupure budgétaire en cours de projet » (activée par défaut) et un bouton pour commencer la manche 1. L'accueil MUST NOT dévoiler les valeurs réelles ni les imprévus.
-
-#### Scenario: Partie sans coupure
-- **GIVEN** l'accueil
-- **WHEN** le joueur décoche la coupure budgétaire puis commence
-- **THEN** les deux manches se jouent sur 12 semaines de développement : 6 COPIL en manche 1, 6 Sprints en manche 2
 
 ### Requirement: Plan de la manche 1
 Avant le premier COPIL, l'écran du cahier des charges SHALL expliquer la règle (12 semaines, 6 COPIL, 12 points tous les 15 jours, dont 8 points de recette et de mise en production finales, cahier des charges contractuel une fois validé) et lister les lots avec leur rang, leur coût, l'intuition de la commanditaire et leur prérequis. Le joueur SHALL pouvoir retirer ou remettre un lot et changer son rang. Une jauge SHALL comparer les points planifiés aux 64 points, et un message SHALL dire ce qui bloque ou que le cahier des charges tient. La validation SHALL rester inactive tant qu'il est invalide.
@@ -66,9 +58,9 @@ Après chaque période, une fenêtre SHALL faire le bilan, puis un bouton SHALL 
 - **THEN** l'écran de transition s'affiche, puis le tableau du Sprint 1 avec le Product Backlog dans l'ordre initial
 
 #### Scenario: Fin de projet après une coupure
-- **GIVEN** la manche 1 avec la coupure budgétaire
-- **WHEN** la fenêtre de fin du projet s'affiche
-- **THEN** elle dit que le projet s'arrête au COPIL 5, annonce 10 semaines d'exploitation sans développement, et ne parle d'aucun Sprint
+- **GIVEN** la manche 1, au COPIL 5
+- **WHEN** la fenêtre de fin du projet s'affiche, juste après le compte rendu qui annonce la coupure
+- **THEN** elle dit que le projet s'arrête au COPIL 5, en l'état, annonce 10 semaines d'exploitation sans développement, et ne parle d'aucun Sprint
 
 ### Requirement: Fenêtre de demande de changement (manche 1)
 En manche 1, quand un COPIL annonce une demande de la commanditaire, le compte rendu SHALL ensuite présenter la demande : texte de Mme Lefèvre, coût, intuition et avenant de 2 points. La fenêtre SHALL lister les lots retirables avec des cases à cocher, une jauge du cahier des charges par rapport au nouveau budget et un message sur ce qui bloque. « Accepter (avenant) » SHALL rester inactif tant que le résultat est invalide ; « Refuser » SHALL toujours être possible. Fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
@@ -90,3 +82,11 @@ Une fonctionnalité issue d'une demande SHALL être signalée comme « Demande d
 - **GIVEN** une demande refusée au COPIL 1
 - **WHEN** le joueur lit les comptes rendus de COPIL
 - **THEN** il y trouve la demande de la version anglaise et son refus
+
+### Requirement: Accueil sans option
+L'accueil SHALL présenter l'histoire de Madame Lefèvre en quelques lignes, annoncer deux manches sur le même projet (d'abord en chef de projet, puis en Product Owner) avec une comparaison à la fin, et proposer un bouton pour commencer la manche 1. L'accueil MUST NOT proposer d'option de coupure, ni dévoiler les valeurs réelles ou les imprévus.
+
+#### Scenario: Rien à régler
+- **GIVEN** l'accueil
+- **WHEN** il s'affiche
+- **THEN** il ne contient ni case à cocher, ni mot sur la banque ou une coupure, et le bouton lance directement le cahier des charges de la manche 1

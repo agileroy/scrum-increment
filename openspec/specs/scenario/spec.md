@@ -35,28 +35,18 @@ Le scénario SHALL contenir des retours clients, chacun avec un texte, un client
 - **WHEN** les gâteaux sur mesure sont en ligne
 - **THEN** ce retour n'apparaît plus
 
-### Requirement: Imprévus
-Le scénario SHALL contenir deux imprévus, annoncés dans la Sprint Review d'un Sprint et applicables à partir du suivant, identiques dans les deux manches :
-- **Concurrent** (Review du Sprint 2) : « La Mie Dorée » lance sa commande en ligne ; à partir du Sprint 3, tant qu'aucune fonctionnalité n'est en ligne, la boulangerie perd des clients potentiels à chaque Sprint.
-- **Coupure budgétaire** (Review du Sprint 3, seulement si l'option est activée) : la banque réduit le prêt et le développement s'arrête après le Sprint 5.
-
-#### Scenario: Coupure désactivée
-- **GIVEN** une partie sans coupure budgétaire
-- **WHEN** la Sprint Review du Sprint 3 s'affiche
-- **THEN** elle n'annonce aucune coupure et le développement dure 6 Sprints
-
 ### Requirement: Calendrier
-Une période de développement SHALL durer 2 semaines : un Sprint en manche 2, l'intervalle entre deux COPIL en manche 1. La partie SHALL couvrir 20 semaines à partir du lancement du projet, soit 10 périodes de 2 semaines : les périodes de développement, puis des semaines d'exploitation sans développement. Les textes d'imprévus SHALL exister dans le vocabulaire de chaque manche.
+Une période de développement SHALL durer 2 semaines : un Sprint en manche 2, l'intervalle entre deux COPIL en manche 1. Le budget prévoit 6 périodes de développement, mais la coupure budgétaire arrête toujours le développement après la cinquième. La partie SHALL couvrir 20 semaines à partir du lancement du projet, soit 10 périodes de 2 semaines : les périodes de développement, puis des semaines d'exploitation sans développement. Les textes d'imprévus SHALL exister dans le vocabulaire de chaque manche.
 
 #### Scenario: Coupure budgétaire
-- **GIVEN** une partie avec la coupure budgétaire
+- **GIVEN** une partie
 - **WHEN** le développement s'arrête après la cinquième période
 - **THEN** la partie continue 10 semaines d'exploitation, jusqu'à 20 semaines après le lancement
 
 #### Scenario: Annonce de la coupure en manche 1
-- **GIVEN** la manche 1 avec la coupure budgétaire
-- **WHEN** la coupure est annoncée
-- **THEN** le texte dit que le projet s'arrêtera au COPIL 5, sans parler de Sprint
+- **GIVEN** la manche 1
+- **WHEN** la coupure tombe, au COPIL 5
+- **THEN** le texte dit que la banque coupe le prêt sans préavis et que le projet s'arrête maintenant, en l'état, sans parler de Sprint
 
 ### Requirement: Demandes de changement
 Le scénario SHALL contenir trois demandes de Madame Lefèvre, chacune une nouvelle fonctionnalité avec un texte de Mme Lefèvre, un coût, un prérequis, l'intuition de Mme Lefèvre et une valeur réelle cachée, annoncée dans la Sprint Review d'un Sprint :
@@ -81,3 +71,24 @@ Le scénario SHALL contenir au moins un retour client pour chaque demande de cha
 - **GIVEN** la version anglaise en ligne dans la manche 2
 - **WHEN** la Sprint Review suivante s'affiche
 - **THEN** un retour client indique que personne ne l'utilise dans le quartier
+
+### Requirement: Concurrent
+Le scénario SHALL contenir l'imprévu du concurrent, identique dans les deux manches : à la fin de la deuxième période, « La Mie Dorée » lance sa commande en ligne ; à partir de la troisième période, tant qu'aucune fonctionnalité n'est en ligne, la boulangerie perd des clients potentiels toutes les deux semaines.
+
+#### Scenario: Annonce du concurrent
+- **GIVEN** une partie
+- **WHEN** la deuxième période se termine
+- **THEN** le bilan (COPIL 2 ou Sprint Review du Sprint 2) annonce que La Mie Dorée lance sa commande en ligne
+
+### Requirement: Coupure budgétaire sans préavis
+Le scénario SHALL contenir la coupure budgétaire, dans toutes les parties et dans les deux manches : à la fin de la cinquième période, la banque coupe le prêt et le développement s'arrête immédiatement, en l'état. L'accueil et les bilans des périodes 1 à 4 MUST NOT l'annoncer ni la laisser deviner.
+
+#### Scenario: Aucun préavis
+- **GIVEN** une partie
+- **WHEN** les quatre premières périodes se terminent
+- **THEN** aucun bilan ne parle de la banque ni d'une coupure
+
+#### Scenario: La coupure tombe
+- **GIVEN** une partie
+- **WHEN** la cinquième période se termine
+- **THEN** le bilan annonce que la banque coupe le prêt sans préavis et que tout s'arrête maintenant, en l'état

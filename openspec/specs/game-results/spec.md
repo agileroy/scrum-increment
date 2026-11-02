@@ -14,7 +14,7 @@ L'écran de résultats SHALL afficher les ventes cumulées sur 20 semaines, une 
 - **THEN** sa courbe reste à 0 € sur les 20 semaines
 
 #### Scenario: Frontière après une coupure
-- **GIVEN** une partie avec la coupure budgétaire
+- **GIVEN** une partie, coupée comme toujours après la cinquième période
 - **WHEN** les résultats s'affichent
 - **THEN** l'axe va de « 2 sem. » à « 20 sem. », avec la ligne « Fin du projet » entre « 10 sem. » et « 12 sem. »
 
@@ -27,9 +27,9 @@ L'écran de résultats SHALL comparer les deux manches : premier euro encaissé 
 - **THEN** la ligne « Investi avant le premier euro » affiche « 30 000 € (sans retour) »
 
 #### Scenario: Premier euro après le projet
-- **GIVEN** une manche 1 sans coupure dont l'appli sort au COPIL 6, et une manche 2 dont la vitrine est en ligne à la fin du Sprint 1
+- **GIVEN** une manche 1 avec le cahier des charges resserré de 39 points, sortie au COPIL 4, et une manche 2 dont la vitrine est en ligne à la fin du Sprint 1
 - **WHEN** les indicateurs s'affichent
-- **THEN** la ligne « Premier euro encaissé » affiche « Dès la semaine 13 » pour la manche 1 et « Dès la semaine 3 » pour la manche 2
+- **THEN** la ligne « Premier euro encaissé » affiche « Dès la semaine 9 » pour la manche 1 et « Dès la semaine 3 » pour la manche 2
 
 ### Requirement: Intuition contre réalité
 L'écran de résultats SHALL lister toutes les fonctionnalités, y compris les trois demandes de changement signalées comme telles, triées par valeur réelle décroissante, avec l'intuition de Mme Lefèvre en étoiles et les ventes réelles par Sprint.
@@ -40,7 +40,7 @@ L'écran de résultats SHALL lister toutes les fonctionnalités, y compris les t
 - **THEN** la réservation de pain est en tête, et les avis clients et la version anglaise sont en dernier, à 0 €
 
 ### Requirement: Questions de débrief
-L'écran de résultats SHALL proposer des questions de débrief reliées au Scrum Guide 2020 : le premier euro et ce qui l'a permis, pourquoi un Increment doit être utilisable, ce qu'ont appris les Sprint Reviews, ce qui restait entre les mains de chacun à la coupure, l'écart entre l'intuition de Mme Lefèvre et l'avis de ses clients, la différence entre décider sur des opinions et sur des retours clients, et ce que le changement de vocabulaire (COPIL et cahier des charges, puis Sprint Review et Product Backlog) a changé dans la façon de décider.
+L'écran de résultats SHALL proposer des questions de débrief reliées au Scrum Guide 2020 : le premier euro et ce qui l'a permis, pourquoi un Increment doit être utilisable, ce qu'ont appris les Sprint Reviews, ce qui restait entre les mains de chacun à la coupure, ce que chacun aurait fait s'il avait été prévenu deux périodes plus tôt, l'écart entre l'intuition de Mme Lefèvre et l'avis de ses clients, la différence entre décider sur des opinions et sur des retours clients, et ce que le changement de vocabulaire a changé dans la façon de décider.
 
 #### Scenario: Débrief en formation
 - **GIVEN** un formateur qui projette les résultats

@@ -29,19 +29,6 @@ Les écrans, fenêtres et journal de la manche 1 MUST NOT employer « Sprint »,
 - **WHEN** on relit tous les textes affichés pendant la manche
 - **THEN** aucun ne contient « Sprint » ni « Product Backlog »
 
-### Requirement: Météo du projet
-Chaque compte rendu de COPIL de la manche 1 SHALL donner une météo du projet : « Ensoleillé » tant que le reste à faire (lots, recette et avenants compris) tient dans la capacité restante jusqu'à la fin du projet, « Orageux » sinon, et « Livré » une fois l'appli sortie.
-
-#### Scenario: Orage à l'annonce de la coupure
-- **GIVEN** la manche 1 avec le plan de 61 points et la coupure budgétaire
-- **WHEN** les COPIL 1, 2 et 3 ont lieu
-- **THEN** la météo est « Ensoleillé » aux COPIL 1 et 2, puis « Orageux » au COPIL 3, qui annonce la coupure
-
-#### Scenario: Soleil sans coupure
-- **GIVEN** la manche 1 avec le plan de 61 points, sans coupure, demandes refusées
-- **WHEN** les COPIL se succèdent
-- **THEN** la météo reste « Ensoleillé » jusqu'à la sortie, puis passe à « Livré »
-
 ### Requirement: Bascule de vocabulaire
 L'écran de transition entre les manches SHALL annoncer le changement de rôle et de vocabulaire : chef de projet → Product Owner, cahier des charges → Product Backlog, COPIL → Sprint Review, recette finale → Definition of Done à chaque Sprint.
 
@@ -57,3 +44,16 @@ Les specs du moteur (`scenario`, `sprint-simulation`) SHALL continuer d'appeler 
 - **GIVEN** une exigence du moteur qui parle du « Sprint 3 » de la manche 1
 - **WHEN** l'interface l'affiche
 - **THEN** elle parle du COPIL 3, à la fin des semaines 5 et 6
+
+### Requirement: Météo du projet sans préavis
+Chaque compte rendu de COPIL de la manche 1 SHALL donner une météo du projet : « Ensoleillé » tant que le reste à faire (lots, recette et avenants compris) tient dans la capacité restante jusqu'à la fin prévue du projet, « Orageux » sinon, et « Livré » une fois l'appli sortie. Comme la coupure n'est jamais annoncée, la météo MUST NOT en tenir compte avant qu'elle tombe.
+
+#### Scenario: Soleil jusqu'à la coupure
+- **GIVEN** la manche 1 avec le cahier des charges de 61 points, demandes refusées
+- **WHEN** les COPIL 1 à 5 ont lieu
+- **THEN** la météo est « Ensoleillé » aux COPIL 1 à 4, puis « Orageux » au COPIL 5, quand la coupure tombe
+
+#### Scenario: Livré avant la coupure
+- **GIVEN** la manche 1 avec le cahier des charges resserré de 39 points, demandes refusées
+- **WHEN** les COPIL 1 à 5 ont lieu
+- **THEN** la météo est « Ensoleillé » aux COPIL 1 à 3, puis « Livré » aux COPIL 4 et 5
