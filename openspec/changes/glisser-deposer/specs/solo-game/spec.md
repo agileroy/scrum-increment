@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Glisser-déposer
-Dans le cahier des charges avant validation et dans le Product Backlog, chaque élément déplaçable SHALL avoir une poignée de saisie. Glisser la poignée (souris, stylet ou doigt) SHALL faire suivre l'élément au pointeur, afficher une ligne d'insertion à l'endroit où il tomberait, et le relâcher SHALL placer l'élément à ce rang, avec les mêmes règles que les flèches. Relâcher hors de la liste, ou appuyer sur Échap pendant le geste, SHALL annuler le déplacement. Un élément non déplaçable MUST NOT avoir de poignée. Les flèches SHALL rester disponibles.
+Dans le cahier des charges avant validation et dans le Product Backlog, chaque élément déplaçable SHALL pouvoir être saisi sur toute sa carte, hors boutons et cases à cocher : à la souris ou au stylet dès qu'on le fait glisser, au doigt après un appui long, pour qu'un glissé direct fasse toujours défiler la page. Le geste SHALL faire suivre l'élément au pointeur, afficher une ligne d'insertion à l'endroit où il tomberait, et le relâcher SHALL placer l'élément à ce rang, avec les mêmes règles que les flèches. Relâcher hors de la liste, ou appuyer sur Échap pendant le geste, SHALL annuler le déplacement. Un élément non déplaçable MUST NOT pouvoir être saisi. Les flèches SHALL rester disponibles.
 
 #### Scenario: Remonter de plusieurs rangs
 - **GIVEN** la manche 2, Product Backlog dans l'ordre initial
@@ -15,8 +15,13 @@ Dans le cahier des charges avant validation et dans le Product Backlog, chaque �
 
 #### Scenario: Au doigt
 - **GIVEN** un téléphone, le Product Backlog affiché
-- **WHEN** le joueur fait glisser une poignée du doigt
+- **WHEN** le joueur appuie longuement sur une carte puis la fait glisser
 - **THEN** la page ne défile pas pendant le geste et l'élément se place là où il est relâché
+
+#### Scenario: Défilement au doigt
+- **GIVEN** un téléphone, le Product Backlog affiché
+- **WHEN** le joueur fait glisser une carte du doigt sans appui long
+- **THEN** la page défile et l'ordre ne change pas
 
 #### Scenario: Geste annulé
 - **GIVEN** un élément en cours de glissement
@@ -26,4 +31,4 @@ Dans le cahier des charges avant validation et dans le Product Backlog, chaque �
 #### Scenario: Élément terminé
 - **GIVEN** la manche 2, vitrine en ligne
 - **WHEN** le Product Backlog s'affiche
-- **THEN** la vitrine n'a pas de poignée, mais les autres éléments peuvent être glissés au-dessus ou en dessous d'elle
+- **THEN** la vitrine ne peut pas être saisie, mais les autres éléments peuvent être glissés au-dessus ou en dessous d'elle

@@ -190,7 +190,8 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
 }
 .move button:hover:not(:disabled) { border-color: var(--crust); }
 .move button:disabled { opacity: 0.3; cursor: default; }
-.move .grip { cursor: grab; touch-action: none; font-size: 1.2rem; color: var(--muted); }
+.item[data-drag] { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.item[data-drag]:hover { border-color: var(--accent); }
 body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .item { position: relative; }
 .item.drag-source { opacity: 0.35; }

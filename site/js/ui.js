@@ -55,7 +55,6 @@ function dependencyHtml(state, id, list) {
 function moveButtons(id, index, count) {
   const name = esc(feature(id).name);
   return `<div class="move">
-    <button type="button" class="grip" data-drag="${id}" aria-label="Déplacer « ${name} » (glisser-déposer)" title="Glisser pour déplacer">⠿</button>
     <button type="button" data-move="${id}" data-dir="-1" aria-label="Monter « ${name} »" ${index === 0 ? 'disabled' : ''}>↑</button>
     <button type="button" data-move="${id}" data-dir="1" aria-label="Descendre « ${name} »" ${index === count - 1 ? 'disabled' : ''}>↓</button>
   </div>`;
@@ -74,7 +73,7 @@ function planItemHtml(state, id, index, impossible) {
   } else if (inPlan) {
     ({ cls, chip, note } = dependencyHtml(state, id, retained));
   }
-  return `<li class="item ${cls}" data-id="${id}">
+  return `<li class="item ${cls}" data-id="${id}" data-drag="${id}">
     <div class="rank">${index + 1}</div>
     <div>
       <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}</div>
@@ -100,7 +99,7 @@ function boardItemHtml(state, id, index, count) {
   const controls = canMove(state, id) ? moveButtons(id, index, count) : '';
   const dep = dependencyHtml(state, id);
   const cls = featureState(state, id) === 'live' ? 'is-live' : dep.cls;
-  return `<li class="item ${cls}" data-id="${id}">
+  return `<li class="item ${cls}" data-id="${id}"${canMove(state, id) ? ` data-drag="${id}"` : ''}>
     <div class="rank">${index + 1}</div>
     <div>
       <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
@@ -348,30 +347,33 @@ function drawChart() {
 }
 
 /* ---------------------------------------------------------------- Glisser-déposer */
-// Comme dans scrum-events : événements Pointer (souris, stylet, doigt), suivis sur toute la fenêtre ;
-// seule la poignée lance le geste, au-delà de 6 px ; une ligne d'insertion montre le rang d'arrivée.
+// Toute la carte se saisit (hors boutons et cases à cocher), avec les événements Pointer comme dans scrum-events.
+// Souris et stylet : le geste démarre au-delà de 6 px. Doigt : après un appui long de 350 ms sans bouger,
+// pour qu'un glissé direct fasse toujours défiler la page ; une fois lancé, le défilement est bloqué.
 
 const DRAG_THRESHOLD = 6;
+const TOUCH_SLOP = 8;
+const LONG_PRESS_MS = 350;
 const AUTO_SCROLL_EDGE = 60;
-let drag = null; // { id, list, render, pointerId, startX, startY, ghost, source, target, offsetY }
+let drag = null; // { id, list, render, pointerId, touch, startX, startY, x, y, timer, ghost, source, target, offsetY }
 
 function clearDropMarks(list) {
   list.querySelectorAll('.drop-before, .drop-after').forEach((li) => li.classList.remove('drop-before', 'drop-after'));
 }
 
 // Rang d'arrivée (dans l'ordre complet) sous le pointeur, ou null hors de la liste.
-function dropTarget(event) {
+function dropTarget(x, y) {
   const rect = drag.list.getBoundingClientRect();
-  if (event.clientX < rect.left - 40 || event.clientX > rect.right + 40 || event.clientY < rect.top - 40 || event.clientY > rect.bottom + 40) return null;
+  if (x < rect.left - 40 || x > rect.right + 40 || y < rect.top - 40 || y > rect.bottom + 40) return null;
   const rows = [...drag.list.querySelectorAll('li[data-id]')];
   if (!rows.length) return null;
-  let row = rows.find((li) => { const r = li.getBoundingClientRect(); return event.clientY >= r.top && event.clientY <= r.bottom; });
+  let row = rows.find((li) => { const r = li.getBoundingClientRect(); return y >= r.top && y <= r.bottom; });
   let after;
   if (row) {
     const r = row.getBoundingClientRect();
-    after = event.clientY > r.top + r.height / 2;
-  } else if (event.clientY < rows[0].getBoundingClientRect().top) { row = rows[0]; after = false; }
-  else if (event.clientY > rows.at(-1).getBoundingClientRect().bottom) { row = rows.at(-1); after = true; }
+    after = y > r.top + r.height / 2;
+  } else if (y < rows[0].getBoundingClientRect().top) { row = rows[0]; after = false; }
+  else if (y > rows.at(-1).getBoundingClientRect().bottom) { row = rows.at(-1); after = true; }
   else return drag.target; // entre deux lignes : on garde la dernière position
   const order = app.round.order;
   let index = order.indexOf(row.dataset.id) + (after ? 1 : 0);
@@ -379,45 +381,65 @@ function dropTarget(event) {
   return { index, row, after };
 }
 
-function onDragMove(event) {
-  if (!drag || event.pointerId !== drag.pointerId) return;
-  if (!drag.ghost) {
-    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < DRAG_THRESHOLD) return;
-    const r = drag.source.getBoundingClientRect();
-    const ghost = drag.source.cloneNode(true);
-    ghost.classList.add('drag-ghost');
-    ghost.removeAttribute('data-id');
-    ghost.setAttribute('aria-hidden', 'true');
-    ghost.style.width = `${r.width}px`;
-    ghost.style.left = `${r.left}px`;
-    drag.offsetY = event.clientY - r.top;
-    document.body.append(ghost);
-    document.body.classList.add('is-dragging');
-    drag.source.classList.add('drag-source');
-    drag.ghost = ghost;
-  }
-  event.preventDefault();
-  drag.ghost.style.top = `${event.clientY - drag.offsetY}px`;
-  if (event.clientY < AUTO_SCROLL_EDGE) window.scrollBy(0, -12);
-  else if (event.clientY > window.innerHeight - AUTO_SCROLL_EDGE) window.scrollBy(0, 12);
-  drag.target = dropTarget(event);
+function activateDrag() {
+  const r = drag.source.getBoundingClientRect();
+  const ghost = drag.source.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.removeAttribute('data-id');
+  ghost.removeAttribute('data-drag');
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.style.width = `${r.width}px`;
+  ghost.style.left = `${r.left}px`;
+  drag.offsetY = drag.y - r.top;
+  document.body.append(ghost);
+  document.body.classList.add('is-dragging');
+  drag.source.classList.add('drag-source');
+  drag.ghost = ghost;
+  followPointer();
+}
+
+function followPointer() {
+  drag.ghost.style.top = `${drag.y - drag.offsetY}px`;
+  if (drag.y < AUTO_SCROLL_EDGE) window.scrollBy(0, -12);
+  else if (drag.y > window.innerHeight - AUTO_SCROLL_EDGE) window.scrollBy(0, 12);
+  drag.target = dropTarget(drag.x, drag.y);
   clearDropMarks(drag.list);
   if (drag.target) drag.target.row.classList.add(drag.target.after ? 'drop-after' : 'drop-before');
+}
+
+function onDragMove(event) {
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  drag.x = event.clientX;
+  drag.y = event.clientY;
+  const moved = Math.hypot(drag.x - drag.startX, drag.y - drag.startY);
+  if (!drag.ghost) {
+    if (drag.touch) { if (moved > TOUCH_SLOP) endDrag(); return; } // glissé avant l'appui long : on laisse défiler
+    if (moved < DRAG_THRESHOLD) return;
+    activateDrag();
+  }
+  event.preventDefault();
+  followPointer();
 }
 
 function onDragEnd(event) {
   if (!drag || (event.pointerId !== undefined && event.pointerId !== drag.pointerId)) return;
   const { id, ghost, render, list } = drag;
-  const target = ghost && event.type === 'pointerup' ? dropTarget(event) : null;
+  const target = ghost && event.type === 'pointerup' ? dropTarget(event.clientX, event.clientY) : null;
   endDrag();
   if (!target) return;
   app.round = moveFeatureTo(app.round, id, target.index);
   render();
-  list.querySelector(`[data-drag="${id}"]`)?.focus();
+  list.querySelector(`button[data-move="${id}"]:not(:disabled)`)?.focus();
+}
+
+// Une fois le geste lancé au doigt, le défilement de la page est bloqué.
+function onTouchMove(event) {
+  if (drag?.ghost) event.preventDefault();
 }
 
 function endDrag() {
   if (!drag) return;
+  clearTimeout(drag.timer);
   drag.ghost?.remove();
   drag.source?.classList.remove('drag-source');
   clearDropMarks(drag.list);
@@ -436,20 +458,26 @@ function onDragKey(event) {
 function enableDrag(listId, render) {
   const list = $(listId);
   list.addEventListener('pointerdown', (event) => {
-    const grip = event.target.closest('[data-drag]');
-    if (!grip || event.button > 0 || drag) return;
-    event.preventDefault();
+    const card = event.target.closest('li[data-drag]');
+    if (!card || event.button > 0 || drag) return;
+    if (event.target.closest('button, input, label, a')) return;
+    const touch = event.pointerType === 'touch';
+    if (!touch) event.preventDefault();
     drag = {
-      id: grip.dataset.drag, list, render, pointerId: event.pointerId,
-      startX: event.clientX, startY: event.clientY, ghost: null, target: null,
-      source: grip.closest('li'),
+      id: card.dataset.drag, list, render, pointerId: event.pointerId, touch,
+      startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
+      timer: null, ghost: null, target: null, source: card,
     };
+    if (touch) drag.timer = setTimeout(() => { if (drag && !drag.ghost) activateDrag(); }, LONG_PRESS_MS);
     window.addEventListener('pointermove', onDragMove, { passive: false });
     window.addEventListener('pointerup', onDragEnd);
     window.addEventListener('pointercancel', onDragEnd);
     window.addEventListener('keydown', onDragKey);
   });
+  list.addEventListener('contextmenu', (event) => { if (event.target.closest('li[data-drag]')) event.preventDefault(); });
 }
+
+document.addEventListener('touchmove', onTouchMove, { passive: false });
 
 /* ---------------------------------------------------------------- Démarrage */
 
