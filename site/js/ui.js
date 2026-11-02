@@ -10,7 +10,7 @@ import {
   requestStatus, decideRequest, isRequest, periodWeeks, planProgress, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
 import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE } from './scenario.js?v=__VERSION__';
-import { lexicon, logEntry, exploitationText } from './vocabulary.js?v=__VERSION__';
+import { lexicon, logEntry, exploitationText, discoveryText } from './vocabulary.js?v=__VERSION__';
 import { chartSvg, legendHtml, formatEuro } from './chart.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -108,7 +108,9 @@ function planItemHtml(state, id, index, impossible) {
 function boardItemHtml(state, id, index, count) {
   const f = feature(id);
   const l = lexicon(state.mode);
-  const p = Math.min(state.progress[id], f.cost);
+  const extra = state.extra?.[id] ?? 0;
+  const cost = f.cost + extra;
+  const p = Math.min(state.progress[id], cost);
   const value = state.revealed.includes(id)
     ? `<span class="value-known">Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} ${l.valuePer}</span>`
     : '<span>Ventes réelles : ?</span>';
@@ -121,9 +123,9 @@ function boardItemHtml(state, id, index, count) {
     <div>
       <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
-      <div class="item-meta"><span>${p} / ${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
+      <div class="item-meta"><span>${p} / ${extra ? `<span class="extra" title="${extra} points découverts en cours de route">${f.cost} + ${extra}</span>` : f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
       ${dep.note}
-      <div class="bar"><span style="width:${(p / f.cost) * 100}%"></span></div>
+      <div class="bar"><span style="width:${(p / cost) * 100}%"></span></div>
     </div>
     <div class="item-controls">${controls}</div>
   </li>`;
@@ -132,12 +134,14 @@ function boardItemHtml(state, id, index, count) {
 function recetteHtml(state) {
   const l = lexicon(state.mode);
   const ready = workItems(state).every((id) => state.done.includes(id));
+  const anomalies = state.extra?.recette ?? 0;
+  const avenants = state.recetteCost - RECETTE - anomalies;
   return `<li class="item is-recette ${state.launched ? 'is-live' : ''}">
     <div class="rank" aria-hidden="true">✓</div>
     <div>
       <div class="item-head"><span class="item-name">${esc(l.recetteName)}</span>${state.launched ? '<span class="chip live">Appli en ligne</span>' : ''}</div>
       <div class="item-desc">${esc(ready ? l.recetteReady : l.recetteWaiting)}</div>
-      <div class="item-meta"><span>${state.recette} / ${state.recetteCost} pts</span>${state.recetteCost > RECETTE ? `<span>${esc(l.recetteAvenant(state.recetteCost - RECETTE))}</span>` : ''}</div>
+      <div class="item-meta"><span>${state.recette} / ${state.recetteCost} pts</span>${avenants ? `<span>${esc(l.recetteAvenant(avenants))}</span>` : ''}${anomalies ? `<span class="extra">dont ${anomalies} points d'anomalies</span>` : ''}</div>
       <div class="bar"><span style="width:${(state.recette / state.recetteCost) * 100}%"></span></div>
     </div>
     <div class="item-controls"></div>
@@ -233,6 +237,9 @@ function reportHtml(state, report, { team = false } = {}) {
       ? report.quotes.map((q) => `<blockquote class="quote">« ${esc(q.text)} »<footer>${esc(q.who)}</footer></blockquote>`).join('')
       : '<p class="muted">Pas de nouveau retour.</p>';
     if (report.completed.length) h += '<p class="muted">La vraie valeur des fonctionnalités en ligne apparaît maintenant dans le Product Backlog.</p>';
+  }
+  for (const d of report.discoveries ?? []) {
+    h += `<p class="discovery"><strong>Travail sous-estimé :</strong> ${esc(discoveryText(state.mode, d))}</p>`;
   }
   for (const e of report.events) {
     h += `<p class="news"><strong>${esc(e.title)} :</strong> ${esc(l.eventText(e))}</p>`;

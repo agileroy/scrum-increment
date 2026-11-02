@@ -102,3 +102,14 @@ test('les retours des demandes viennent après les autres', () => {
   const firstRequestQuote = QUOTES.findIndex((q) => REQUESTS.some((r) => r.id === q.need));
   assert.ok(QUOTES.slice(firstRequestQuote).every((q) => REQUESTS.some((r) => r.id === q.need)));
 });
+
+test('Travail sous-estimé : cibles existantes, recette en manche 1 seulement', async () => {
+  const { UNDERESTIMATES, FEATURES } = await import('../site/js/scenario.js');
+  const ids = FEATURES.map((f) => f.id);
+  assert.deepEqual(UNDERESTIMATES.map((u) => [u.target, u.extra]), [['vitrine', 4], ['resa', 6], ['recette', 4]]);
+  for (const u of UNDERESTIMATES) {
+    if (u.target === 'recette') { assert.equal(u.mode, 'cascade'); assert.ok(u.text.cascade); continue; }
+    assert.ok(ids.includes(u.target));
+    assert.ok(u.text.cascade && u.text.increment);
+  }
+});

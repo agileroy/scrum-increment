@@ -257,6 +257,9 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .dialog-content .actions .button { margin-top: 0; }
 .journal .request-line { color: var(--accent); }
 .journal .decision-line { font-weight: 600; }
+.discovery { padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-text); }
+.item-meta .extra, .extra { color: var(--warn-text); font-weight: 700; }
+.journal .discovery-line { color: var(--warn-text); }
 .bad { padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-text); }
 
 /* ---------------------------------------------------------------- Résultats */

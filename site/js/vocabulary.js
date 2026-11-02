@@ -3,7 +3,7 @@
 // tests/vocabulary.test.mjs vérifie qu'aucune manche n'emploie les mots de l'autre.
 
 import { feature, periodWeeks } from './game-core.js?v=__VERSION__';
-import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT } from './scenario.js?v=__VERSION__';
+import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT, UNDERESTIMATES } from './scenario.js?v=__VERSION__';
 
 const euro = (n) => `${Math.round(n).toLocaleString('fr-FR')} €`;
 const plural = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
@@ -125,8 +125,15 @@ export function logEntry(mode, entry) {
     case 'event': return { kind: 'event', label: 'Imprévu', text: lex.eventLog(EVENTS.find((e) => e.id === entry.event)) };
     case 'request': { const r = feature(entry.request); return { kind: 'request', label: `Demande de ${lex.stakeholder}`, text: `${r.name} : « ${r.ask} »` }; }
     case 'decision': return { kind: 'decision', text: lex.decision(entry) };
+    case 'discovery': return { kind: 'discovery', label: 'Travail sous-estimé', text: discoveryText(mode, entry) };
     default: throw new Error(`Entrée de journal inconnue : ${entry.kind}`);
   }
+}
+
+/** Annonce d'une découverte de travail sous-estimé : « texte (+6 points) ». */
+export function discoveryText(mode, { target, extra }) {
+  const u = UNDERESTIMATES.find((x) => x.target === target && (!x.mode || x.mode === mode));
+  return `${u.text[mode]} (+${extra} points)`;
 }
 
 /** Textes de l'écran de fin du projet, communs aux deux manches (exploitation sans Sprint ni COPIL). */

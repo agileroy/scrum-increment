@@ -82,6 +82,33 @@ export const REQUESTS = [
     ask: "Le cabinet d'avocats d'à côté m'a demandé des plateaux petit-déjeuner. Je ne sais pas si ça vaut vraiment le coup…" },
 ];
 
+/**
+ * Travail sous-estimé : découvert quand l'équipe commence l'élément (`target`), ou la recette finale
+ * (manche 1 seulement). Fixe et identique pour les deux approches : le moteur reste déterministe.
+ */
+export const UNDERESTIMATES = [
+  {
+    target: 'vitrine', extra: 4,
+    text: {
+      cascade: "Le lot « Vitrine en ligne » est plus gros que prévu : la charte graphique et l'accessibilité n'étaient pas dans l'estimation.",
+      increment: "« Vitrine en ligne » est plus grosse que prévu : la charte graphique et l'accessibilité n'étaient pas dans l'estimation.",
+    },
+  },
+  {
+    target: 'resa', extra: 6,
+    text: {
+      cascade: 'Le lot « Réservation de pain » est plus gros que prévu : il faut le relier au logiciel de caisse de la boulangerie.',
+      increment: '« Réservation de pain » est plus grosse que prévu : il faut la relier au logiciel de caisse de la boulangerie.',
+    },
+  },
+  {
+    target: 'recette', extra: 4, mode: 'cascade',
+    text: {
+      cascade: "La recette commence et révèle des anomalies à l'intégration des lots : il faut les corriger avant la mise en production.",
+    },
+  },
+];
+
 /** Au plus ce nombre de nouveaux retours par Sprint Review. */
 export const QUOTES_PER_REVIEW = 3;
 

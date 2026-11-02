@@ -6,7 +6,7 @@
 import {
   FEATURES, REQUESTS, QUOTES, QUOTES_PER_REVIEW, EVENTS, EURO_PER_POINT, COST_PER_POINT,
   PLANNED_SPRINTS, LAST_SPRINT, TEAM_CAPACITY, DONE_COST, RECETTE, AVENANT, PROJECT_CAPACITY,
-  CLIENT_LOSS, COMPETITOR_FROM, SPRINT_WEEKS,
+  CLIENT_LOSS, COMPETITOR_FROM, SPRINT_WEEKS, UNDERESTIMATES,
 } from './scenario.js?v=__VERSION__';
 
 export const MODES = { cascade: 'cascade', increment: 'increment' };
@@ -26,6 +26,16 @@ export function feature(id) {
 }
 
 const clone = (state) => JSON.parse(JSON.stringify(state));
+
+/** Travail sous-estimé prévu pour cet élément (ou 'recette') dans cette manche, ou null. */
+export function underestimate(mode, target) {
+  return UNDERESTIMATES.find((u) => u.target === target && (!u.mode || u.mode === mode)) ?? null;
+}
+
+/** Coût réel d'un élément : estimation, plus le travail découvert en cours de route. */
+export function effectiveCost(state, id) {
+  return feature(id).cost + (state.extra?.[id] ?? 0);
+}
 const has = (list, id) => list.includes(id);
 
 /** Nouvelle manche. La coupure budgétaire fait partie du scénario : toujours là, jamais annoncée avant. */
@@ -39,6 +49,7 @@ export function newRound(mode) {
     order: FEATURES.map((f) => f.id),
     included: FEATURES.map((f) => f.id),
     progress: Object.fromEntries([...FEATURES, ...REQUESTS].map((f) => [f.id, 0])),
+    extra: {}, // travail découvert : { id ou 'recette' → points en plus }
     done: [],
     live: [],
     revealed: [],
@@ -178,8 +189,8 @@ export function salesRate(state) {
 /** Avancement du plan de la manche 1, recette comprise, en pourcentage entier. */
 export function planProgress(state) {
   const items = workItems(state);
-  const total = items.reduce((sum, id) => sum + feature(id).cost, 0) + state.recetteCost;
-  const doneSoFar = items.reduce((sum, id) => sum + Math.min(state.progress[id], feature(id).cost), 0) + state.recette;
+  const total = items.reduce((sum, id) => sum + effectiveCost(state, id), 0) + state.recetteCost;
+  const doneSoFar = items.reduce((sum, id) => sum + Math.min(state.progress[id], effectiveCost(state, id)), 0) + state.recette;
   return Math.round((doneSoFar / total) * 100);
 }
 
@@ -221,21 +232,32 @@ function earn(state, sprint) {
   return sales;
 }
 
+// Découverte du travail sous-estimé, au premier point de travail sur l'élément (ou la recette).
+function discover(state, target, discoveries) {
+  const u = underestimate(state.mode, target);
+  if (!u || state.extra[target] !== undefined) return;
+  state.extra[target] = u.extra;
+  if (target === 'recette') state.recetteCost += u.extra;
+  discoveries.push(target);
+}
+
 // Construction dans l'ordre de la liste, puis mise en ligne de fin de Sprint.
 function build(state) {
   let capacity = buildCapacity(state);
   const items = workItems(state);
   const completed = [];
+  const discoveries = [];
   for (const id of items) {
     if (capacity <= 0) break;
     if (has(state.done, id)) continue;
     const f = feature(id);
     if (f.req && !has(state.done, f.req)) continue;
-    const use = Math.min(capacity, f.cost - state.progress[id]);
+    if (state.progress[id] === 0) discover(state, id, discoveries);
+    const use = Math.min(capacity, effectiveCost(state, id) - state.progress[id]);
     state.progress[id] += use;
     state.spent += use;
     capacity -= use;
-    if (state.progress[id] >= f.cost) {
+    if (state.progress[id] >= effectiveCost(state, id)) {
       state.done.push(id);
       completed.push(id);
     }
@@ -244,6 +266,7 @@ function build(state) {
   if (state.mode === MODES.cascade) {
     const allDone = items.every((id) => has(state.done, id));
     if (allDone && capacity > 0 && state.recette < state.recetteCost) {
+      if (state.recette === 0) discover(state, 'recette', discoveries);
       const use = Math.min(capacity, state.recetteCost - state.recette);
       state.recette += use;
       state.spent += use;
@@ -259,7 +282,7 @@ function build(state) {
       state.revealed.push(id);
     }
   }
-  return { completed, launched };
+  return { completed, launched, discoveries };
 }
 
 // Nouveaux retours clients de la Sprint Review (manche 2 seulement).
@@ -289,7 +312,7 @@ export function playSprint(state) {
   next.sprint += 1;
   const sprint = next.sprint;
   const sales = earn(next, sprint);
-  const { completed, launched } = build(next);
+  const { completed, launched, discoveries } = build(next);
   const quotes = review(next);
   const events = EVENTS.filter((e) => e.after === sprint);
   for (const e of events) if (e.lastBuildSprint) next.lastBuildSprint = Math.min(next.lastBuildSprint, e.lastBuildSprint);
@@ -297,6 +320,7 @@ export function playSprint(state) {
   const progress = next.mode === MODES.cascade ? planProgress(next) : null;
   const weather = next.mode === MODES.cascade ? projectWeather(next) : null;
   next.log.push({ sprint, kind: 'sprint', completed: completed.slice(), launched, progress, weather, sales: Math.round(sales) });
+  for (const target of discoveries) next.log.push({ sprint, kind: 'discovery', target, extra: next.extra[target] });
   for (const q of quotes) next.log.push({ sprint, kind: 'quote', quote: q.id });
   for (const e of events) next.log.push({ sprint, kind: 'event', event: e.id });
 
@@ -316,6 +340,7 @@ export function playSprint(state) {
     state: next,
     report: {
       sprint, sales, completed, launched, progress, weather, quotes, events, request,
+      discoveries: discoveries.map((target) => ({ target, extra: next.extra[target] })),
       nothingLive: next.live.length === 0,
       developmentOver: developmentOver(next),
     },
@@ -434,7 +459,7 @@ export function periodWeeks(period) {
 /** Points restant à faire : lots du plan non terminés, puis recette (avenants compris). */
 export function remainingWork(state) {
   const items = workItems(state);
-  return items.reduce((sum, id) => sum + Math.max(0, feature(id).cost - state.progress[id]), 0)
+  return items.reduce((sum, id) => sum + Math.max(0, effectiveCost(state, id) - state.progress[id]), 0)
     + Math.max(0, state.recetteCost - state.recette);
 }
 
@@ -482,7 +507,7 @@ export function reviveRound(raw) {
   for (const [key, def] of Object.entries(base)) {
     const v = raw[key];
     if (Array.isArray(def)) out[key] = toArray(v);
-    else if (key === 'progress') out[key] = { ...def, ...(v ?? {}) };
+    else if (key === 'progress' || key === 'extra') out[key] = { ...def, ...(v ?? {}) };
     else out[key] = v === undefined ? def : v;
   }
   out.log = toArray(raw.log).map(reviveEntry);
@@ -508,6 +533,7 @@ export function reportFromState(state, sprint = state.sprint) {
     quotes: entries.filter((e) => e.kind === 'quote').map((e) => QUOTES.find((q) => q.id === e.quote)).filter(Boolean),
     events: entries.filter((e) => e.kind === 'event').map((e) => EVENTS.find((x) => x.id === e.event)).filter(Boolean),
     request: requestEntry ? feature(requestEntry.request) : null,
+    discoveries: entries.filter((e) => e.kind === 'discovery').map((e) => ({ target: e.target, extra: e.extra })),
     developmentOver: sprint >= buildEnd,
   };
 }
