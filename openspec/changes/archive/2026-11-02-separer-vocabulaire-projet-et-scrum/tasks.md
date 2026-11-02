@@ -14,7 +14,7 @@
 - [x] 3.2 Vérifier l'affichage à 360, 390, 1280 et 1440 px, en thème clair et sombre. Vérification : captures sans défilement horizontal.
 - [x] 3.3 Mettre à jour `README.md` (vocabulaire des manches, météo). Vérification : `npm test` au vert, `openspec validate` sans erreur.
 - [x] 3.4 Pousser sur `main` et vérifier la publication GitHub Actions. Vérification : workflow réussi et déploiement du dernier commit. Fait le 2 novembre 2026 : workflow réussi, déploiement github-pages du commit 1e2e663.
-- [ ] 3.5 Faire jouer les deux manches par l'auteur. Vérification : validation explicite de l'auteur.
+- [x] 3.5 Faire jouer les deux manches par l'auteur. Vérification : validation explicite de l'auteur. Fait le 2 novembre 2026 : l'auteur a joué et enchaîne sur la coupure budgétaire (systématique et sans préavis), traitée dans le changement suivant.
 
 ## Workflow follow-up
 
