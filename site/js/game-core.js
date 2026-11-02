@@ -179,8 +179,9 @@ export function featureState(state, id) {
 
 /**
  * Dépendance d'un élément dans une liste ordonnée (par défaut la liste travaillée) :
- * « misplaced » s'il est placé au-dessus de son prérequis non terminé (l'équipe le sautera),
- * « after » s'il est bien placé sous son prérequis non terminé, null sinon.
+ * « misplaced » s'il est placé au-dessus de son prérequis non terminé, ou si ce prérequis est lui-même
+ * « misplaced » (l'équipe le sautera, et tout ce qui en dépend avec lui) ;
+ * « after » s'il est bien placé sous un prérequis non terminé lui-même bien placé ; null sinon.
  */
 export function dependencyState(state, id, list = workItems(state)) {
   const req = feature(id).req;
@@ -188,7 +189,8 @@ export function dependencyState(state, id, list = workItems(state)) {
   const i = list.indexOf(id);
   const j = list.indexOf(req);
   if (i < 0 || j < 0) return null;
-  return j > i ? 'misplaced' : 'after';
+  if (j > i) return 'misplaced';
+  return dependencyState(state, req, list) === 'misplaced' ? 'misplaced' : 'after';
 }
 
 // Pertes de clients et ventes du Sprint `sprint`, avec ce qui est en ligne au début du Sprint.

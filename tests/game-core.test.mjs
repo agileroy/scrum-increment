@@ -506,3 +506,13 @@ test('impossibleLots : chaîne complète', () => {
   assert.deepEqual(impossibleLots(['paiement']), { paiement: 'resa' });
   assert.deepEqual(impossibleLots(['resa', 'paiement']), { resa: 'vitrine', paiement: 'vitrine' });
 });
+
+test('Rouge en chaîne : réservation avant la vitrine, paiement et livraison en rouge aussi', () => {
+  const s = { ...newRound('increment') };
+  s.order = ['resa', 'paiement', 'livraison', 'vitrine', ...s.order.filter((x) => !['resa', 'paiement', 'livraison', 'vitrine'].includes(x))];
+  assert.equal(dependencyState(s, 'resa'), 'misplaced');
+  assert.equal(dependencyState(s, 'paiement'), 'misplaced');
+  assert.equal(dependencyState(s, 'livraison'), 'misplaced');
+  assert.equal(dependencyState(s, 'cc'), 'misplaced');
+  assert.equal(dependencyState(s, 'fidelite'), 'after');
+});
