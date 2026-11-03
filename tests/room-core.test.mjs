@@ -79,3 +79,14 @@ test('chrono : temps restant et format', () => {
   assert.equal(timeLeft({ timerSeconds: 60, periodOpenedAt: 1000 }, 99000), 0);
   assert.equal(formatSeconds(125), '2:05');
 });
+
+test('Pas prête tant que le COPIL n\'a pas arbitré un projet orageux', async () => {
+  const g = await import('../site/js/game-core.js');
+  let s = g.newRound('cascade');
+  s = g.validatePlan(g.toggleInPlan(s, 'avis'));
+  s = g.playSprint(s).state; s = g.decideRequest(s, { accept: false });
+  s = g.playSprint(s).state; s = g.decideRequest(s, { accept: false });
+  assert.equal(g.needsArbitrage(s), true);
+  assert.equal(canBeReady(s), false);
+  assert.equal(canBeReady(g.keepScope(s)), true);
+});

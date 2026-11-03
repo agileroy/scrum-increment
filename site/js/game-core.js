@@ -61,6 +61,9 @@ export function newRound(mode) {
     recetteCost: RECETTE,
     pendingRequest: null,
     requests: [],
+    // Manche 1 : décisions du COPIL en cours révisables jusqu'au lancement de la période suivante.
+    periodStart: null, // { sprint, included, order, recetteCost, pendingRequest, logLength, requestsLength }
+    arbitratedAt: null, // période du dernier arbitrage (retrait de lots ou maintien du périmètre)
     launched: false,
     clientele: 1,
     cumulative: 0,
@@ -336,6 +339,10 @@ export function playSprint(state) {
   for (const e of events) next.log.push({ sprint, kind: 'event', event: e.id });
 
   const request = REQUESTS.find((r) => r.after === sprint && !developmentOver(next)) ?? null;
+  const snapshot = () => ({
+    sprint, included: next.included.slice(), order: next.order.slice(), recetteCost: next.recetteCost,
+    pendingRequest: next.pendingRequest, logLength: next.log.length, requestsLength: next.requests.length,
+  });
   if (request) {
     next.log.push({ sprint, kind: 'request', request: request.id });
     if (next.mode === MODES.cascade) {
@@ -346,6 +353,7 @@ export function playSprint(state) {
       next.log.push({ sprint, kind: 'decision', request: request.id, decision: 'backlog', removed: [] });
     }
   }
+  if (next.mode === MODES.cascade) next.periodStart = snapshot();
 
   return {
     state: next,
@@ -421,14 +429,22 @@ export function requestStatus(state, remove = []) {
   const removable = workItems(state).filter((x) => canRemove(state, x));
   const items = [...workItems(state).filter((x) => !remove.includes(x)), id];
   const status = checkPlan(items, planBudget(state, state.recetteCost + AVENANT));
+  // Prévision réelle (travail découvert compris) si la demande est acceptée ainsi, et si elle est refusée.
+  const accepted = { ...state, included: items, order: [...state.order.filter((x) => x !== id), id], recetteCost: state.recetteCost + AVENANT };
+  const left = capacityLeft(state);
+  const forecast = {
+    left,
+    accept: { remaining: remainingWork(accepted), weather: remainingWork(accepted) <= left ? 'sunny' : 'stormy' },
+    refuse: { remaining: remainingWork(state), weather: remainingWork(state) <= left ? 'sunny' : 'stormy' },
+  };
   const blocked = remove.filter((x) => !removable.includes(x));
   if (blocked.length) {
-    return { ...status, removable, valid: false, message: `« ${feature(blocked[0]).name} » est déjà commencé : ce lot ne peut plus être retiré.` };
+    return { ...status, removable, forecast, valid: false, message: `« ${feature(blocked[0]).name} » est déjà commencé : ce lot ne peut plus être retiré.` };
   }
   let message = status.message;
   if (status.over > 0) message = `Le cahier des charges dépasserait le budget de ${manDays(status.over)} : retirez des lots pas encore commencés.`;
   else if (status.valid) message = 'Le cahier des charges tient dans le budget : le COPIL peut signer l\'avenant.';
-  return { ...status, removable, message };
+  return { ...status, removable, message, forecast };
 }
 
 /**
@@ -508,6 +524,45 @@ export function descope(state, remove) {
   const next = clone(state);
   next.included = next.included.filter((x) => !remove.includes(x));
   next.log.push({ sprint: next.sprint, kind: 'descope', removed: remove.slice() });
+  next.arbitratedAt = next.sprint;
+  return next;
+}
+
+/** Manche 1 : le projet est orageux et le COPIL n'a pas encore arbitré pendant cette période. */
+export function needsArbitrage(state) {
+  return canDescope(state) && state.arbitratedAt !== state.sprint;
+}
+
+/** Manche 1 : le COPIL maintient le périmètre malgré l'orage (`reason: 'timeout'` : faute de décision). */
+export function keepScope(state, { reason = null } = {}) {
+  if (!needsArbitrage(state)) throw new Error("Aucun arbitrage n'est attendu.");
+  const next = clone(state);
+  const entry = { sprint: next.sprint, kind: 'descope', removed: [] };
+  if (reason) entry.reason = reason;
+  next.log.push(entry);
+  next.arbitratedAt = next.sprint;
+  return next;
+}
+
+/** Manche 1 : des décisions de ce COPIL (demande, arbitrage) peuvent-elles encore être revues ? */
+export function canRevise(state) {
+  const p = state.periodStart;
+  return state.mode === MODES.cascade && Boolean(p) && p.sprint === state.sprint && !state.finished
+    && state.log.length > p.logLength;
+}
+
+/** Manche 1 : annule les décisions prises depuis le dernier COPIL (la demande redevient en attente). */
+export function reviseDecisions(state) {
+  if (!canRevise(state)) throw new Error('Aucune décision à revoir.');
+  const p = state.periodStart;
+  const next = clone(state);
+  next.included = p.included.slice();
+  next.order = p.order.slice();
+  next.recetteCost = p.recetteCost;
+  next.pendingRequest = p.pendingRequest;
+  next.log = next.log.slice(0, p.logLength);
+  next.requests = next.requests.slice(0, p.requestsLength);
+  next.arbitratedAt = null;
   return next;
 }
 
@@ -573,6 +628,9 @@ export function reviveRound(raw) {
     const v = raw[key];
     if (Array.isArray(def)) out[key] = toArray(v);
     else if (key === 'progress' || key === 'extra') out[key] = { ...def, ...(v ?? {}) };
+    else if (key === 'periodStart') {
+      out[key] = v ? { ...v, included: toArray(v.included), order: toArray(v.order), pendingRequest: v.pendingRequest ?? null } : null;
+    }
     else out[key] = v === undefined ? def : v;
   }
   out.log = toArray(raw.log).map(reviveEntry);
@@ -629,7 +687,7 @@ export function decisionTrail(state) {
       if (state.mode === MODES.increment && e.completed.length) at(e.sprint).push({ kind: 'live', ids: e.completed.slice() });
     }
     if (e.kind === 'discovery') at(e.sprint).push({ kind: 'discovery', target: e.target, extra: e.extra });
-    if (e.kind === 'descope') at(e.sprint).push({ kind: 'descope', removed: e.removed.slice() });
+    if (e.kind === 'descope') at(e.sprint).push({ kind: 'descope', removed: e.removed.slice(), ...(e.reason ? { reason: e.reason } : {}) });
     if (e.kind === 'decision') {
       const fact = { kind: 'decision', request: e.request, decision: e.decision, removed: (e.removed ?? []).slice() };
       if (e.reason) fact.reason = e.reason;

@@ -112,7 +112,7 @@
           <h3 class="list-title" id="list-title"></h3>
           <p class="muted list-hint" id="list-hint"></p>
           <p class="intuition-help" id="board-intuition"></p>
-          <div class="descope-bar" id="descope-bar" hidden><p id="descope-hint"></p><button type="button" class="button button-primary" id="descope-open"></button></div>
+          <div class="descope-bar" id="descope-bar" hidden><p id="descope-hint"></p><div class="descope-actions"><button type="button" class="button button-primary" id="descope-open"></button><button type="button" class="button button-ghost" id="keep-scope"></button><button type="button" class="button button-ghost" id="revise-open"></button></div></div>
           <ol class="backlog" id="board-list"></ol>
         </div>
         <aside class="panel journal-panel">
@@ -159,30 +159,30 @@
         <h2 class="title" id="results-title">Un projet, puis Scrum : deux courbes</h2>
       </div>
       <div class="approaches" id="results-intro" hidden></div>
-      <section class="panel" aria-labelledby="debrief-title">
-        <h3 id="debrief-title"><span class="emo" aria-hidden="true">💬</span>Pour le débrief</h3>
-        <ol class="questions" id="debrief-questions">
-          <li>À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu'est-ce qui l'a permis ?</li>
-          <li>Pourquoi le Scrum Guide demande-t-il qu'un Increment soit utilisable ? Que se passe-t-il quand il ne l'est pas ?</li>
-          <li>Qu'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l'ordre du Product Backlog ?</li>
-          <li>Quand la banque a coupé le prêt, que restait-il entre vos mains dans chaque manche ?</li>
-          <li>Si la banque vous avait prévenus deux COPIL plus tôt, qu'auriez-vous fait ? Et avec Scrum, qu'est-ce que ça aurait changé ?</li>
-          <li>Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu'en pensaient vraiment ses clients ?</li>
-          <li>Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu'est-ce que ça change ?</li>
-          <li>COPIL et cahier des charges, puis Sprint Review et Product Backlog : qu'est-ce que le changement de vocabulaire a changé dans votre façon de décider ?</li>
-        </ol>
+      <section class="panel debrief-card" id="debrief" aria-labelledby="debrief-title" aria-live="polite">
+        <div class="debrief-head">
+          <h3 id="debrief-title"><span class="emo" aria-hidden="true">💬</span>Pour le débrief</h3>
+          <span class="chip" id="debrief-count"></span>
+        </div>
+        <p class="debrief-question" id="debrief-question"></p>
+        <p class="muted" id="debrief-note"></p>
+        <div class="debrief-controls" id="debrief-controls">
+          <button type="button" class="button button-ghost" id="debrief-prev">← Précédente</button>
+          <button type="button" class="button button-primary" id="debrief-reveal"></button>
+          <button type="button" class="button button-ghost" id="debrief-next">Suivante →</button>
+        </div>
       </section>
-      <section class="panel" aria-labelledby="chart-title">
+      <section class="panel" id="chart-panel" aria-labelledby="chart-title">
         <h3 id="chart-title">Ventes cumulées sur 20 semaines</h3>
         <div class="chart" id="chart"></div>
         <div class="legend" id="legend"></div>
       </section>
-      <div class="results-grid">
-        <details class="panel fold-panel" id="kpi-panel">
-          <summary><h3 id="kpi-title"><span class="emo" aria-hidden="true">📊</span>Les indicateurs</h3><span class="fold-hint" aria-hidden="true"></span></summary>
+      <div class="results-grid" id="results-grid">
+        <section class="panel" id="kpi-panel" aria-labelledby="kpi-title">
+          <h3 id="kpi-title"><span class="emo" aria-hidden="true">📊</span>Les indicateurs</h3>
           <div class="table-wrap"><table id="kpi"></table></div>
-        </details>
-        <section class="panel" aria-labelledby="truth-title">
+        </section>
+        <section class="panel" id="truth-panel" aria-labelledby="truth-title">
           <h3 id="truth-title">Intuition contre réalité</h3>
           <div class="table-wrap"><table id="truth"></table></div>
         </section>

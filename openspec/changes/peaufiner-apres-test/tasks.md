@@ -29,6 +29,9 @@
 - [x] 4.5 Valeur révélée : liste chiffrée dans la Sprint Review, badge dans le Product Backlog
 - [x] 4.6 Étoiles devant la légende de l'intuition dans le tableau
 - [x] 4.7 Textes : ordinateur d'abord, téléphone en dépannage
+- [x] 4.8 Arbitrage obligatoire quand orageux (maintien possible, d'office au lancement) ; prévision réelle dans la demande
+- [x] 4.9 Décisions du COPIL révisables ; « Nous ne sommes plus prêts » les rouvre
+- [x] 4.10 Débrief question par question, indicateurs liés, révélation pilotée par le formateur (règles Firebase : debriefStep, debriefShown dans les 7 dépôts)
 
 ## 5. Vérifications
 

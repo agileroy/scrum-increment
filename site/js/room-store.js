@@ -3,7 +3,7 @@
 // contraintes côté base. Toute action d'équipe est une transaction sur l'état de l'équipe.
 
 import {
-  newRound, reviveRound, playSprint, finishRound, decideRequest, developmentOver,
+  newRound, reviveRound, playSprint, finishRound, decideRequest, developmentOver, needsArbitrage, keepScope,
 } from './game-core.js?v=__VERSION__';
 import {
   ROOM_TTL_MS, TIMER_CHOICES, MAX_PLAYERS, generateCode, isValidCode, normalizeCode, normalizeName, validateName,
@@ -133,6 +133,7 @@ export function createRoomStore(db, { random = cryptoRandom } = {}) {
           let s = reviveRound(raw);
           if (s.sprint !== period || s.finished) return undefined;
           if (s.pendingRequest) s = decideRequest(s, { accept: false, reason: 'timeout' });
+          if (needsArbitrage(s)) s = keepScope(s, { reason: 'timeout' }); // orage sans arbitrage : périmètre maintenu d'office
           s = playSprint(s).state;
           if (developmentOver(s)) s = finishRound(s).state;
           return s;
@@ -148,6 +149,11 @@ export function createRoomStore(db, { random = cryptoRandom } = {}) {
 
     reveal(code) {
       return db.set(`${roomPath(code)}/meta/status`, 'revealed');
+    },
+
+    /** Débrief piloté par le formateur : question affichée et indicateurs révélés ou non. */
+    setDebrief(code, step, shown) {
+      return db.update(`${roomPath(code)}/meta`, { debriefStep: step, debriefShown: shown });
     },
 
     // ------------------------------------------------------------ Participant

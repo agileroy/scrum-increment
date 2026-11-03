@@ -47,8 +47,17 @@ const cascade = {
   descopeIntro: (remaining, left) => `Reste à faire : ${jh(remaining)}. Temps restant jusqu'à la fin prévue : ${jh(left)}. Le COPIL peut retirer du cahier des charges des lots pas encore commencés, avec l'accord de la boulangère.`,
   descopeGauge: 'Reste à faire après l\'arbitrage',
   descopeConfirm: 'Retirer ces lots',
-  descopeHint: 'Le projet est orageux : le COPIL peut arbitrer et retirer des lots pas encore commencés.',
-  descopeLog: (removed) => `Arbitrage du COPIL : ${names(removed)} ${removed.length > 1 ? 'retirés' : 'retiré'} du cahier des charges.`,
+  descopeHint: 'Le projet est orageux : le COPIL devra arbitrer, en retirant des lots pas encore commencés ou en maintenant le périmètre.',
+  descopeLog: (removed, reason) => {
+    if (removed.length) return `Arbitrage du COPIL : ${names(removed)} ${removed.length > 1 ? 'retirés' : 'retiré'} du cahier des charges.`;
+    return reason === 'timeout' ? 'Arbitrage du COPIL : périmètre maintenu faute de décision.' : "Arbitrage du COPIL : périmètre maintenu malgré l'orage.";
+  },
+  keepButton: 'Maintenir le périmètre',
+  reviseButton: 'Revoir les décisions de ce COPIL',
+  arbitrageNeeded: "Le projet est orageux : le reste à faire dépasse le temps restant. Le COPIL doit arbitrer avant de continuer : retirer des lots pas encore commencés, ou maintenir le périmètre.",
+  arbitrageMore: 'Le projet reste orageux : le COPIL peut encore retirer des lots pas encore commencés.',
+  arbitrageBar: 'Arbitrez d\'abord : le projet est orageux.',
+  forecast: (label, weather, remaining, left) => `${label} : reste à faire ${jh(remaining)} pour ${jh(left)} de temps restant, ${weather === 'sunny' ? 'projet ensoleillé ☀️' : 'projet orageux ⛈️, le COPIL devra arbitrer'}.`,
   approach: 'Vous optez pour une démarche projet : un cahier des charges complet, signé avant de commencer, et un COPIL toutes les deux semaines pour suivre l\'avancement.',
   intuitionHelp: "Intuition : ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles. C'est son avis, pas une mesure.",
   requestFits: (r) => `Accepter, c'est signer un avenant : ${jh(r.cost)} de lot et ${jh(AVENANT)} de recette en plus. Le cahier des charges garde assez de marge : rien à retirer.`,
@@ -164,7 +173,7 @@ export function logEntry(mode, entry) {
     case 'request': { const r = feature(entry.request); return { kind: 'request', label: `Demande de ${lex.stakeholder}`, text: `${r.name} : « ${r.ask} »` }; }
     case 'decision': return { kind: 'decision', text: lex.decision(entry) };
     case 'discovery': return { kind: 'discovery', label: 'Travail sous-estimé', text: discoveryText(mode, entry) };
-    case 'descope': return { kind: 'decision', text: lex.descopeLog(entry.removed) };
+    case 'descope': return { kind: 'decision', text: lex.descopeLog(entry.removed, entry.reason) };
     default: throw new Error(`Entrée de journal inconnue : ${entry.kind}`);
   }
 }
@@ -186,7 +195,7 @@ export function trailText(mode, fact) {
     case 'live': return `Mis en ligne : ${names(fact.ids)}.`;
     case 'moved': return `« ${name(fact.id)} » ${fact.to < fact.from ? 'remontée' : 'descendue'} du rang ${fact.from} au rang ${fact.to}.`;
     case 'discovery': return `Travail sous-estimé : ${fact.target === 'recette' ? lex.recetteName : name(fact.target)} (+${lex.sizeLong(fact.extra)}).`;
-    case 'descope': return lex.descopeLog(fact.removed);
+    case 'descope': return lex.descopeLog(fact.removed, fact.reason);
     case 'decision': return lex.decision(fact);
     default: throw new Error(`Fait inconnu : ${fact.kind}`);
   }

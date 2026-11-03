@@ -5,6 +5,7 @@ import {
   roundResults, canMove, featureState, developmentOver, truthTable,
   requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, moveFeatureTo, periodWeeks, projectWeather, planStatus as status,
   effectiveCost, underestimate, canDescope, descopeStatus, descope, decisionTrail,
+  needsArbitrage, keepScope, canRevise, reviseDecisions, reviveRound,
 } from '../site/js/game-core.js';
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
@@ -650,4 +651,60 @@ test('Arbitrage : lot commencé, prérequis cassé ou rien de coché sont refus�
   assert.equal(descopeStatus(s, ['resa']).valid, false);
   assert.throws(() => descope(s, ['paiement']));
   assert.match(descopeStatus(s, ['livraison']).message, /soleil|orageux/);
+});
+
+test('Arbitrage obligatoire à l\'orage : retirer des lots ou maintenir le périmètre', () => {
+  let s = cascadeWithoutReviews();
+  s = sprint(sprint(s).state).state; // COPIL 2 : orage, demande refusée
+  assert.equal(needsArbitrage(s), true);
+  const kept = keepScope(s);
+  assert.equal(needsArbitrage(kept), false);
+  assert.equal(canDescope(kept), true); // on peut encore retirer des lots
+  assert.ok(kept.log.some((e) => e.kind === 'descope' && e.removed.length === 0));
+  const cut = descope(s, ['livraison']);
+  assert.equal(needsArbitrage(cut), false);
+  assert.throws(() => keepScope(newRound('increment')));
+});
+
+test('Revoir les décisions du COPIL : la demande redevient en attente, l\'arbitrage est annulé', () => {
+  let s = cascadeWithoutReviews();
+  s = playSprint(sprint(s).state).state; // COPIL 2 : demande « promos » en attente
+  assert.equal(s.pendingRequest, 'promos');
+  assert.equal(canRevise(s), false);
+  const decided = decideRequest(s, { accept: true, remove: ['livraison'] });
+  const arbitrated = needsArbitrage(decided) ? keepScope(decided) : decided;
+  assert.equal(canRevise(arbitrated), true);
+  const back = reviseDecisions(arbitrated);
+  assert.equal(back.pendingRequest, 'promos');
+  assert.deepEqual(back.included, s.included);
+  assert.equal(back.recetteCost, s.recetteCost);
+  assert.equal(back.log.length, s.log.length);
+  assert.equal(back.requests.length, s.requests.length);
+  assert.equal(back.arbitratedAt, null);
+  // relu depuis la base (Firebase) : l'instantané survit
+  assert.equal(canRevise(reviveRound(JSON.parse(JSON.stringify(arbitrated)))), true);
+  // après la période suivante, plus rien à revoir
+  assert.equal(canRevise(playSprint(arbitrated).state), false);
+});
+
+test('Demande : la prévision tient compte du travail découvert, pas seulement du budget', () => {
+  let s = cascadeWith(['vitrine', 'resa', 'paiement', 'alerte', 'gateaux', 'cc', 'fidelite', 'avis']);
+  s = playSprint(sprint(s).state).state; // COPIL 2 : paiement découvert (+6), demande « promos »
+  assert.equal(projectWeather(s), 'sunny');
+  const st = requestStatus(s, []);
+  assert.equal(st.valid, true); // le contrat tient…
+  assert.equal(st.forecast.accept.weather, 'stormy'); // …mais le projet serait orageux
+  assert.ok(st.forecast.accept.remaining > st.forecast.left);
+});
+
+test('Manche 2 : un élément terminé est figé ; un élément en cours redescendu attend les éléments au-dessus', () => {
+  let s = playSprint(newRound('increment')).state; // vitrine en ligne, réservation à 5 sur 8
+  assert.equal(canMove(s, 'vitrine'), false);
+  assert.equal(canMove(s, 'resa'), true);
+  s = moveFeatureTo(s, 'resa', s.order.indexOf('avis'));
+  const r = playSprint(s);
+  // fidélité (7) puis avis (3) prennent les 10 points ; paiement et livraison, qui attendent la réservation, sont sautés
+  assert.equal(r.state.progress.resa, 5);
+  assert.equal(r.state.progress.fidelite, 7);
+  assert.equal(r.state.progress.avis, 3);
 });

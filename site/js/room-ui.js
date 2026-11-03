@@ -10,7 +10,7 @@ import {
   MAX_TEAMS, MIN_TEAMS, TIMER_CHOICES, isValidCode, normalizeCode, teamName, teamMode, teamNumbers, teamMembers,
   isConnected, isReady, canBeReady, planReady, timeLeft, formatSeconds,
 } from './room-core.js?v=__VERSION__';
-import { MODES, reportFromState, finishSummary, roundResults, periodWeeks, decisionTrail } from './game-core.js?v=__VERSION__';
+import { MODES, reportFromState, finishSummary, roundResults, periodWeeks, decisionTrail, needsArbitrage, canRevise } from './game-core.js?v=__VERSION__';
 import { lexicon, trailText, trailPeriod, STORY } from './vocabulary.js?v=__VERSION__';
 import { PLANNED_SPRINTS, HORIZON_WEEKS } from './scenario.js?v=__VERSION__';
 import { formatEuro } from './chart.js?v=__VERSION__';
@@ -24,16 +24,17 @@ const APPROACH = {
   [MODES.increment]: { short: 'Scrum', long: 'Scrum, un incrément à chaque Sprint' },
 };
 
+// Débrief en salle : une question à la fois, les indicateurs liés révélés par le formateur après la discussion.
 const DEBRIEF_TEAMS = [
-  'À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque équipe ? Qu\'est-ce qui l\'a permis ?',
-  'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?',
-  'Équipes Scrum : qu\'ont appris vos Sprint Reviews ? Comment ont-elles changé l\'ordre du Product Backlog ?',
-  'Quand la banque a coupé le prêt, que restait-il entre les mains de chaque équipe ?',
-  'Équipes projet : si la banque vous avait prévenus deux COPIL plus tôt, qu\'auriez-vous fait ? Équipes Scrum : qu\'est-ce que ça aurait changé pour vous ?',
-  'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?',
-  'Face aux demandes de Mme Lefèvre, les équipes projet ont décidé sur des opinions, les équipes Scrum avec des retours clients. Qu\'est-ce que ça change ?',
-  'Vous ne parliez pas la même langue : COPIL et cahier des charges d\'un côté, Sprint Review et Product Backlog de l\'autre. Qu\'est-ce que le vocabulaire a changé dans votre façon de décider ?',
-  'Comment votre équipe a-t-elle décidé ensemble, chacun sur son écran ?',
+  { text: 'À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque équipe ? Qu\'est-ce qui l\'a permis ?', show: { chart: true, kpi: ['first', 'invested'] } },
+  { text: 'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?', show: { kpi: ['first', 'invested', 'live'] } },
+  { text: 'Équipes Scrum : qu\'ont appris vos Sprint Reviews ? Comment ont-elles changé l\'ordre du Product Backlog ?', show: { truth: true, decisions: true } },
+  { text: 'Quand la banque a coupé le prêt, que restait-il entre les mains de chaque équipe ?', show: { chart: true, kpi: ['live', 'cumulative'] } },
+  { text: 'Équipes projet : si la banque vous avait prévenus deux COPIL plus tôt, qu\'auriez-vous fait ? Équipes Scrum : qu\'est-ce que ça aurait changé pour vous ?', show: { chart: true } },
+  { text: 'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?', show: { truth: true, kpi: ['lowUse'] } },
+  { text: 'Face aux demandes de Mme Lefèvre, les équipes projet ont décidé sur des opinions, les équipes Scrum avec des retours clients. Qu\'est-ce que ça change ?', show: { kpi: ['requests', 'lowUse'], decisions: true } },
+  { text: 'Vous ne parliez pas la même langue : COPIL et cahier des charges d\'un côté, Sprint Review et Product Backlog de l\'autre. Qu\'est-ce que le vocabulaire a changé dans votre façon de décider ?', show: {} },
+  { text: 'Comment votre équipe a-t-elle décidé ensemble, chacun sur son écran ?', show: { decisions: true } },
 ];
 
 /* ---------------------------------------------------------------- Outils */
@@ -127,7 +128,6 @@ export async function startRoomMode() {
   let backstage = false;          // coulisses du formateur : fermées par défaut, à ne pas projeter
   let feed = [];                  // fil neutre de la salle : [{ at, text }]
   let seenRoom = null;            // dernier état observé, pour déduire le fil neutre
-  const soloQuestions = $('debrief-questions').innerHTML;
 
   if (!offline) store.onConnection((connected) => {
     everConnected ||= connected;
@@ -177,7 +177,6 @@ export async function startRoomMode() {
     $('me-name').hidden = true;
     $('timer-chip').hidden = true;
     $('replay').hidden = false;
-    $('debrief-questions').innerHTML = soloQuestions;
     $('decisions').hidden = true;
     backstage = false;
     feed = [];
@@ -591,6 +590,8 @@ export async function startRoomMode() {
     const period = meta.period ?? 0;
     const ready = isReady(team, period);
     const l = lexicon(state.mode);
+    // Décisions rouvertes (demande ou arbitrage) : l'équipe n'est plus prête.
+    if (ready && meta.status === 'playing' && !state.finished && !canBeReady(state)) store.setReady(code, n, room, false);
     const button = $('team-ready');
     let status;
     if (state.finished || meta.status !== 'playing') {
@@ -601,6 +602,9 @@ export async function startRoomMode() {
       button.hidden = true;
     } else if (state.pendingRequest) {
       status = `Tranchez la demande de ${l.stakeholder}.`;
+      button.hidden = true;
+    } else if (needsArbitrage(state)) {
+      status = l.arbitrageBar;
       button.hidden = true;
     } else {
       button.hidden = false;
@@ -620,6 +624,8 @@ export async function startRoomMode() {
     const ready = !$('team-ready').dataset.ready;
     if (ready && !canBeReady(app.round)) return;
     store.setReady(code, n, room, ready);
+    // « Nous ne sommes plus prêts » : les décisions de ce COPIL redeviennent modifiables.
+    if (!ready && canRevise(app.round)) ui.revise();
   });
 
   $('role-ok').addEventListener('click', () => {
@@ -645,12 +651,17 @@ export async function startRoomMode() {
       });
     }
     if (!columns.length) { showWait({ title: 'Résultats indisponibles', text: 'Aucune équipe n\'a terminé son projet.' }); return; }
-    const intro = `<h3>Deux façons de travailler, sans que vous le sachiez</h3><ul class="approach-list">${columns.map((c) => `<li class="team-tone-${c.team}"><span class="swatch" aria-hidden="true"></span><strong>${esc(teamName(c.team))}</strong> : ${esc(APPROACH[teamMode(c.team)].long)}</li>`).join('')}</ul>`;
+    const intro = `<h3>Deux façons de travailler</h3><ul class="approach-list">${columns.map((c) => `<li class="team-tone-${c.team}"><span class="swatch" aria-hidden="true"></span><strong>${esc(teamName(c.team))}</strong> : ${esc(APPROACH[teamMode(c.team)].long)}</li>`).join('')}</ul>`;
     // keepScroll : pas de retour en haut de page à chaque mise à jour de la salle
-    ui.renderComparison(columns, { title: `Résultats : ${plural(columns.length, 'équipe')}, deux façons de travailler`, intro, keepScroll: true });
-    $('debrief-questions').innerHTML = DEBRIEF_TEAMS.map((q) => `<li>${esc(q)}</li>`).join('');
-    $('decisions').hidden = false;
+    // Débrief piloté par le formateur : l'étape et la révélation viennent de la salle, pour tous les écrans.
+    const presenter = room.meta.hostUid === uid;
+    const debrief = {
+      questions: DEBRIEF_TEAMS, teams: true, presenter,
+      step: room.meta.debriefStep ?? 0, shown: Boolean(room.meta.debriefShown),
+      onChange: presenter ? ({ step, shown }) => store.setDebrief(code, step, shown) : null,
+    };
     $('decisions-body').innerHTML = columns.map((c) => `<details class="panel team-card team-tone-${c.team}" open><summary><h4>${esc(teamName(c.team))} · ${esc(APPROACH[teamMode(c.team)].short)}</h4></summary>${trailHtml(c.team)}</details>`).join('');
+    ui.renderComparison(columns, { title: `Résultats : ${plural(columns.length, 'équipe')}, deux façons de travailler`, intro, keepScroll: true, debrief });
   }
 
   /* ------------------------------------------------------------ Entrée */

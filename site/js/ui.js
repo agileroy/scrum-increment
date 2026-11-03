@@ -7,7 +7,7 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, canDescope, descopeStatus, descope, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
+  requestStatus, decideRequest, isRequest, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
 import { EURO_PER_POINT, MAN_DAYS_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
 import { lexicon, logEntry, exploitationText, discoveryText, STORY, SPEAKER } from './vocabulary.js?v=__VERSION__';
@@ -204,10 +204,23 @@ function renderBoard() {
   $('list-title').textContent = l.listTitle;
   $('list-hint').textContent = l.listHint;
   $('board-intuition').innerHTML = `${stars(3, true)} ${esc(l.intuitionHelp)}`;
-  // Manche 1 : arbitrage du COPIL quand le reste à faire dépasse le temps restant.
-  const arbitrage = cascade && canDescope(s);
-  $('descope-bar').hidden = !arbitrage;
-  if (arbitrage) { $('descope-hint').textContent = l.descopeHint; $('descope-open').textContent = l.descopeButton; }
+  // Manche 1 : arbitrage du COPIL quand le reste à faire dépasse le temps restant, et décisions révisables.
+  const need = cascade && needsArbitrage(s);
+  const more = cascade && !need && canDescope(s);
+  const revise = cascade && canRevise(s);
+  $('descope-bar').hidden = !(need || more || revise);
+  $('descope-bar').classList.toggle('is-calm', !need && !more);
+  if (cascade) {
+    $('descope-hint').textContent = need ? l.arbitrageNeeded : more ? l.arbitrageMore : '';
+    $('descope-hint').hidden = !(need || more);
+    $('descope-open').textContent = l.descopeButton;
+    $('descope-open').hidden = !(need || more);
+    $('keep-scope').textContent = l.keepButton;
+    $('keep-scope').hidden = !need;
+    $('revise-open').textContent = l.reviseButton;
+    $('revise-open').hidden = !revise;
+  }
+  $('play-sprint').disabled = need;
   $('journal-title').textContent = l.journalTitle;
   const tiles = l.stats(s, {
     weather: cascade ? projectWeather(s) : null,
@@ -346,6 +359,9 @@ function requestHtml() {
   h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${ratio(st.total, st.budget)}</span></div>`;
   h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
   h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
+  // Le budget du contrat ne dit pas tout : la prévision tient compte du travail découvert.
+  const fc = st.forecast;
+  h += `<ul class="forecast"><li class="${fc.accept.weather}">${esc(l.forecast('Si vous acceptez ainsi', fc.accept.weather, fc.accept.remaining, fc.left))}</li><li class="${fc.refuse.weather}">${esc(l.forecast('Si vous refusez', fc.refuse.weather, fc.refuse.remaining, fc.left))}</li></ul>`;
   const broken = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
   if (broken.length) h += `<p class="item-alert">Deviendraient impossibles : ${broken.map((id) => esc(feature(id).name)).join(', ')}</p>`;
   h += st.removable.length
@@ -382,6 +398,12 @@ function decide(accept) {
 }
 
 /* ---------------------------------------------------------------- Arbitrage du COPIL (manche 1) */
+
+/** Revoir les décisions de ce COPIL : la demande éventuelle redevient en attente et sa fenêtre se rouvre. */
+function revise() {
+  if (!act((s) => (canRevise(s) ? reviseDecisions(s) : s), renderBoard)) return;
+  if (app.round.pendingRequest) { closeDialog(); app.remove = []; openRequestDialog(); }
+}
 
 function descopeHtml() {
   const s = app.round;
@@ -439,25 +461,85 @@ function closeDialog() {
 
 const firstWeek = (period) => periodWeeks(period)[0];
 
+/**
+ * Questions de débrief du solo. `show` : ce qui se révèle après la discussion
+ * (chart : la courbe ; kpi : lignes d'indicateurs ; truth : intuition contre réalité ; decisions : décisions des équipes).
+ */
+export const DEBRIEF_SOLO = [
+  { text: 'À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu\'est-ce qui l\'a permis ?', show: { chart: true, kpi: ['first', 'invested'] } },
+  { text: 'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?', show: { kpi: ['first', 'invested', 'live'] } },
+  { text: 'Qu\'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l\'ordre du Product Backlog ?', show: { truth: true } },
+  { text: 'Quand la banque a coupé le prêt, que restait-il entre vos mains dans chaque manche ?', show: { chart: true, kpi: ['live', 'cumulative'] } },
+  { text: 'Si la banque vous avait prévenus deux COPIL plus tôt, qu\'auriez-vous fait ? Et avec Scrum, qu\'est-ce que ça aurait changé ?', show: { chart: true } },
+  { text: 'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?', show: { truth: true, kpi: ['lowUse'] } },
+  { text: 'Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu\'est-ce que ça change ?', show: { kpi: ['requests', 'lowUse'] } },
+  { text: 'COPIL et cahier des charges, puis Sprint Review et Product Backlog : qu\'est-ce que le changement de vocabulaire a changé dans votre façon de décider ?', show: {} },
+];
+
+const ALL_SHOWN = { chart: true, kpi: ['first', 'invested', 'live', 'lowUse', 'requests', 'cumulative'], truth: true, decisions: true };
+
+/** Le débrief en cours : { questions, step, shown, presenter, onChange({ step, shown }) }. */
+app.debrief = null;
+
+/** Applique l'étape du débrief : la question, puis seulement les indicateurs liés, une fois révélés. */
+function renderDebrief() {
+  const d = app.debrief;
+  if (!d) return;
+  const count = d.questions.length;
+  const step = Math.max(0, Math.min(d.step ?? 0, count));
+  const overview = step === count;
+  const q = overview ? null : d.questions[step];
+  const show = overview ? ALL_SHOWN : q.show;
+  const hasShow = Boolean(show.chart || show.truth || show.decisions || show.kpi?.length);
+  const visible = overview || (d.shown && hasShow);
+  $('debrief-count').textContent = overview ? 'Vue d\'ensemble' : `Question ${step + 1} sur ${count}`;
+  $('debrief-question').textContent = overview ? 'Tous les indicateurs, pour conclure.' : q.text;
+  let note = '';
+  if (!overview && !hasShow) note = 'Pas d\'indicateur pour cette question : place à la discussion.';
+  else if (!overview && !d.shown) note = d.presenter ? 'Lancez la discussion, puis révélez les indicateurs.' : 'Les indicateurs apparaîtront après votre discussion.';
+  $('debrief-note').textContent = note;
+  $('debrief-note').hidden = !note;
+  $('debrief-controls').hidden = !d.presenter;
+  $('debrief-prev').disabled = step === 0;
+  $('debrief-next').disabled = overview;
+  $('debrief-next').textContent = step === count - 1 ? 'Vue d\'ensemble →' : 'Suivante →';
+  $('debrief-reveal').hidden = overview || !hasShow;
+  $('debrief-reveal').textContent = d.shown ? 'Masquer les indicateurs' : '📊 Révéler les indicateurs';
+  $('chart-panel').hidden = !(visible && show.chart);
+  if (visible && show.chart) drawChart();
+  const kpi = visible ? (show.kpi ?? []) : [];
+  $('kpi-panel').hidden = !kpi.length;
+  for (const row of $('kpi').querySelectorAll('tr[data-kpi]')) row.hidden = !kpi.includes(row.dataset.kpi);
+  $('truth-panel').hidden = !(visible && show.truth);
+  $('decisions').hidden = !(visible && show.decisions && d.teams);
+  $('results-grid').hidden = $('kpi-panel').hidden && $('truth-panel').hidden;
+}
+
+function changeDebrief(patch) {
+  const d = app.debrief;
+  if (!d?.presenter) return;
+  Object.assign(d, patch);
+  renderDebrief();
+  d.onChange?.({ step: d.step, shown: d.shown });
+}
+
 function renderResults() {
   const a = app.results[MODES.cascade];
   const b = app.results[MODES.increment];
   renderComparison([
     { kind: 1, label: 'Manche 1 : projet, une livraison à la fin', head: 'Manche 1 · Projet', results: a },
     { kind: 2, label: 'Manche 2 : Scrum, un incrément à chaque Sprint', head: 'Manche 2 · Scrum', results: b },
-  ], { title: 'Un projet, puis Scrum : deux courbes' });
+  ], { title: 'Un projet, puis Scrum : deux courbes', debrief: { questions: DEBRIEF_SOLO, step: 0, shown: false, presenter: true } });
 }
 
 /**
  * Écran de résultats : une courbe et une colonne d'indicateurs par entrée de `columns`
  * ([{ kind: 1 | 2, label, head, results, team? }]), dans l'ordre donné.
  */
-function renderComparison(columns, { title, intro = '', keepScroll = false }) {
+function renderComparison(columns, { title, intro = '', keepScroll = false, debrief }) {
   const series = columns.map((c) => ({ kind: c.kind, label: c.label, values: c.results.curve, team: c.team }));
   const frontier = columns[0].results.lastBuildSprint;
   app.chart = { series, frontier, periods: columns[0].results.curve.map((_, i) => i + 1) };
-  // Indicateurs pliés à chaque arrivée sur les résultats : les chiffres ne doivent pas lancer le débat.
-  if ($('screen-results').hidden) $('kpi-panel').open = false;
   $('results-title').textContent = title;
   $('results-intro').innerHTML = intro;
   $('results-intro').hidden = !intro;
@@ -467,19 +549,23 @@ function renderComparison(columns, { title, intro = '', keepScroll = false }) {
   const invested = (r) => `${formatEuro(r.invested)}${r.neverSold ? ' (sans retour)' : ''}`;
   const low = (r) => (r.liveAtEnd.length ? `${r.lowUse.length} sur ${r.liveAtEnd.length}` : '—');
   const rows = [
-    ['Premier euro encaissé', first],
-    ['Investi avant le premier euro', invested],
-    ['Fonctionnalités en ligne à la fin du projet', (r) => r.liveAtEnd.length],
-    ['Fonctionnalités en ligne peu utilisées', low],
-    ['Demandes de Mme Lefèvre mises en ligne', (r) => r.requestsLive.length],
-    [`Ventes cumulées après ${HORIZON_WEEKS} semaines`, (r) => `<strong>${formatEuro(r.cumulative)}</strong>`],
+    ['first', 'Premier euro encaissé', first],
+    ['invested', 'Investi avant le premier euro', invested],
+    ['live', 'Fonctionnalités en ligne à la fin du projet', (r) => r.liveAtEnd.length],
+    ['lowUse', 'Fonctionnalités en ligne peu utilisées', low],
+    ['requests', 'Demandes de Mme Lefèvre mises en ligne', (r) => r.requestsLive.length],
+    ['cumulative', `Ventes cumulées après ${HORIZON_WEEKS} semaines`, (r) => `<strong>${formatEuro(r.cumulative)}</strong>`],
   ];
   $('kpi').innerHTML = `<thead><tr><th scope="col"><span hidden>Indicateur</span></th>${columns.map((c) => `<th scope="col">${esc(c.head)}</th>`).join('')}</tr></thead><tbody>`
-    + rows.map(([label, cell]) => `<tr><th scope="row">${label}</th>${columns.map((c) => `<td>${cell(c.results)}</td>`).join('')}</tr>`).join('') + '</tbody>';
+    + rows.map(([key, label, cell]) => `<tr data-kpi="${key}"><th scope="row">${label}</th>${columns.map((c) => `<td>${cell(c.results)}</td>`).join('')}</tr>`).join('') + '</tbody>';
   $('kpi').classList.toggle('kpi-wide', columns.length > 2);
   $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th></tr></thead><tbody>'
     + truthTable().map((t) => `<tr><td>${emo(feature(t.id).icon)}${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
+  // Débrief : à l'arrivée sur les résultats, on repart de la première question, indicateurs cachés ;
+  // ensuite, seul le présentateur fait avancer (en salle, l'étape vient de la salle).
+  if (debrief) app.debrief = { ...debrief };
   show('results', { keepScroll });
+  renderDebrief();
 }
 
 function drawChart() {
@@ -664,6 +750,8 @@ export function init() {
 
   $('play-sprint').addEventListener('click', () => { if (!app.session) onPlaySprint(); });
   $('descope-open').addEventListener('click', () => { if (canDescope(app.round)) openDescopeDialog(); });
+  $('keep-scope').addEventListener('click', () => { act((s) => (needsArbitrage(s) ? keepScope(s) : s), renderBoard); });
+  $('revise-open').addEventListener('click', revise);
 
   $('start-round-2').addEventListener('click', () => {
     app.round = newRound(MODES.increment);
@@ -699,6 +787,9 @@ export function init() {
   // Échap ne doit pas trancher une demande de changement à la place du joueur.
   dialog.addEventListener('cancel', (e) => { if (app.round?.pendingRequest && !app.afterDialog) e.preventDefault(); });
   compactQuery.addEventListener('change', drawChart);
+  $('debrief-prev').addEventListener('click', () => changeDebrief({ step: Math.max(0, app.debrief.step - 1), shown: false }));
+  $('debrief-next').addEventListener('click', () => changeDebrief({ step: Math.min(app.debrief.questions.length, app.debrief.step + 1), shown: false }));
+  $('debrief-reveal').addEventListener('click', () => changeDebrief({ shown: !app.debrief.shown }));
   // Fermer la fenêtre (bouton ou Échap) poursuit toujours la partie.
   dialog.addEventListener('close', () => {
     if (app.silentCloses > 0) { app.silentCloses -= 1; return; }
@@ -713,6 +804,6 @@ export function init() {
 
 /** Ce que room-ui.js réutilise pour le jeu d'une équipe et les résultats collectifs. */
 export const ui = {
-  app, $, esc, plural, show, act, speechHtml, refreshDescopeDialog, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
+  app, $, esc, plural, show, act, speechHtml, refreshDescopeDialog, revise, renderDebrief, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
   openRequestDialog, refreshRequestDialog, renderComparison, isDragging: () => Boolean(drag),
 };

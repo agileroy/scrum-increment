@@ -1,3 +1,23 @@
+## MODIFIED Requirements
+
+### Requirement: Nous sommes prêts
+Pendant la réflexion d'une période, chaque écran SHALL proposer « Nous sommes prêts », qui signale au formateur que l'équipe a fini, et « Nous ne sommes plus prêts » pour revenir dessus. Une équipe « projet » SHALL d'abord valider son cahier des charges pour se déclarer prête à la première période, trancher sa demande de changement en attente, et arbitrer quand le projet est orageux. « Nous ne sommes plus prêts » SHALL rouvrir les décisions du COPIL en cours (la demande de changement se rouvre) ; une équipe dont les décisions sont rouvertes n'est plus prête. Le lancement de la période par le formateur se fait sans attendre l'équipe ; les écrans SHALL l'indiquer (« En attente du formateur »).
+
+#### Scenario: Prêts
+- **GIVEN** l'équipe Croissant, cahier des charges validé
+- **WHEN** un membre appuie sur « Nous sommes prêts »
+- **THEN** l'écran du formateur montre l'équipe Croissant comme prête
+
+#### Scenario: Revenir sur une demande
+- **GIVEN** l'équipe Croissant prête, après avoir accepté une demande au COPIL 2
+- **WHEN** un membre appuie sur « Nous ne sommes plus prêts »
+- **THEN** la fenêtre de la demande se rouvre pour toute l'équipe
+
+#### Scenario: Arbitrage avant d'être prêts
+- **GIVEN** l'équipe Croissant, projet orageux, sans arbitrage
+- **WHEN** un membre veut se déclarer prêt
+- **THEN** le bouton n'est pas proposé et l'écran indique « Arbitrez d'abord : le projet est orageux. »
+
 ## ADDED Requirements
 
 ### Requirement: Contexte de la mission
@@ -14,7 +34,7 @@ Dès l'attente de la salle, l'écran d'un participant SHALL raconter le contexte
 - **THEN** la présentation du rôle de Product Owner commence par le contexte, suivi de « Vous optez pour Scrum »
 
 ### Requirement: Arbitrage en équipe
-Dans une équipe projet, tout membre SHALL pouvoir ouvrir l'arbitrage quand il est possible et retirer des lots pour toute l'équipe, avec les mêmes règles qu'en solo. La fenêtre ouverte chez un coéquipier SHALL suivre l'état partagé et se fermer quand l'arbitrage n'est plus possible.
+Dans une équipe projet, tout membre SHALL pouvoir arbitrer (retirer des lots ou maintenir le périmètre) pour toute l'équipe, avec les mêmes règles qu'en solo ; au lancement de la période suivante, un arbitrage attendu et non fait vaut maintien du périmètre. La fenêtre ouverte chez un coéquipier SHALL suivre l'état partagé et se fermer quand l'arbitrage n'est plus possible.
 
 #### Scenario: Arbitrage par un coéquipier
 - **GIVEN** deux membres de Croissant, la fenêtre d'arbitrage ouverte chez les deux

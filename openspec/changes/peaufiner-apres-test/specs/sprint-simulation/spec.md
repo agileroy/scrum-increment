@@ -34,7 +34,7 @@ Après le dernier Sprint de développement, le moteur SHALL simuler des période
 ## ADDED Requirements
 
 ### Requirement: Arbitrage du périmètre (manche 1)
-En manche 1, entre deux COPIL, quand le reste à faire dépasse la capacité restante jusqu'à la fin prévue (météo orageuse) et qu'aucune demande n'attend, le moteur SHALL permettre de retirer du cahier des charges des lots qui n'ont reçu aucun point. Le retrait MUST NOT être possible pour un lot commencé, ni s'il laisse un lot sans son prérequis, ni quand le projet est ensoleillé. Le moteur SHALL donner, pour un retrait envisagé, le reste à faire, la capacité restante et la météo qui en résulteraient, et journaliser l'arbitrage.
+En manche 1, entre deux COPIL, quand le reste à faire dépasse la capacité restante jusqu'à la fin prévue (météo orageuse) et qu'aucune demande n'attend, le moteur SHALL permettre de retirer du cahier des charges des lots qui n'ont reçu aucun point. Le retrait MUST NOT être possible pour un lot commencé, ni s'il laisse un lot sans son prérequis, ni quand le projet est ensoleillé. Le moteur SHALL donner, pour un retrait envisagé, le reste à faire, la capacité restante et la météo qui en résulteraient, et journaliser l'arbitrage. À chaque COPIL orageux, l'arbitrage SHALL être obligatoire : retirer des lots, ou maintenir le périmètre (journalisé « périmètre maintenu malgré l'orage »). Un arbitrage non fait au lancement de la période suivante SHALL valoir maintien d'office (« faute de décision »).
 
 #### Scenario: Arbitrer pour sortir
 - **GIVEN** le cahier des charges de 61 points, orageux au COPIL 2
@@ -45,3 +45,19 @@ En manche 1, entre deux COPIL, quand le reste à faire dépasse la capacité res
 - **GIVEN** un projet ensoleillé
 - **WHEN** le joueur cherche à retirer un lot
 - **THEN** l'arbitrage n'est pas proposé
+
+### Requirement: Décisions du COPIL révisables
+En manche 1, les décisions prises pendant la réflexion qui suit un COPIL (demande de changement, arbitrage) SHALL pouvoir être revues jusqu'au lancement de la période suivante : la révision remet le cahier des charges, la recette, le journal et la demande en attente dans l'état du COPIL. Après le lancement, plus rien n'est révisable.
+
+#### Scenario: Revoir une demande acceptée
+- **GIVEN** la demande « Promotions flash » acceptée au COPIL 2 en retirant la livraison
+- **WHEN** l'équipe revoit les décisions de ce COPIL
+- **THEN** la livraison revient au cahier des charges et la demande attend de nouveau une décision
+
+### Requirement: Prévision de la demande
+Pour une demande de changement en manche 1, le moteur SHALL donner, en plus du budget du contrat (en estimations), le reste à faire réel (travail découvert compris) face au temps restant, et la météo qui en résulterait si la demande est acceptée telle quelle ou refusée.
+
+#### Scenario: Le contrat tient, le projet non
+- **GIVEN** un cahier des charges de 52 points (tout sauf la livraison), le paiement découvert au COPIL 2
+- **WHEN** la demande « Promotions flash » est examinée
+- **THEN** elle tient dans le budget du contrat, mais l'accepter rendrait le projet orageux

@@ -21,6 +21,8 @@ Deuxième test de l'auteur, après les briefings, les COPIL sans ventes, les cou
 - **Jours/homme en projet** : la manche 1 compte la charge en jours/homme (1 point du moteur = 5 jours/homme : une équipe de 6 personnes abat 60 jours/homme en 2 semaines, 360 au total, 40 de recette, 320 à répartir) ; la manche 2 garde les points. Aucun mot de l'une dans l'autre.
 - **Arbitrage du COPIL** : quand le projet est orageux (reste à faire au-delà du temps restant), le COPIL peut retirer du cahier des charges des lots pas encore commencés, sans attendre une demande de la boulangère.
 - **Ordinateur d'abord** : les textes ne présentent plus le téléphone comme le poste des participants ; ils jouent sur leur ordinateur, le téléphone restant un dépannage.
+- **Arbitrage obligatoire et décisions révisables** : à chaque COPIL orageux, le COPIL doit arbitrer (retirer des lots ou maintenir le périmètre) avant d'avancer ou d'être prêt ; la fenêtre de demande montre la météo réelle qui résulterait de la décision ; les décisions d'un COPIL se revoient jusqu'au lancement suivant (« Nous ne sommes plus prêts » rouvre la demande).
+- **Débrief question par question** : une question à la fois, avec seulement ses indicateurs, révélés par le présentateur après la discussion (le formateur en salle, pour tous les écrans) ; une vue d'ensemble à la fin.
 - **Valeur révélée visible** : la Sprint Review dit ce que rapporte vraiment chaque fonctionnalité mise en ligne, et le Product Backlog l'affiche en badge.
 - **Demande de changement** : la phrase sur l'avenant dépend de la marge : « la marge suffit, rien à retirer » quand la demande tient déjà, la phrase actuelle sinon.
 

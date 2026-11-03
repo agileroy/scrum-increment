@@ -1,7 +1,7 @@
 // Logique pure de la salle collective : code, prénoms, équipes, état « prêt », chrono.
 // Ni DOM ni base : testée avec Node.js, utilisée par room-store.js et room-ui.js.
 
-import { MODES } from './game-core.js?v=__VERSION__';
+import { MODES, needsArbitrage } from './game-core.js?v=__VERSION__';
 
 export const MAX_PLAYERS = 30;
 export const MIN_TEAMS = 2;
@@ -126,9 +126,9 @@ export function planReady(state) {
   return !state || state.mode !== MODES.cascade || Boolean(state.planValidated);
 }
 
-/** L'équipe peut-elle se déclarer prête ? (cahier des charges validé, aucune demande en attente) */
+/** L'équipe peut-elle se déclarer prête ? (cahier des charges validé, aucune demande ni arbitrage en attente) */
 export function canBeReady(state) {
-  return Boolean(state) && planReady(state) && !state.pendingRequest && !state.finished;
+  return Boolean(state) && planReady(state) && !state.pendingRequest && !state.finished && !needsArbitrage(state);
 }
 
 /** L'équipe s'est-elle déclarée prête pour la prochaine période ? */

@@ -36,6 +36,8 @@ En manche 1, quand un COPIL annonce une demande de la boulangère, le compte ren
 - **WHEN** le joueur appuie sur Échap
 - **THEN** la fenêtre reste ouverte et la demande n'est ni acceptée ni refusée
 
+La fenêtre SHALL aussi afficher la prévision réelle, travail découvert compris : reste à faire face au temps restant, et météo si la demande est acceptée telle quelle ou refusée (« le COPIL devra arbitrer » si orageux).
+
 #### Scenario: Demande qui tient dans la marge
 - **GIVEN** un cahier des charges de 130 jours/homme et la demande « Version anglaise » (25 jours/homme)
 - **WHEN** la fenêtre s'affiche
@@ -84,12 +86,25 @@ Le tableau des deux manches SHALL rappeler, sous le titre de la liste, ce que re
 - **THEN** une légende précédée d'étoiles dit que l'intuition est l'avis de Mme Lefèvre, et que les Sprint Reviews diront ce qu'en pensent ses clients
 
 ### Requirement: Fenêtre d'arbitrage (manche 1)
-Quand l'arbitrage est possible, le tableau de la manche 1 SHALL l'annoncer dans un bandeau d'orage avec un bouton « Arbitrer : retirer des lots », et le compte rendu du COPIL SHALL le rappeler. La fenêtre SHALL donner le reste à faire et le temps restant en jours/homme, lister les lots pas commencés avec des cases à cocher, montrer une jauge du reste à faire après arbitrage face au temps restant, et dire si le projet repasserait au soleil ou combien il manquerait encore. « Retirer ces lots » SHALL rester inactif tant que rien n'est coché ou qu'un prérequis manque ; « Annuler » ne change rien.
+Quand le projet est orageux, le tableau de la manche 1 SHALL afficher un bandeau d'orage qui exige l'arbitrage, avec « Arbitrer : retirer des lots » et « Maintenir le périmètre », et le bouton pour avancer au COPIL suivant SHALL rester inactif tant que le COPIL n'a pas arbitré. Le compte rendu du COPIL SHALL annoncer l'arbitrage à venir. La fenêtre d'arbitrage SHALL donner le reste à faire et le temps restant en jours/homme, lister les lots pas commencés avec des cases à cocher, montrer le reste à faire après arbitrage face au temps restant, et dire si le projet repasserait au soleil. « Retirer ces lots » SHALL rester inactif tant que rien n'est coché ou qu'un prérequis manque.
 
 #### Scenario: Arbitrer au COPIL 2
 - **GIVEN** le cahier des charges sans les avis clients, orageux au COPIL 2
 - **WHEN** le joueur ouvre l'arbitrage et coche la livraison, la fidélité et le click & collect
-- **THEN** la fenêtre annonce que le projet repasse au soleil, et après confirmation le tableau est ensoleillé, sans bandeau d'arbitrage
+- **THEN** la fenêtre annonce que le projet repasse au soleil, et après confirmation le tableau est ensoleillé et le joueur peut avancer
+
+#### Scenario: Maintenir le périmètre
+- **GIVEN** un projet orageux
+- **WHEN** le joueur choisit « Maintenir le périmètre »
+- **THEN** il peut avancer au COPIL suivant, le journal indique « périmètre maintenu malgré l'orage », et il peut encore retirer des lots
+
+### Requirement: Revoir les décisions du COPIL
+Tant que le COPIL suivant n'a pas eu lieu, le tableau de la manche 1 SHALL proposer « Revoir les décisions de ce COPIL » dès qu'une décision a été prise depuis le dernier COPIL ; la demande de changement éventuelle rouvre alors sa fenêtre.
+
+#### Scenario: Changer d'avis
+- **GIVEN** la demande « Version anglaise » refusée au COPIL 1
+- **WHEN** le joueur choisit « Revoir les décisions de ce COPIL »
+- **THEN** la fenêtre de la demande se rouvre pour accepter ou refuser à nouveau
 
 ### Requirement: Valeur révélée en Sprint Review
 En manche 2, quand des fonctionnalités sont mises en ligne, la Sprint Review SHALL dire, pour chacune, ce qu'elle rapporte vraiment par Sprint à côté de l'intuition de Mme Lefèvre, et le Product Backlog SHALL afficher cette valeur en badge (« 💶 Ventes réelles : 200 € / Sprint ») à la place de « Ventes réelles : ? ».

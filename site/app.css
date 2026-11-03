@@ -508,3 +508,23 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .reveal p { margin: 0 0 4px; }
 .reveal ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
 .item-meta .value-known { padding: 0 8px; border-radius: 999px; background: var(--live-soft); color: var(--live-text); font-weight: 700; }
+.descope-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.descope-bar.is-calm { background: var(--surface-2); color: var(--text); }
+.descope-bar.is-calm p::before { content: none; }
+.descope-bar p[hidden] { display: none; }
+.forecast { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.forecast li { padding: 6px 10px; border-radius: 8px; }
+.forecast .sunny { background: var(--live-soft); color: var(--live-text); }
+.forecast .stormy { background: var(--warn-bg); color: var(--warn-text); }
+
+/* ---------------------------------------------------------------- Débrief question par question */
+
+.debrief-card { border: 2px solid var(--accent); }
+.debrief-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.debrief-head h3 { margin: 0; }
+.debrief-question { margin: 12px 0 6px; font-size: 1.35rem; font-weight: 700; line-height: 1.35; }
+.debrief-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.debrief-controls[hidden], .debrief-card [hidden] { display: none; }
+.results-grid[hidden], #chart-panel[hidden], #kpi-panel[hidden], #truth-panel[hidden] { display: none; }
+.results-grid:has(> #kpi-panel[hidden]), .results-grid:has(> #truth-panel[hidden]) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 560px) { .debrief-question { font-size: 1.1rem; } .debrief-controls .button { flex: 1 1 auto; } }

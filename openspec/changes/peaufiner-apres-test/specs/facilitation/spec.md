@@ -12,3 +12,13 @@ L'écran du formateur SHALL proposer un panneau « Coulisses (à ne pas projeter
 - **GIVEN** les coulisses ouvertes
 - **WHEN** le formateur lance la période suivante
 - **THEN** le panneau se referme et l'écran redevient neutre
+
+## ADDED Requirements
+
+### Requirement: Débrief piloté par le formateur
+Après la révélation, seul le formateur SHALL piloter le débrief (question précédente ou suivante, révéler ou masquer les indicateurs). Les écrans des participants SHALL suivre la même question et la même révélation, sans commande, avec la mention « Les indicateurs apparaîtront après votre discussion. » tant qu'ils sont cachés. L'étape et la révélation SHALL être partagées par la salle (règles de sécurité : étape de 0 à 20, révélation booléenne, écrites par le formateur seul).
+
+#### Scenario: Révélation synchronisée
+- **GIVEN** une partie révélée, le formateur et un participant sur la question 1
+- **WHEN** le formateur révèle les indicateurs
+- **THEN** la courbe apparaît aussi chez le participant, qui n'a aucun bouton de débrief
