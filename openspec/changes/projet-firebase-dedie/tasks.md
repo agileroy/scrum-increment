@@ -11,5 +11,5 @@
 
 ## 3. Projet partagé
 
-- [ ] 3.1 Retirer la branche `incrementGame` du fichier commun dans les 7 autres dépôts (et du test de `roti` qui la cite), lancer leurs tests, pousser. Vérification : 7 fichiers identiques, tests au vert.
+- [x] 3.1 Retirer la branche `incrementGame` du fichier commun dans les 7 autres dépôts (et du test de `roti` qui la cite), lancer leurs tests, pousser. Vérification : 7 fichiers identiques, tests au vert. Fait le 3 novembre 2026 (le test de `roti` ne liste plus les branches des autres outils).
 - [ ] 3.2 Faire publier le fichier commun allégé dans la console du projet partagé par l'auteur. Vérification : la branche `incrementGame` n'apparaît plus dans les règles publiées.
