@@ -9,16 +9,21 @@ const rules = JSON.parse(await readFile(new URL('../database.rules.json', import
 const game = rules[ROOT];
 const room = game.rooms.$code;
 
-test('la branche incrementGame existe à côté des autres outils', () => {
+test('projet dédié : le fichier ne contient que la branche incrementGame, tout le reste est fermé', () => {
   assert.equal(ROOT, 'incrementGame');
-  for (const branch of ['room', 'skillMatrix', 'wheelOfChance', 'movingMotivators', 'rolesGame', 'eventsGame', 'incrementGame']) assert.ok(rules[branch], branch);
+  assert.deepEqual(Object.keys(rules).sort(), ['.read', '.write', 'incrementGame']);
   assert.equal(rules['.read'], false);
   assert.equal(rules['.write'], false);
 });
 
+test('firebase.json déploie ce fichier de règles', async () => {
+  const config = JSON.parse(await readFile(new URL('../firebase.json', import.meta.url), 'utf8'));
+  assert.deepEqual(config, { database: { rules: 'database.rules.json' } });
+});
+
 test('la branche incrementGame ne fait référence qu\'à elle-même', () => {
   const text = JSON.stringify(game);
-  for (const other of ['eventsGame', 'rolesGame', 'skillMatrix', 'wheelOfChance', 'movingMotivators']) assert.ok(!text.includes(other), other);
+  for (const other of ['eventsGame', 'rolesGame', 'skillMatrix', 'wheelOfChance', 'movingMotivators', 'roti/']) assert.ok(!text.includes(other), other);
 });
 
 test('le code de salle des règles correspond à l\'alphabet du jeu', () => {

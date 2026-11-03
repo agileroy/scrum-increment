@@ -31,9 +31,9 @@ context: |
   de son équipe. Le formateur donne le tempo (chrono facultatif, période lancée pour toutes les équipes en même
   temps) et son écran reste neutre jusqu'à la révélation. Le mode démo (?demo) joue le mode collectif sans
   Firebase, sur une base locale partagée entre onglets. Temps réel : Firebase Realtime Database (offre
-  gratuite, connexion anonyme) dans le projet partagé avec roles-responsabilites, scrum-events, poker-planning,
-  matrice-competences, wheel-of-chance et moving-motivators ; database.rules.json devra rester identique dans
-  tous ces dépôts. L'état de partie est donc fait d'objets JSON simples, sérialisables tels quels.
+  gratuite, connexion anonyme) dans un projet Firebase dédié au jeu (aucun autre outil ne l'utilise) ;
+  database.rules.json ne contient que la branche incrementGame et est publié automatiquement par GitHub Actions
+  après les tests (secret FIREBASE_SERVICE_ACCOUNT). L'état de partie est donc fait d'objets JSON simples, sérialisables tels quels.
   Firebase n'est chargé qu'en mode collectif ; le jeu seul ne charge rien d'externe. Aucun autre service tiers
   (ni police web, ni CDN, ni traceur, ni publicité). N'utiliser que HTTPS (port 443).
   Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages et Firebase : le jeu se joue hors VPN.

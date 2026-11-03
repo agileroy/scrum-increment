@@ -43,7 +43,7 @@ Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages : jouer hors VPN.
 
 ## Architecture
 
-Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, polices système, ni CDN ni traceur. Seul le mode collectif utilise un service tiers : Firebase Realtime Database (connexion anonyme), dans le projet partagé avec les jeux frères ; le jeu seul ne charge rien d'externe.
+Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, polices système, ni CDN ni traceur. Seul le mode collectif utilise un service tiers : Firebase Realtime Database (connexion anonyme), dans un projet Firebase propre au jeu ; le jeu seul ne charge rien d'externe.
 
 - `site/js/scenario.js` : données du scénario (fonctionnalités, demandes de changement, retours clients, imprévus, calendrier, constantes) ;
 - `site/js/game-core.js` : logique métier pure et déterministe (plan, Sprints, construction dans l'ordre, prérequis, mises en ligne, demandes de changement et avenants, ventes, clients perdus, coupure, calendrier, résultats), testée avec Node.js ; l'état d'une manche est un objet JSON simple ;
@@ -55,7 +55,7 @@ Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, police
 - `site/js/room-ui.js` : écran du formateur et écrans des participants ;
 - `site/js/firebase-db.js` (seul module qui parle à Firebase), `site/js/memory-db.js` (même interface en mémoire, pour les tests et le mode démo), `site/js/firebase-config.js` ;
 - `site/vendor/qrcode-generator-1.4.4.js` : QR code de la salle (licence MIT) ;
-- `database.rules.json` : règles de sécurité de la base partagée, branche `incrementGame` ; le fichier doit rester identique dans les 7 dépôts qui partagent le projet Firebase, et se publie à la main dans la console Firebase (Realtime Database, onglet Règles).
+- `database.rules.json` : règles de sécurité de la base, limitées à la branche `incrementGame` ; `firebase.json` et `.firebaserc` désignent le projet. Les règles sont publiées automatiquement à chaque push sur `main`, après les tests, par le job `rules` du workflow (Firebase CLI avec le compte de service du secret `FIREBASE_SERVICE_ACCOUNT`) ; sans ce secret, le job est sauté avec un avertissement et les règles sont à publier à la main dans la console Firebase.
 
 ## Développement
 
@@ -64,7 +64,7 @@ npm test                                          # scénario, moteur, salle, ba
 python3 -m http.server 8765 --directory site      # puis http://localhost:8765/ (ou /?demo pour le mode collectif sans Firebase)
 ```
 
-Chaque push sur `main` lance les tests puis publie `site/` sur GitHub Pages ; un test en échec bloque la publication. Une retouche du scénario qui change l'histoire racontée par les courbes fait échouer les tests des parcours de référence.
+Chaque push sur `main` lance les tests, publie les règles Firebase puis publie `site/` sur GitHub Pages ; un test en échec bloque les deux publications. Une retouche du scénario qui change l'histoire racontée par les courbes fait échouer les tests des parcours de référence.
 
 ## Méthode
 
