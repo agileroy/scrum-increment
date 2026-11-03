@@ -6,12 +6,12 @@ Parcours du joueur seul, de l'accueil aux résultats : plan de la manche 1, tabl
 ## Requirements
 
 ### Requirement: Plan de la manche 1
-Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la mission en briefing : une réplique de Madame Lefèvre, puis la règle en quatre tuiles chiffrées (12 semaines avec un COPIL toutes les 2 semaines ; 72 points, l'équipe abattant 12 points tous les 15 jours ; 8 points de recette et de mise en production finales ; cahier des charges contractuel une fois validé, tout changement passant par un avenant), puis la mission en une phrase juste au-dessus de la jauge. L'écran MUST NOT présenter ces règles en paragraphe. Il SHALL lister les lots avec leur rang, leur coût, l'intuition de la commanditaire et leur prérequis. Le joueur SHALL pouvoir retirer ou remettre un lot et changer son rang. Une jauge SHALL comparer les points planifiés aux 64 points, et un message SHALL dire ce qui bloque ou que le cahier des charges tient. La validation SHALL rester inactive tant qu'il est invalide.
+Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la mission en briefing : le contexte (Mme Lefèvre, sa boulangerie, l'appli qu'elle vous confie, puis la démarche projet choisie), une réplique de Madame Lefèvre, puis la règle en quatre tuiles chiffrées (12 semaines avec un COPIL toutes les 2 semaines ; 360 j/h, une équipe de 6 personnes abattant 60 jours/homme tous les 15 jours ; 40 j/h de recette et de mise en production finales ; cahier des charges contractuel une fois validé, tout changement passant par un avenant), puis la mission en une phrase juste au-dessus de la jauge, suivie d'une légende qui explique l'intuition (ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles : son avis, pas une mesure). L'écran MUST NOT présenter ces règles en paragraphe. Il SHALL lister les lots avec leur rang, leur coût, l'intuition de Mme Lefèvre et leur prérequis. Le joueur SHALL pouvoir retirer ou remettre un lot et changer son rang. Une jauge SHALL comparer la charge planifiée aux 320 jours/homme, et un message SHALL dire ce qui bloque ou que le cahier des charges tient. La validation SHALL rester inactive tant qu'il est invalide.
 
 #### Scenario: Dépassement
 - **GIVEN** le cahier des charges initial de 66 points
 - **WHEN** l'écran s'affiche
-- **THEN** la jauge est rouge, le message indique un dépassement de 2 points et la validation est impossible
+- **THEN** la jauge est rouge, le message indique un dépassement de 10 jours/homme et la validation est impossible
 
 #### Scenario: Prérequis retiré
 - **GIVEN** un cahier des charges qui contient le paiement en ligne
@@ -21,7 +21,12 @@ Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la missi
 #### Scenario: Briefing lisible d'un coup d'œil
 - **GIVEN** un téléphone de 360 px de large
 - **WHEN** l'écran du cahier des charges s'affiche
-- **THEN** la réplique de Mme Lefèvre et les quatre tuiles (12 semaines, 72 points, 8 points, contrat) tiennent sans défilement horizontal, et la phrase de mission précède la jauge
+- **THEN** la réplique de Mme Lefèvre et les quatre tuiles (12 semaines, 360 j/h, 40 j/h, contrat) tiennent sans défilement horizontal, et la phrase de mission précède la jauge
+
+#### Scenario: Intuition expliquée
+- **GIVEN** l'écran du cahier des charges
+- **WHEN** le joueur lit la mission
+- **THEN** une légende sous la mission explique que les étoiles « Intuition » sont l'avis de Mme Lefèvre sur ce que chaque lot va rapporter, pas une mesure
 
 ### Requirement: Tableau de Sprint
 Pendant le développement, l'écran SHALL afficher la manche, la prochaine échéance (« COPIL N sur M » ou « Sprint N sur M ») et ses semaines, la capacité, la liste ordonnée et le journal. En manche 1, les indicateurs SHALL être ceux d'un pilotage de projet : temps écoulé contre travail fait (deux barres en pourcentage : semaines écoulées sur 12, avancement du plan recette comprise), météo du projet et capacité ; les ventes cumulées n'y apparaissent qu'après la sortie de l'appli, et l'écran MUST NOT afficher de part de clients ni de ligne « Ventes réelles » sur les lots. En manche 2, les indicateurs SHALL être les ventes cumulées, la capacité, les fonctionnalités en ligne et les clients potentiels. Chaque élément SHALL afficher son avancement, l'intuition et son état, et en manche 2 sa valeur réelle si elle est révélée. En manche 1, la liste « Cahier des charges » SHALL être figée et finir par « Recette et mise en production ». En manche 2, chaque élément non terminé du Product Backlog SHALL pouvoir monter ou descendre d'un rang.
@@ -78,12 +83,22 @@ Après chaque période, une fenêtre SHALL faire le bilan, puis un bouton SHALL 
 - **THEN** elle dit que le projet s'arrête au COPIL 5, en l'état, annonce 10 semaines d'exploitation sans développement, et ne parle d'aucun Sprint
 
 ### Requirement: Fenêtre de demande de changement (manche 1)
-En manche 1, quand un COPIL annonce une demande de la commanditaire, le compte rendu SHALL ensuite présenter la demande : texte de Mme Lefèvre, coût, intuition et avenant de 2 points. La fenêtre SHALL lister les lots retirables avec des cases à cocher, une jauge du cahier des charges par rapport au nouveau budget et un message sur ce qui bloque. « Accepter (avenant) » SHALL rester inactif tant que le résultat est invalide ; « Refuser » SHALL toujours être possible. Fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande en deux temps. D'abord la situation : la réplique de Mme Lefèvre, la charge de la demande (jours/homme de lot et 10 jours/homme de recette pour l'avenant), l'intuition de Mme Lefèvre, puis deux choix côte à côte. « Si vous acceptez » SHALL dire de combien de jours/homme de lots pas commencés il faudra réduire le cahier des charges (demande, avenant et travail découvert compris), ou que rien n'est à retirer, ou que c'est impossible. « Si vous refusez » SHALL dire que le cahier des charges tient dans le temps prévu, ou de combien il faudra quand même le réduire à cause du travail découvert, le COPIL devant alors arbitrer. Le travail découvert MUST NOT être mentionné tant qu'il n'y en a pas eu, pour ne rien annoncer de ce qui vient. Ensuite, si l'équipe accepte et qu'il faut retirer des lots : les lots pas commencés avec des cases à cocher, une jauge du retiré face à l'objectif, ce qui reste à retirer pour tenir dans le temps prévu (un seul objectif, sans distinguer budget signé et délais), « Signer l'avenant » (inactif tant que l'objectif n'est pas atteint, sauf s'il n'y a plus rien à retirer, ou qu'un prérequis manque) et « Revenir au choix ». « Refuser » SHALL toujours être possible ; si le projet dépasse déjà le temps prévu, refuser SHALL ouvrir aussitôt la fenêtre d'arbitrage, qui propose aussi « Maintenir le périmètre » ; fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+
+#### Scenario: Rien de découvert, rien d'annoncé
+- **GIVEN** la demande « Version anglaise » au COPIL 1, aucun travail découvert
+- **WHEN** la fenêtre s'affiche
+- **THEN** « Si vous acceptez » demande de réduire le cahier des charges de 20 jours/homme, sans parler de travail découvert, et « Si vous refusez » dit que le cahier des charges tient dans le temps prévu
+
+#### Scenario: Situation au COPIL 2
+- **GIVEN** le cahier des charges sans les avis clients, le paiement découvert, la demande « Promotions flash »
+- **WHEN** la fenêtre s'affiche
+- **THEN** « Si vous acceptez » demande de réduire le cahier des charges d'au moins 55 jours/homme, travail découvert (30 jours/homme) compris, et « Si vous refusez » annonce qu'il faudra quand même le réduire d'au moins 15 jours/homme
 
 #### Scenario: Faire de la place
-- **GIVEN** la demande « Version anglaise » avec le cahier des charges de 61 points
-- **WHEN** le joueur coche la livraison à domicile (14 points, pas commencée)
-- **THEN** la jauge passe à 52 points sur 62 et « Accepter (avenant) » devient actif
+- **GIVEN** la même situation, le joueur ayant choisi d'accepter
+- **WHEN** il coche la livraison et la fidélité (105 jours/homme)
+- **THEN** l'objectif est atteint et « Signer l'avenant » est actif
 
 #### Scenario: Touche Échap
 - **GIVEN** la fenêtre d'une demande de changement
@@ -91,7 +106,7 @@ En manche 1, quand un COPIL annonce une demande de la commanditaire, le compte r
 - **THEN** la fenêtre reste ouverte et la demande n'est ni acceptée ni refusée
 
 ### Requirement: Demandes visibles dans les listes
-Une fonctionnalité issue d'une demande SHALL être signalée comme « Demande de la commanditaire » dans le cahier des charges et comme « Demande de Mme Lefèvre » dans le Product Backlog. Le journal SHALL garder chaque demande et la décision prise : acceptée par avenant avec les lots retirés, refusée, ou ajoutée au Product Backlog.
+Une fonctionnalité issue d'une demande SHALL être signalée comme « Demande de la boulangère » dans le cahier des charges et comme « Demande de Mme Lefèvre » dans le Product Backlog. Le journal SHALL garder chaque demande et la décision prise : acceptée par avenant avec les lots retirés, refusée, ou ajoutée au Product Backlog.
 
 #### Scenario: Journal de la manche 1
 - **GIVEN** une demande refusée au COPIL 1
@@ -184,12 +199,12 @@ Dans le cahier des charges avant validation et dans le Product Backlog, chaque �
 - **THEN** la vitrine ne peut pas être saisie, mais les autres éléments peuvent être glissés au-dessus ou en dessous d'elle
 
 ### Requirement: Annonce du travail sous-estimé
-Le compte rendu de COPIL ou la Sprint Review de la période SHALL annoncer chaque découverte de travail sous-estimé dans le vocabulaire de la manche, et l'élément concerné SHALL afficher son coût sous la forme « coût prévu + travail découvert » (par exemple « 8 + 6 pts »).
+Le compte rendu de COPIL ou la Sprint Review de la période SHALL annoncer chaque découverte de travail sous-estimé dans le vocabulaire de la manche, avec un pictogramme, et l'élément concerné SHALL afficher son coût sous la forme « coût prévu + travail découvert » (par exemple « 40 + 30 j/h » en manche 1, « 8 + 6 pts » en manche 2).
 
 #### Scenario: Découverte annoncée au COPIL
-- **GIVEN** la manche 1, la réservation commencée pendant la période 2
+- **GIVEN** la manche 1, le paiement en ligne commencé pendant la période 2
 - **WHEN** le compte rendu du COPIL 2 s'affiche
-- **THEN** il annonce que la réservation doit être reliée au logiciel de caisse (+6 points), et le lot affiche « 8 + 6 pts »
+- **THEN** il annonce que la banque exige une sécurisation et une certification (+30 jours/homme), et le lot affiche « 40 + 30 j/h »
 
 ### Requirement: Briefing de la manche 2
 L'écran de transition vers la manche 2 SHALL présenter la nouvelle mission avec la même mise en page que le cahier des charges : une réplique de Madame Lefèvre, quatre tuiles (Sprint de 2 semaines conclu par une Sprint Review ; 10 points pour construire et 2 pour la Definition of Done ; une fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant ; chaque Sprint Review révèle la vraie valeur grâce aux retours clients) et la mission en une phrase. Le tableau des équivalences de vocabulaire SHALL rester sur cet écran.
@@ -198,3 +213,69 @@ L'écran de transition vers la manche 2 SHALL présenter la nouvelle mission ave
 - **GIVEN** la fin de la manche 1
 - **WHEN** le joueur ferme la fin du projet
 - **THEN** il voit la réplique de Mme Lefèvre, les quatre tuiles de la manche 2, le tableau « Ce qui change » et « Commencer la manche 2 »
+
+### Requirement: Répliques de Mme Lefèvre
+Chaque réplique de Mme Lefèvre (briefings, attente de la salle, demande de changement) SHALL s'afficher en bulle, à côté d'un avatar de boulangère (👩‍🍳), entre un guillemet ouvrant et un guillemet fermant, et signée « Madame Lefèvre, la boulangère ».
+
+#### Scenario: Guillemets fermés
+- **GIVEN** l'écran du cahier des charges
+- **WHEN** la réplique s'affiche
+- **THEN** elle s'ouvre sur « et se termine par », avec la signature « Madame Lefèvre, la boulangère »
+
+### Requirement: Annonces illustrées
+Les comptes rendus et Sprint Reviews SHALL illustrer leurs annonces d'un émoji : sortie de l'appli (🎉) et mise en ligne (🚀), avec une courte animation désactivée si le système demande moins d'animations ; travail sous-estimé (🔍) ; imprévus (leur pictogramme) ; demande de changement (📨). Les listes, la fenêtre de demande et « Intuition contre réalité » SHALL afficher le pictogramme de chaque fonctionnalité devant son nom.
+
+#### Scenario: Mise en ligne
+- **GIVEN** la manche 2, la vitrine terminée au Sprint 1
+- **WHEN** la Sprint Review s'affiche
+- **THEN** elle annonce « Mis en ligne : 🏪 Vitrine en ligne » avec une fusée
+
+### Requirement: Intuition expliquée dans le Product Backlog
+Le tableau des deux manches SHALL rappeler, sous le titre de la liste, ce que représentent les étoiles « Intuition », dans le vocabulaire de la manche.
+
+#### Scenario: Légende en manche 2
+- **GIVEN** la manche 2
+- **WHEN** le Product Backlog s'affiche
+- **THEN** une légende précédée d'étoiles dit que l'intuition est l'avis de Mme Lefèvre, et que les Sprint Reviews diront ce qu'en pensent ses clients
+
+### Requirement: Fenêtre d'arbitrage (manche 1)
+Quand le projet est orageux, le tableau de la manche 1 SHALL afficher un bandeau d'orage qui exige l'arbitrage, avec « Arbitrer : retirer des lots » et « Maintenir le périmètre », et le bouton pour avancer au COPIL suivant SHALL rester inactif tant que le COPIL n'a pas arbitré. Le compte rendu du COPIL SHALL annoncer l'arbitrage à venir. La fenêtre d'arbitrage SHALL donner le reste à faire et le temps restant en jours/homme, lister les lots pas commencés avec des cases à cocher, montrer le reste à faire après arbitrage face au temps restant, et dire si le projet repasserait au soleil. « Retirer ces lots » SHALL rester inactif tant que rien n'est coché ou qu'un prérequis manque.
+
+#### Scenario: Arbitrer au COPIL 2
+- **GIVEN** le cahier des charges sans les avis clients, orageux au COPIL 2
+- **WHEN** le joueur ouvre l'arbitrage et coche la livraison, la fidélité et le click & collect
+- **THEN** la fenêtre annonce que le projet repasse au soleil, et après confirmation le tableau est ensoleillé et le joueur peut avancer
+
+#### Scenario: Maintenir le périmètre
+- **GIVEN** un projet orageux
+- **WHEN** le joueur choisit « Maintenir le périmètre »
+- **THEN** il peut avancer au COPIL suivant, le journal indique « périmètre maintenu malgré l'orage », et il peut encore retirer des lots
+
+### Requirement: Changer la décision du COPIL
+Tant que le COPIL suivant n'a pas eu lieu, le tableau de la manche 1 SHALL proposer, à côté du bouton pour avancer, « Changer la décision du COPIL » dès qu'une décision a été prise depuis le dernier COPIL ; la demande de changement éventuelle rouvre alors sa fenêtre. Avant le premier COPIL, le bouton s'appelle « Revoir le cahier des charges » et ramène au cahier des charges, à nouveau modifiable.
+
+#### Scenario: Changer d'avis
+- **GIVEN** la demande « Version anglaise » refusée au COPIL 1
+- **WHEN** le joueur choisit « Changer la décision du COPIL »
+- **THEN** la fenêtre de la demande se rouvre pour accepter ou refuser à nouveau
+
+### Requirement: Valeur révélée en Sprint Review
+En manche 2, quand des fonctionnalités sont mises en ligne, la Sprint Review SHALL dire, pour chacune, ce qu'elle rapporte vraiment par Sprint à côté de l'intuition de Mme Lefèvre, et le Product Backlog SHALL afficher cette valeur en badge (« 💶 Ventes réelles : 200 € / Sprint ») à la place de « Ventes réelles : ? ».
+
+#### Scenario: Vitrine en ligne
+- **GIVEN** la vitrine terminée au Sprint 1
+- **WHEN** la Sprint Review s'affiche
+- **THEN** elle indique que la vitrine rapporte 200 € par Sprint, pour une intuition de 3 étoiles, et le Product Backlog affiche le badge
+
+#### Scenario: Revoir le cahier des charges
+- **GIVEN** le cahier des charges validé, avant le premier COPIL
+- **WHEN** le joueur choisit « Revoir le cahier des charges »
+- **THEN** il retrouve l'écran du cahier des charges, peut retirer ou remettre des lots et le valider de nouveau
+
+### Requirement: Éléments terminés en tête du Product Backlog
+En manche 2, les éléments terminés SHALL se placer en tête du Product Backlog, dans l'ordre où ils ont été terminés. Aucun élément MUST NOT pouvoir passer au-dessus d'eux, ni par les flèches ni par le glisser-déposer. Un élément en cours SHALL pouvoir être redescendu : il ne reçoit alors du travail qu'une fois servis les éléments au-dessus de lui.
+
+#### Scenario: Flèche bloquée sous les éléments terminés
+- **GIVEN** la vitrine terminée au Sprint 1, en tête
+- **WHEN** le joueur regarde l'élément suivant
+- **THEN** sa flèche vers le haut est inactive, et le glisser au rang 1 le laisse au rang 2

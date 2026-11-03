@@ -47,8 +47,8 @@ Après le dernier Sprint de développement, le moteur SHALL simuler des période
   - manche 1, cahier des charges de 61 points (tout sauf les avis clients) : 0 € ;
   - manche 1, cahier des charges resserré de 39 points (vitrine, réservation, alerte, gâteaux, click & collect, fidélité) : 0 €, le travail découvert empêchant la sortie ;
   - manche 1, tout petit cahier des charges de 26 points (vitrine, réservation, alerte, gâteaux) : 12 150 € ;
-  - manche 2, Product Backlog dans l'ordre initial, jamais réordonné : 10 500 € ;
-  - manche 2, ordre vitrine, réservation, alerte, gâteaux, click & collect, fidélité, paiement, livraison, avis : 21 200 €
+  - manche 2, Product Backlog dans l'ordre initial, jamais réordonné : 13 200 € ;
+  - manche 2, ordre vitrine, réservation, alerte, gâteaux, click & collect, fidélité, paiement, livraison, avis : 22 800 €
 
 ### Requirement: Demande de changement en manche 1
 Dans la manche 1, la demande annoncée à la Sprint Review SHALL être tranchée avant le Sprint suivant. Refuser SHALL laisser le plan inchangé. Accepter SHALL ajouter la fonctionnalité à la fin du plan, ajouter 2 points d'avenant à la recette et retirer du plan les fonctionnalités choisies par le joueur. L'acceptation MUST NOT être possible si le plan obtenu dépasse le budget ou viole un prérequis.
@@ -111,17 +111,22 @@ Dans la manche 1, la capacité SHALL être de 12 points par Sprint, sur un budge
 - **THEN** aucun compte rendu ne contient l'imprévu de coupure, et le développement prévu reste de 6 Sprints jusqu'au Sprint 5
 
 ### Requirement: Découverte du travail sous-estimé
-Le moteur SHALL révéler une découverte quand l'élément concerné reçoit son premier point de travail (ou quand la recette commence) : le coût de l'élément augmente du travail découvert, la découverte est journalisée pour la période, et la construction continue avec la capacité habituelle. Le moteur MUST NOT utiliser de hasard : la découverte arrive au même moment pour la même suite de décisions.
+Le moteur SHALL révéler une découverte quand l'élément concerné reçoit des points de travail (ou quand la recette commence), à partir de la deuxième période : le coût de l'élément augmente du travail découvert, la découverte est journalisée pour la période, et la construction continue avec la capacité habituelle. Un élément commencé pendant la première période SHALL révéler sa découverte la première fois qu'il reçoit des points dans une période suivante. La première période (premier COPIL, premier Sprint) MUST NOT annoncer de découverte. Le moteur MUST NOT utiliser de hasard : la découverte arrive au même moment pour la même suite de décisions.
 
 #### Scenario: Cahier des charges resserré
 - **GIVEN** la manche 1 avec un cahier des charges de 39 points (vitrine, réservation, alerte, gâteaux, click & collect, fidélité)
 - **WHEN** la partie est jouée jusqu'à la coupure
-- **THEN** les découvertes portent le travail total à 61 points, au-delà des 60 points réalisables, et l'appli ne sort pas avant la coupure
+- **THEN** les découvertes (click & collect au COPIL 2, gâteaux au COPIL 3, recette au COPIL 5) portent le travail total à 61 points, au-delà des 60 points réalisables, et l'appli ne sort pas avant la coupure
 
 #### Scenario: Découverte en manche 2
-- **GIVEN** la manche 2 avec la réservation en tête après la vitrine
-- **WHEN** l'équipe commence la réservation
-- **THEN** son coût passe de 8 à 14 points, et la Sprint Review de la période annonce la découverte
+- **GIVEN** la manche 2 dans l'ordre initial
+- **WHEN** l'équipe commence le paiement en ligne au Sprint 2
+- **THEN** son coût passe de 8 à 14 points, et la Sprint Review du Sprint 2 annonce la découverte
+
+#### Scenario: Premier COPIL sans surprise
+- **GIVEN** la manche 1, un cahier des charges qui place les gâteaux juste après la vitrine
+- **WHEN** le premier COPIL a lieu
+- **THEN** aucune découverte n'est annoncée et la météo est ensoleillée ; les 6 points des gâteaux sont découverts au COPIL 2
 
 ### Requirement: Ordre journalisé
 À chaque période jouée, le moteur SHALL retenir dans le journal l'ordre de la liste au début de la période, pour que l'interface puisse dire ce qui a changé d'une période à l'autre. Cet ajout MUST NOT changer les résultats.
@@ -130,3 +135,40 @@ Le moteur SHALL révéler une découverte quand l'élément concerné reçoit so
 - **GIVEN** un Product Backlog où l'alerte « fournée chaude » passe du rang 5 au rang 2 entre le Sprint 1 et le Sprint 2
 - **WHEN** le fil des décisions est calculé
 - **THEN** il indique que l'alerte a été remontée de 5 à 2 avant le Sprint 2
+
+### Requirement: Arbitrage du périmètre (manche 1)
+En manche 1, entre deux COPIL, quand le reste à faire dépasse la capacité restante jusqu'à la fin prévue (météo orageuse) et qu'aucune demande n'attend, le moteur SHALL permettre de retirer du cahier des charges des lots qui n'ont reçu aucun point. Le retrait MUST NOT être possible pour un lot commencé, ni s'il laisse un lot sans son prérequis, ni quand le projet est ensoleillé. Le moteur SHALL donner, pour un retrait envisagé, le reste à faire, la capacité restante et la météo qui en résulteraient, et journaliser l'arbitrage. À chaque COPIL orageux, l'arbitrage SHALL être obligatoire : retirer des lots, ou maintenir le périmètre (journalisé « périmètre maintenu malgré l'orage »). Un arbitrage non fait au lancement de la période suivante SHALL valoir maintien d'office (« faute de décision »).
+
+#### Scenario: Arbitrer pour sortir
+- **GIVEN** le cahier des charges de 61 points, orageux au COPIL 2
+- **WHEN** le COPIL retire la livraison, la fidélité et le click & collect
+- **THEN** le projet repasse au soleil, l'appli sort au COPIL 5 et les ventes cumulées valent 9 842 €
+
+#### Scenario: Pas d'arbitrage au soleil
+- **GIVEN** un projet ensoleillé
+- **WHEN** le joueur cherche à retirer un lot
+- **THEN** l'arbitrage n'est pas proposé
+
+### Requirement: Décisions du COPIL révisables
+En manche 1, les décisions prises pendant la réflexion qui suit un COPIL (demande de changement, arbitrage) SHALL pouvoir être revues jusqu'au lancement de la période suivante : la révision remet le cahier des charges, la recette, le journal et la demande en attente dans l'état du COPIL. Avant le premier COPIL, la révision rouvre le cahier des charges validé. Après le lancement, plus rien n'est révisable.
+
+#### Scenario: Revoir une demande acceptée
+- **GIVEN** la demande « Promotions flash » acceptée au COPIL 2 en retirant la livraison
+- **WHEN** l'équipe revoit les décisions de ce COPIL
+- **THEN** la livraison revient au cahier des charges et la demande attend de nouveau une décision
+
+### Requirement: Prévision de la demande
+Pour une demande de changement en manche 1, le moteur SHALL donner, en plus du budget du contrat (en estimations), le reste à faire réel (travail découvert compris) face au temps restant, et la météo qui en résulterait si la demande est acceptée telle quelle ou refusée.
+
+#### Scenario: Le contrat tient, le projet non
+- **GIVEN** un cahier des charges de 52 points (tout sauf la livraison), le paiement découvert au COPIL 2
+- **WHEN** la demande « Promotions flash » est examinée
+- **THEN** elle tient dans le budget du contrat, mais l'accepter rendrait le projet orageux
+
+### Requirement: Ordre de la manche 2 et éléments terminés
+En manche 2, le moteur SHALL placer les éléments terminés en tête de l'ordre, dans l'ordre où ils ont été terminés, à la fin de chaque Sprint, et MUST NOT accepter de déplacement qui place un élément au-dessus d'eux. Le fil des décisions MUST NOT compter cette remontée comme un déplacement décidé par l'équipe. Les résultats SHALL donner la période de mise en ligne de chaque fonctionnalité.
+
+#### Scenario: Remontée automatique
+- **GIVEN** l'ordre vitrine, paiement, alerte, réservation
+- **WHEN** le Sprint 1 termine la vitrine et l'alerte, le paiement étant sauté faute de réservation
+- **THEN** l'ordre commence par vitrine, alerte, paiement
