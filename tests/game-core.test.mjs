@@ -560,8 +560,10 @@ test('moveFeatureTo : bornes, même rang, règles des flèches', () => {
   assert.equal(moveFeatureTo(s, 'vitrine', 99).order.at(-1), 'vitrine');
   const played = playSprint(s).state;
   assert.throws(() => moveFeatureTo(played, 'vitrine', 3));
+  // jamais au-dessus d'un élément terminé : la vitrine reste en tête
   const moved = moveFeatureTo(played, 'alerte', 0);
-  assert.equal(moved.order[0], 'alerte');
+  assert.deepEqual(moved.order.slice(0, 2), ['vitrine', 'alerte']);
+  assert.equal(moveFeature(moved, 'alerte', -1), moved);
   assert.throws(() => moveFeatureTo(cascadeWithoutReviews(), 'alerte', 0));
   assert.equal(moveFeatureTo(newRound('cascade'), 'alerte', 0).order[0], 'alerte');
 });
@@ -707,4 +709,38 @@ test('Manche 2 : un élément terminé est figé ; un élément en cours redesce
   assert.equal(r.state.progress.resa, 5);
   assert.equal(r.state.progress.fidelite, 7);
   assert.equal(r.state.progress.avis, 3);
+});
+
+test('Manche 2 : les éléments terminés remontent en tête, dans l\'ordre où ils ont été terminés', () => {
+  let s = newRound('increment');
+  s.order = ['vitrine', 'paiement', 'alerte', 'resa', ...s.order.filter((x) => !['vitrine', 'paiement', 'alerte', 'resa'].includes(x))];
+  s = playSprint(s).state; // vitrine puis alerte terminées ; le paiement, sans réservation, est sauté
+  assert.deepEqual(s.done, ['vitrine', 'alerte']);
+  assert.deepEqual(s.order.slice(0, 3), ['vitrine', 'alerte', 'paiement']);
+  assert.equal(canMove(s, 'paiement'), true);
+  assert.equal(moveFeature(s, 'paiement', -1), s);
+  assert.equal(moveFeatureTo(s, 'resa', 0).order.indexOf('resa'), 2);
+  // le fil des décisions ne prend pas cette remontée pour une décision de l'équipe
+  const period2 = decisionTrail(playSprint(s).state).find((p) => p.period === 2);
+  assert.ok(!period2.facts.some((f) => f.kind === 'moved'));
+});
+
+test('Revoir le cahier des charges avant le premier COPIL', () => {
+  const s = cascadeWithoutReviews();
+  assert.equal(canRevise(s), true);
+  const back = reviseDecisions(s);
+  assert.equal(back.planValidated, false);
+  assert.ok(!back.log.some((e) => e.kind === 'plan'));
+  assert.equal(canRevise(back), false);
+  assert.equal(canRevise(playSprint(s).state) && playSprint(s).state.pendingRequest === null, false);
+});
+
+test('Résultats : période de mise en ligne de chaque fonctionnalité, et surprises de l\'intuition', async () => {
+  const { intuitionSurprises } = await import('../site/js/game-core.js');
+  const { results } = playAll({ ...newRound('increment'), order: SMART_ORDER.slice() });
+  assert.equal(results.liveSince.vitrine, 1);
+  assert.equal(results.liveSince.resa, 2);
+  const { underrated, overrated } = intuitionSurprises();
+  assert.deepEqual(underrated.map((f) => f.id), ['gateaux', 'alerte', 'cc', 'plateaux']);
+  assert.deepEqual(overrated.map((f) => f.id), ['livraison', 'paiement', 'anglais', 'promos']);
 });

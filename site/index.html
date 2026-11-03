@@ -99,10 +99,14 @@
           <span class="chip" id="board-chip"></span>
           <h2 class="title" id="board-title"></h2>
         </div>
-        <button type="button" class="button button-primary button-large" id="play-sprint"></button>
+        <div class="solo-actions" id="solo-actions">
+          <button type="button" class="button button-ghost button-large" data-revise hidden></button>
+          <button type="button" class="button button-primary button-large" id="play-sprint"></button>
+        </div>
         <div class="team-bar" id="team-bar" hidden>
           <p class="team-timer" id="team-timer" hidden></p>
           <p class="team-status" id="team-status" role="status"></p>
+          <button type="button" class="button button-ghost button-large" data-revise hidden></button>
           <button type="button" class="button button-primary button-large" id="team-ready"></button>
         </div>
       </div>
@@ -112,7 +116,7 @@
           <h3 class="list-title" id="list-title"></h3>
           <p class="muted list-hint" id="list-hint"></p>
           <p class="intuition-help" id="board-intuition"></p>
-          <div class="descope-bar" id="descope-bar" hidden><p id="descope-hint"></p><div class="descope-actions"><button type="button" class="button button-primary" id="descope-open"></button><button type="button" class="button button-ghost" id="keep-scope"></button><button type="button" class="button button-ghost" id="revise-open"></button></div></div>
+          <div class="descope-bar" id="descope-bar" hidden><p id="descope-hint"></p><div class="descope-actions"><button type="button" class="button button-primary" id="descope-open"></button><button type="button" class="button button-ghost" id="keep-scope"></button></div></div>
           <ol class="backlog" id="board-list"></ol>
         </div>
         <aside class="panel journal-panel">
@@ -176,6 +180,10 @@
         <h3 id="chart-title">Ventes cumulées sur 20 semaines</h3>
         <div class="chart" id="chart"></div>
         <div class="legend" id="legend"></div>
+      </section>
+      <section class="panel" id="surprises-panel" aria-labelledby="surprises-title">
+        <h3 id="surprises-title">L'intuition de Mme Lefèvre mise à l'épreuve</h3>
+        <div id="surprises"></div>
       </section>
       <div class="results-grid" id="results-grid">
         <section class="panel" id="kpi-panel" aria-labelledby="kpi-title">

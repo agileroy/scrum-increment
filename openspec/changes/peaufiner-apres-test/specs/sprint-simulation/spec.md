@@ -47,7 +47,7 @@ En manche 1, entre deux COPIL, quand le reste à faire dépasse la capacité res
 - **THEN** l'arbitrage n'est pas proposé
 
 ### Requirement: Décisions du COPIL révisables
-En manche 1, les décisions prises pendant la réflexion qui suit un COPIL (demande de changement, arbitrage) SHALL pouvoir être revues jusqu'au lancement de la période suivante : la révision remet le cahier des charges, la recette, le journal et la demande en attente dans l'état du COPIL. Après le lancement, plus rien n'est révisable.
+En manche 1, les décisions prises pendant la réflexion qui suit un COPIL (demande de changement, arbitrage) SHALL pouvoir être revues jusqu'au lancement de la période suivante : la révision remet le cahier des charges, la recette, le journal et la demande en attente dans l'état du COPIL. Avant le premier COPIL, la révision rouvre le cahier des charges validé. Après le lancement, plus rien n'est révisable.
 
 #### Scenario: Revoir une demande acceptée
 - **GIVEN** la demande « Promotions flash » acceptée au COPIL 2 en retirant la livraison
@@ -61,3 +61,11 @@ Pour une demande de changement en manche 1, le moteur SHALL donner, en plus du b
 - **GIVEN** un cahier des charges de 52 points (tout sauf la livraison), le paiement découvert au COPIL 2
 - **WHEN** la demande « Promotions flash » est examinée
 - **THEN** elle tient dans le budget du contrat, mais l'accepter rendrait le projet orageux
+
+### Requirement: Ordre de la manche 2 et éléments terminés
+En manche 2, le moteur SHALL placer les éléments terminés en tête de l'ordre, dans l'ordre où ils ont été terminés, à la fin de chaque Sprint, et MUST NOT accepter de déplacement qui place un élément au-dessus d'eux. Le fil des décisions MUST NOT compter cette remontée comme un déplacement décidé par l'équipe. Les résultats SHALL donner la période de mise en ligne de chaque fonctionnalité.
+
+#### Scenario: Remontée automatique
+- **GIVEN** l'ordre vitrine, paiement, alerte, réservation
+- **WHEN** le Sprint 1 termine la vitrine et l'alerte, le paiement étant sauté faute de réservation
+- **THEN** l'ordre commence par vitrine, alerte, paiement

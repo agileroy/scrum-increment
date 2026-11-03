@@ -99,11 +99,11 @@ Quand le projet est orageux, le tableau de la manche 1 SHALL afficher un bandeau
 - **THEN** il peut avancer au COPIL suivant, le journal indique « périmètre maintenu malgré l'orage », et il peut encore retirer des lots
 
 ### Requirement: Revoir les décisions du COPIL
-Tant que le COPIL suivant n'a pas eu lieu, le tableau de la manche 1 SHALL proposer « Revoir les décisions de ce COPIL » dès qu'une décision a été prise depuis le dernier COPIL ; la demande de changement éventuelle rouvre alors sa fenêtre.
+Tant que le COPIL suivant n'a pas eu lieu, le tableau de la manche 1 SHALL proposer, à côté du bouton pour avancer, « Revoir les décisions du COPIL » dès qu'une décision a été prise depuis le dernier COPIL ; la demande de changement éventuelle rouvre alors sa fenêtre. Avant le premier COPIL, le bouton s'appelle « Revoir le cahier des charges » et ramène au cahier des charges, à nouveau modifiable.
 
 #### Scenario: Changer d'avis
 - **GIVEN** la demande « Version anglaise » refusée au COPIL 1
-- **WHEN** le joueur choisit « Revoir les décisions de ce COPIL »
+- **WHEN** le joueur choisit « Revoir les décisions du COPIL »
 - **THEN** la fenêtre de la demande se rouvre pour accepter ou refuser à nouveau
 
 ### Requirement: Valeur révélée en Sprint Review
@@ -113,3 +113,16 @@ En manche 2, quand des fonctionnalités sont mises en ligne, la Sprint Review SH
 - **GIVEN** la vitrine terminée au Sprint 1
 - **WHEN** la Sprint Review s'affiche
 - **THEN** elle indique que la vitrine rapporte 200 € par Sprint, pour une intuition de 3 étoiles, et le Product Backlog affiche le badge
+
+#### Scenario: Revoir le cahier des charges
+- **GIVEN** le cahier des charges validé, avant le premier COPIL
+- **WHEN** le joueur choisit « Revoir le cahier des charges »
+- **THEN** il retrouve l'écran du cahier des charges, peut retirer ou remettre des lots et le valider de nouveau
+
+### Requirement: Éléments terminés en tête du Product Backlog
+En manche 2, les éléments terminés SHALL se placer en tête du Product Backlog, dans l'ordre où ils ont été terminés. Aucun élément MUST NOT pouvoir passer au-dessus d'eux, ni par les flèches ni par le glisser-déposer. Un élément en cours SHALL pouvoir être redescendu : il ne reçoit alors du travail qu'une fois servis les éléments au-dessus de lui.
+
+#### Scenario: Flèche bloquée sous les éléments terminés
+- **GIVEN** la vitrine terminée au Sprint 1, en tête
+- **WHEN** le joueur regarde l'élément suivant
+- **THEN** sa flèche vers le haut est inactive, et le glisser au rang 1 le laisse au rang 2

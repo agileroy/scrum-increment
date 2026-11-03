@@ -7,7 +7,7 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
+  requestStatus, decideRequest, isRequest, firstMovableIndex, intuitionSurprises, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
 import { EURO_PER_POINT, MAN_DAYS_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
 import { lexicon, logEntry, exploitationText, discoveryText, STORY, SPEAKER } from './vocabulary.js?v=__VERSION__';
@@ -80,10 +80,10 @@ function dependencyHtml(state, id, list) {
   return { cls: 'is-misplaced', chip: `<span class="chip warn">Impossible sans « ${esc(req)} »</span>`, note: '' };
 }
 
-function moveButtons(id, index, count) {
+function moveButtons(id, index, count, top = 0) {
   const name = esc(feature(id).name);
   return `<div class="move">
-    <button type="button" data-move="${id}" data-dir="-1" aria-label="Monter « ${name} »" ${index === 0 ? 'disabled' : ''}>↑</button>
+    <button type="button" data-move="${id}" data-dir="-1" aria-label="Monter « ${name} »" ${index <= top ? 'disabled' : ''}>↑</button>
     <button type="button" data-move="${id}" data-dir="1" aria-label="Descendre « ${name} »" ${index === count - 1 ? 'disabled' : ''}>↓</button>
   </div>`;
 }
@@ -130,7 +130,7 @@ function boardItemHtml(state, id, index, count) {
       : '<span>Ventes réelles : ?</span>';
   }
   const chip = isRequest(id) ? `<span class="chip request">${esc(l.requestChip)}</span>` : '';
-  const controls = canMove(state, id) ? moveButtons(id, index, count) : '';
+  const controls = canMove(state, id) ? moveButtons(id, index, count, firstMovableIndex(state)) : '';
   const dep = dependencyHtml(state, id);
   const cls = featureState(state, id) === 'live' ? 'is-live' : dep.cls;
   return `<li class="item ${cls}" data-id="${id}"${canMove(state, id) ? ` data-drag="${id}"` : ''}>
@@ -198,7 +198,7 @@ function renderBoard() {
   $('board-chip').textContent = roundLabel();
   $('board-title').textContent = `${l.deadline(next, s.lastBuildSprint)} · ${l.deadlineWeeks(next)}`;
   $('play-sprint').textContent = l.play(next);
-  $('play-sprint').hidden = Boolean(app.session);
+  $('solo-actions').hidden = Boolean(app.session);
   $('team-bar').hidden = !app.session;
   app.session?.renderBar();
   $('list-title').textContent = l.listTitle;
@@ -208,8 +208,11 @@ function renderBoard() {
   const need = cascade && needsArbitrage(s);
   const more = cascade && !need && canDescope(s);
   const revise = cascade && canRevise(s);
-  $('descope-bar').hidden = !(need || more || revise);
-  $('descope-bar').classList.toggle('is-calm', !need && !more);
+  $('descope-bar').hidden = !(need || more);
+  for (const btn of document.querySelectorAll('[data-revise]')) {
+    btn.hidden = !revise;
+    btn.textContent = s.sprint === 0 ? l.revisePlan : l.reviseButton;
+  }
   if (cascade) {
     $('descope-hint').textContent = need ? l.arbitrageNeeded : more ? l.arbitrageMore : '';
     $('descope-hint').hidden = !(need || more);
@@ -217,8 +220,6 @@ function renderBoard() {
     $('descope-open').hidden = !(need || more);
     $('keep-scope').textContent = l.keepButton;
     $('keep-scope').hidden = !need;
-    $('revise-open').textContent = l.reviseButton;
-    $('revise-open').hidden = !revise;
   }
   $('play-sprint').disabled = need;
   $('journal-title').textContent = l.journalTitle;
@@ -402,6 +403,7 @@ function decide(accept) {
 /** Revoir les décisions de ce COPIL : la demande éventuelle redevient en attente et sa fenêtre se rouvre. */
 function revise() {
   if (!act((s) => (canRevise(s) ? reviseDecisions(s) : s), renderBoard)) return;
+  if (!app.round.planValidated) { closeDialog(); renderPlan(); show('plan'); return; }
   if (app.round.pendingRequest) { closeDialog(); app.remove = []; openRequestDialog(); }
 }
 
@@ -466,17 +468,33 @@ const firstWeek = (period) => periodWeeks(period)[0];
  * (chart : la courbe ; kpi : lignes d'indicateurs ; truth : intuition contre réalité ; decisions : décisions des équipes).
  */
 export const DEBRIEF_SOLO = [
+  // D'abord l'exercice, chiffres à l'appui…
   { text: 'À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu\'est-ce qui l\'a permis ?', show: { chart: true, kpi: ['first', 'invested'] } },
-  { text: 'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?', show: { kpi: ['first', 'invested', 'live'] } },
-  { text: 'Qu\'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l\'ordre du Product Backlog ?', show: { truth: true } },
+  { text: 'Qu\'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l\'ordre du Product Backlog ?', show: { surprises: true } },
+  { text: 'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?', show: { surprises: true, kpi: ['lowUse'] } },
+  { text: 'Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu\'est-ce que ça change ?', show: { kpi: ['requests'] } },
   { text: 'Quand la banque a coupé le prêt, que restait-il entre vos mains dans chaque manche ?', show: { chart: true, kpi: ['live', 'cumulative'] } },
   { text: 'Si la banque vous avait prévenus deux COPIL plus tôt, qu\'auriez-vous fait ? Et avec Scrum, qu\'est-ce que ça aurait changé ?', show: { chart: true } },
-  { text: 'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?', show: { truth: true, kpi: ['lowUse'] } },
-  { text: 'Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu\'est-ce que ça change ?', show: { kpi: ['requests', 'lowUse'] } },
+  // … puis la théorie.
+  { text: 'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?', show: { kpi: ['first', 'invested', 'live'] } },
   { text: 'COPIL et cahier des charges, puis Sprint Review et Product Backlog : qu\'est-ce que le changement de vocabulaire a changé dans votre façon de décider ?', show: {} },
 ];
 
-const ALL_SHOWN = { chart: true, kpi: ['first', 'invested', 'live', 'lowUse', 'requests', 'cumulative'], truth: true, decisions: true };
+const ALL_SHOWN = { chart: true, kpi: ['first', 'invested', 'live', 'lowUse', 'requests', 'cumulative'], surprises: true, truth: true, decisions: true };
+
+/** Surprises de l'intuition, et quand chaque manche ou équipe les a mises en ligne. */
+function surprisesHtml(columns) {
+  const { underrated, overrated } = intuitionSurprises();
+  const when = (c, id) => {
+    const p = c.results.liveSince?.[id];
+    if (!p) return '—';
+    return c.kind === 1 ? `COPIL ${p}` : `Sprint ${p}`;
+  };
+  const head = `<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th>${columns.map((c) => `<th scope="col">En ligne · ${esc(c.head)}</th>`).join('')}</tr></thead>`;
+  const rows = (list) => list.map((f) => `<tr><td>${nameHtml(f.id)}${f.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(f.stars)}</td><td class="num">${formatEuro(f.sales)}</td>${columns.map((c) => `<td>${when(c, f.id)}</td>`).join('')}</tr>`).join('');
+  return `<h4>💎 Peu d'étoiles, beaucoup de ventes</h4><div class="table-wrap"><table>${head}<tbody>${rows(underrated)}</tbody></table></div>`
+    + `<h4>🎈 Beaucoup d'étoiles, presque rien</h4><div class="table-wrap"><table>${head}<tbody>${rows(overrated)}</tbody></table></div>`;
+}
 
 /** Le débrief en cours : { questions, step, shown, presenter, onChange({ step, shown }) }. */
 app.debrief = null;
@@ -490,7 +508,7 @@ function renderDebrief() {
   const overview = step === count;
   const q = overview ? null : d.questions[step];
   const show = overview ? ALL_SHOWN : q.show;
-  const hasShow = Boolean(show.chart || show.truth || show.decisions || show.kpi?.length);
+  const hasShow = Boolean(show.chart || show.truth || show.surprises || show.decisions || show.kpi?.length);
   const visible = overview || (d.shown && hasShow);
   $('debrief-count').textContent = overview ? 'Vue d\'ensemble' : `Question ${step + 1} sur ${count}`;
   $('debrief-question').textContent = overview ? 'Tous les indicateurs, pour conclure.' : q.text;
@@ -511,6 +529,7 @@ function renderDebrief() {
   $('kpi-panel').hidden = !kpi.length;
   for (const row of $('kpi').querySelectorAll('tr[data-kpi]')) row.hidden = !kpi.includes(row.dataset.kpi);
   $('truth-panel').hidden = !(visible && show.truth);
+  $('surprises-panel').hidden = !(visible && show.surprises);
   $('decisions').hidden = !(visible && show.decisions && d.teams);
   $('results-grid').hidden = $('kpi-panel').hidden && $('truth-panel').hidden;
 }
@@ -547,18 +566,22 @@ function renderComparison(columns, { title, intro = '', keepScroll = false, debr
   $('legend').innerHTML = legendHtml(series);
   const first = (r) => (r.firstSale ? `Dès la semaine ${firstWeek(r.firstSale)}` : 'Jamais');
   const invested = (r) => `${formatEuro(r.invested)}${r.neverSold ? ' (sans retour)' : ''}`;
-  const low = (r) => (r.liveAtEnd.length ? `${r.lowUse.length} sur ${r.liveAtEnd.length}` : '—');
+  // Peu utilisées et demandes : on nomme les fonctionnalités, avec ce qu'elles rapportent.
+  const named = (ids) => ids.map((id) => `<span class="nowrap">${nameHtml(id)} (${formatEuro(feature(id).value * EURO_PER_POINT)})</span>`).join('<br>');
+  const low = (r) => (r.liveAtEnd.length ? `${r.lowUse.length} sur ${r.liveAtEnd.length}${r.lowUse.length ? `<br>${named(r.lowUse)}` : ''}` : '—');
+  const reqs = (r) => (r.requestsLive.length ? `${r.requestsLive.length}<br>${named(r.requestsLive)}` : '0');
   const rows = [
     ['first', 'Premier euro encaissé', first],
     ['invested', 'Investi avant le premier euro', invested],
     ['live', 'Fonctionnalités en ligne à la fin du projet', (r) => r.liveAtEnd.length],
-    ['lowUse', 'Fonctionnalités en ligne peu utilisées', low],
-    ['requests', 'Demandes de Mme Lefèvre mises en ligne', (r) => r.requestsLive.length],
+    ['lowUse', 'Fonctionnalités en ligne peu utilisées (100 € ou moins toutes les 2 semaines)', low],
+    ['requests', 'Demandes de Mme Lefèvre mises en ligne (ventes toutes les 2 semaines)', reqs],
     ['cumulative', `Ventes cumulées après ${HORIZON_WEEKS} semaines`, (r) => `<strong>${formatEuro(r.cumulative)}</strong>`],
   ];
   $('kpi').innerHTML = `<thead><tr><th scope="col"><span hidden>Indicateur</span></th>${columns.map((c) => `<th scope="col">${esc(c.head)}</th>`).join('')}</tr></thead><tbody>`
     + rows.map(([key, label, cell]) => `<tr data-kpi="${key}"><th scope="row">${label}</th>${columns.map((c) => `<td>${cell(c.results)}</td>`).join('')}</tr>`).join('') + '</tbody>';
   $('kpi').classList.toggle('kpi-wide', columns.length > 2);
+  $('surprises').innerHTML = surprisesHtml(columns);
   $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th></tr></thead><tbody>'
     + truthTable().map((t) => `<tr><td>${emo(feature(t.id).icon)}${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
   // Débrief : à l'arrivée sur les résultats, on repart de la première question, indicateurs cachés ;
@@ -751,7 +774,7 @@ export function init() {
   $('play-sprint').addEventListener('click', () => { if (!app.session) onPlaySprint(); });
   $('descope-open').addEventListener('click', () => { if (canDescope(app.round)) openDescopeDialog(); });
   $('keep-scope').addEventListener('click', () => { act((s) => (needsArbitrage(s) ? keepScope(s) : s), renderBoard); });
-  $('revise-open').addEventListener('click', revise);
+  for (const btn of document.querySelectorAll('[data-revise]')) btn.addEventListener('click', revise);
 
   $('start-round-2').addEventListener('click', () => {
     app.round = newRound(MODES.increment);

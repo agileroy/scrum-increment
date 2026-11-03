@@ -140,6 +140,11 @@ export function toggleInPlan(state, id) {
   return next;
 }
 
+/** Premier rang libre : en manche 2, les éléments terminés restent en haut, dans l'ordre où ils ont été terminés. */
+export function firstMovableIndex(state) {
+  return state.mode === MODES.increment ? state.done.length : 0;
+}
+
 /** Peut-on changer le rang de cette fonctionnalité ? */
 export function canMove(state, id) {
   if (state.finished) return false;
@@ -152,20 +157,20 @@ export function moveFeature(state, id, direction) {
   if (!canMove(state, id)) throw new Error('Cette fonctionnalité ne peut pas changer de rang.');
   const i = state.order.indexOf(id);
   const j = i + Math.sign(direction);
-  if (i < 0 || j < 0 || j >= state.order.length) return state;
+  if (i < 0 || j < firstMovableIndex(state) || j >= state.order.length) return state;
   const next = clone(state);
   [next.order[i], next.order[j]] = [next.order[j], next.order[i]];
   return next;
 }
 
 /**
- * Place une fonctionnalité au rang `index` de la liste (0 = en haut), mêmes règles que les flèches.
- * Les éléments terminés restent où ils sont et peuvent être enjambés.
+ * Place une fonctionnalité au rang `index` de la liste (0 = en haut), mêmes règles que les flèches :
+ * jamais au-dessus des éléments terminés.
  */
 export function moveFeatureTo(state, id, index) {
   if (!canMove(state, id)) throw new Error('Cette fonctionnalité ne peut pas changer de rang.');
   const from = state.order.indexOf(id);
-  const to = Math.max(0, Math.min(state.order.length - 1, Math.trunc(index)));
+  const to = Math.max(firstMovableIndex(state), Math.min(state.order.length - 1, Math.trunc(index)));
   if (from < 0 || from === to) return state;
   const next = clone(state);
   next.order.splice(from, 1);
@@ -327,6 +332,8 @@ export function playSprint(state) {
   const sprint = next.sprint;
   const sales = earn(next, sprint);
   const { completed, launched, discoveries } = build(next);
+  // Manche 2 : les éléments terminés remontent en haut du Product Backlog, dans l'ordre où ils ont été terminés.
+  if (next.mode === MODES.increment) next.order = [...next.done, ...next.order.filter((x) => !has(next.done, x))];
   const quotes = review(next);
   const events = EVENTS.filter((e) => e.after === sprint);
   for (const e of events) if (e.lastBuildSprint) next.lastBuildSprint = Math.min(next.lastBuildSprint, e.lastBuildSprint);
@@ -401,10 +408,34 @@ export function roundResults(state) {
     invested: investedPoints * COST_PER_POINT,
     neverSold: state.firstSale === null,
     liveAtEnd: state.liveAtEnd.slice(),
+    liveSince: liveSince(state),
     requestsLive: state.liveAtEnd.filter(isRequest),
     lastBuildSprint: state.lastBuildSprint,
     lowUse,
     cumulative: Math.round(state.cumulative),
+  };
+}
+
+/** Période de mise en ligne de chaque fonctionnalité en ligne à la fin : { id → période }. */
+function liveSince(state) {
+  const out = {};
+  for (const e of state.log) {
+    if (e.kind !== 'sprint') continue;
+    if (state.mode === MODES.increment) for (const id of e.completed) out[id] ??= e.sprint;
+    else if (e.launched) for (const id of state.liveAtEnd) out[id] ??= e.sprint;
+  }
+  return out;
+}
+
+/**
+ * Les surprises de l'intuition : fonctionnalités peu étoilées qui rapportent beaucoup (« sous-estimées »),
+ * et très étoilées qui ne rapportent presque rien (« surestimées »).
+ */
+export function intuitionSurprises() {
+  const all = [...FEATURES, ...REQUESTS].map((f) => ({ id: f.id, name: f.name, stars: f.stars, sales: f.value * EURO_PER_POINT, requested: isRequest(f.id) }));
+  return {
+    underrated: all.filter((f) => f.stars <= 3 && f.sales >= 400).sort((a, b) => b.sales - a.sales),
+    overrated: all.filter((f) => f.stars >= 4 && f.sales <= 200).sort((a, b) => b.stars - a.stars || a.sales - b.sales),
   };
 }
 
@@ -546,6 +577,8 @@ export function keepScope(state, { reason = null } = {}) {
 
 /** Manche 1 : des décisions de ce COPIL (demande, arbitrage) peuvent-elles encore être revues ? */
 export function canRevise(state) {
+  // Avant le premier COPIL : le cahier des charges validé peut être rouvert.
+  if (state.mode === MODES.cascade && state.sprint === 0 && state.planValidated) return true;
   const p = state.periodStart;
   return state.mode === MODES.cascade && Boolean(p) && p.sprint === state.sprint && !state.finished
     && state.log.length > p.logLength;
@@ -554,6 +587,12 @@ export function canRevise(state) {
 /** Manche 1 : annule les décisions prises depuis le dernier COPIL (la demande redevient en attente). */
 export function reviseDecisions(state) {
   if (!canRevise(state)) throw new Error('Aucune décision à revoir.');
+  if (state.sprint === 0) {
+    const reopened = clone(state);
+    reopened.planValidated = false;
+    reopened.log = reopened.log.filter((e) => e.kind !== 'plan');
+    return reopened;
+  }
   const p = state.periodStart;
   const next = clone(state);
   next.included = p.included.slice();
@@ -670,17 +709,22 @@ export function decisionTrail(state) {
   const periods = new Map();
   const at = (p) => { if (!periods.has(p)) periods.set(p, []); return periods.get(p); };
   let previous = FEATURES.map((f) => f.id);
+  const doneSoFar = []; // manche 2 : les éléments terminés remontent tout seuls en haut, ce n'est pas une décision
   for (const e of state.log) {
     if (e.kind === 'plan') at(0).push({ kind: 'plan', total: e.total, dropped: (e.dropped ?? []).slice() });
     if (e.kind === 'sprint') {
       if (state.mode === MODES.increment && e.order) {
-        for (const id of e.order) {
+        const before = previous.filter((x) => !doneSoFar.includes(x));
+        const now = e.order.filter((x) => !doneSoFar.includes(x));
+        const top = doneSoFar.length;
+        for (const id of now) {
           // une demande ajoutée depuis la période précédente part du bas de la liste
-          const from = previous.includes(id) ? previous.indexOf(id) : previous.length;
-          const to = e.order.indexOf(id);
-          if (Math.abs(from - to) >= 2) at(e.sprint).push({ kind: 'moved', id, from: from + 1, to: to + 1 });
+          const from = before.includes(id) ? before.indexOf(id) : before.length;
+          const to = now.indexOf(id);
+          if (Math.abs(from - to) >= 2) at(e.sprint).push({ kind: 'moved', id, from: top + from + 1, to: top + to + 1 });
         }
         previous = e.order.slice();
+        doneSoFar.push(...e.completed);
       }
       if (state.mode === MODES.cascade && !e.launched && e.progress !== null) at(e.sprint).push({ kind: 'status', progress: e.progress, weather: e.weather });
       if (e.launched) at(e.sprint).push({ kind: 'release' });

@@ -31,6 +31,9 @@
 - [x] 4.7 Textes : ordinateur d'abord, téléphone en dépannage
 - [x] 4.8 Arbitrage obligatoire quand orageux (maintien possible, d'office au lancement) ; prévision réelle dans la demande
 - [x] 4.9 Décisions du COPIL révisables ; « Nous ne sommes plus prêts » les rouvre
+- [x] 4.11 « Revoir les décisions du COPIL » à côté de « Nous sommes prêts » et d'« Avancer » ; cahier des charges révisable avant le premier COPIL
+- [x] 4.12 Manche 2 : éléments terminés en tête, rien au-dessus
+- [x] 4.13 Débrief : exercice d'abord, théorie ensuite ; surprises de l'intuition ; peu utilisées et demandes nommées
 - [x] 4.10 Débrief question par question, indicateurs liés, révélation pilotée par le formateur (règles Firebase : debriefStep, debriefShown dans les 7 dépôts)
 
 ## 5. Vérifications
