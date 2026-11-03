@@ -31,6 +31,8 @@ L'écran de résultats SHALL commencer par le débrief, une question à la fois 
 - **WHEN** le présentateur révèle les indicateurs
 - **THEN** s'affichent la courbe et les lignes « Premier euro encaissé » et « Investi avant le premier euro », et rien d'autre
 
+## ADDED Requirements
+
 ### Requirement: Surprises de l'intuition
 Pour les questions sur les Sprint Reviews et sur l'intuition de Mme Lefèvre, les résultats SHALL mettre en avant deux listes : les fonctionnalités peu étoilées (3 étoiles ou moins) qui rapportent beaucoup (400 € ou plus toutes les 2 semaines), et les très étoilées (4 étoiles ou plus) qui ne rapportent presque rien (200 € ou moins), avec pour chacune l'intuition, les ventes réelles et, pour chaque manche ou équipe, quand elle a été mise en ligne (« Sprint 3 », « COPIL 5 » ou « — »). Les lignes « peu utilisées » et « demandes mises en ligne » des indicateurs SHALL nommer les fonctionnalités concernées avec leurs ventes. Le tableau complet « Intuition contre réalité » reste dans la vue d'ensemble.
 
