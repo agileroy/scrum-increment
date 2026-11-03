@@ -10,7 +10,7 @@ import {
   requestStatus, decideRequest, isRequest, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
 import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
-import { lexicon, logEntry, exploitationText, discoveryText } from './vocabulary.js?v=__VERSION__';
+import { lexicon, logEntry, exploitationText, discoveryText, STORY, SPEAKER } from './vocabulary.js?v=__VERSION__';
 import { chartSvg, legendHtml, formatEuro } from './chart.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -24,6 +24,15 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const lex = () => lexicon(app.round.mode);
 const stars = (n) => `<span class="stars" aria-label="Intuition de Mme Lefèvre : ${n} sur 5">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+
+// Pictogramme décoratif d'une fonctionnalité : le nom reste le texte lu.
+const emo = (icon) => (icon ? `<span class="emo" aria-hidden="true">${icon}</span>` : '');
+const nameHtml = (id) => `${emo(feature(id).icon)}${esc(feature(id).name)}`;
+
+/** Réplique de Mme Lefèvre : avatar, bulle entre guillemets, signature. */
+function speechHtml(text) {
+  return `<figure class="speech"><span class="avatar" aria-hidden="true">👩‍🍳</span><blockquote><p>«&nbsp;${esc(text)}&nbsp;»</p><footer>${esc(SPEAKER)}</footer></blockquote></figure>`;
+}
 
 const roundLabel = () => (app.session ? app.session.label : lex().round);
 
@@ -93,7 +102,7 @@ function planItemHtml(state, id, index, impossible) {
   return `<li class="item ${cls}" data-id="${id}" data-drag="${id}">
     <div class="rank">${index + 1}</div>
     <div>
-      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}</div>
+      <div class="item-head"><span class="item-name">${nameHtml(id)}</span>${chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
       <div class="item-meta"><span>${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${f.req ? `<span>Nécessite : ${esc(feature(f.req).name)}</span>` : ''}</div>
       ${note}
@@ -125,7 +134,7 @@ function boardItemHtml(state, id, index, count) {
   return `<li class="item ${cls}" data-id="${id}"${canMove(state, id) ? ` data-drag="${id}"` : ''}>
     <div class="rank">${index + 1}</div>
     <div>
-      <div class="item-head"><span class="item-name">${esc(f.name)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
+      <div class="item-head"><span class="item-name">${nameHtml(id)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
       <div class="item-meta"><span>${p} / ${extra ? `<span class="extra" title="${extra} points découverts en cours de route">${f.cost} + ${extra}</span>` : f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
       ${dep.note}
@@ -163,6 +172,7 @@ function renderPlan() {
   meter.firstElementChild.style.width = `${Math.min(100, (st.total / st.budget) * 100)}%`;
   $('plan-message').textContent = st.message;
   $('plan-chip').textContent = `${roundLabel()} · Avant le premier COPIL`;
+  $('plan-story').textContent = `${STORY} ${lex().approach}`;
   $('plan-message').closest('.plan-gauge').classList.toggle('is-invalid', !st.valid);
   $('validate-plan').disabled = !st.valid;
   $('plan-list').innerHTML = s.order.map((id, i) => planItemHtml(s, id, i, st.impossible)).join('');
@@ -191,6 +201,7 @@ function renderBoard() {
   app.session?.renderBar();
   $('list-title').textContent = l.listTitle;
   $('list-hint').textContent = l.listHint;
+  $('board-intuition').textContent = l.intuitionHelp;
   $('journal-title').textContent = l.journalTitle;
   const tiles = l.stats(s, {
     weather: cascade ? projectWeather(s) : null,
@@ -244,14 +255,14 @@ function reportHtml(state, report, { team = false } = {}) {
     // Un COPIL pilote un plan : ni ventes ni clients tant que l'appli n'est pas sortie.
     const weeks = Math.min(report.sprint, PLANNED_SPRINTS) * SPRINT_WEEKS;
     if (report.launched) {
-      h += `<p class="good"><strong>L'appli est en ligne !</strong> Les ${state.live.length} lots du cahier des charges sortent tous en même temps.</p>`;
+      h += `<p class="good launch"><span class="emo pop" aria-hidden="true">🎉</span><strong>L'appli est en ligne !</strong> Les ${state.live.length} lots du cahier des charges sortent tous en même temps.</p>`;
     } else {
       h += `<p>Temps écoulé : <strong>${weeks} semaines sur ${PLANNED_SPRINTS * SPRINT_WEEKS}</strong> · Travail fait : <strong>${report.progress} %</strong></p>`;
     }
     if (report.sales > 0) h += `<p>${esc(l.salesLine(report.sales))}</p>`;
   } else {
     h += report.completed.length
-      ? `<p>Mis en ligne : <strong>${report.completed.map((id) => esc(feature(id).name)).join(', ')}</strong></p>`
+      ? `<p class="good launch"><span class="emo pop" aria-hidden="true">🚀</span><span>Mis en ligne : <strong>${report.completed.map(nameHtml).join(', ')}</strong></span></p>`
       : '<p>Rien de nouveau en ligne ce Sprint : un élément est encore en cours.</p>';
     h += `<p>${esc(l.salesLine(report.sales))}</p>`;
     h += '<h3>Ce que disent les clients</h3>';
@@ -261,14 +272,14 @@ function reportHtml(state, report, { team = false } = {}) {
     if (report.completed.length) h += '<p class="muted">La vraie valeur des fonctionnalités en ligne apparaît maintenant dans le Product Backlog.</p>';
   }
   for (const d of report.discoveries ?? []) {
-    h += `<p class="discovery"><strong>Travail sous-estimé :</strong> ${esc(discoveryText(state.mode, d))}</p>`;
+    h += `<p class="discovery">${emo('🔍')}<strong>Travail sous-estimé :</strong> ${esc(discoveryText(state.mode, d))}</p>`;
   }
   for (const e of report.events) {
-    h += `<p class="news"><strong>${esc(e.title)} :</strong> ${esc(l.eventText(e))}</p>`;
+    h += `<p class="news">${emo(e.icon)}<strong>${esc(e.title)} :</strong> ${esc(l.eventText(e))}</p>`;
   }
   if (report.request) {
     const r = report.request;
-    h += `<div class="request-box"><p><strong>Demande de ${esc(l.stakeholder)} :</strong> « ${esc(r.ask)} »</p><p>${esc(l.requestAnnounce(r))}</p></div>`;
+    h += `<div class="request-box"><p>${emo('📨')}<strong>Demande de ${esc(l.stakeholder)} :</strong> « ${esc(r.ask)} »</p><p>${esc(l.requestAnnounce(r))}</p></div>`;
   }
   let next = report.developmentOver ? 'Fin du projet' : (team ? 'Revenir au tableau' : l.next(report.sprint + 1));
   if (cascade && report.request) next = l.seeRequest;
@@ -317,9 +328,11 @@ function requestHtml() {
   const r = feature(s.pendingRequest);
   const st = requestStatus(s, app.remove);
   let h = '<h2 id="dialog-title">Demande de changement</h2>';
-  h += `<blockquote class="quote">« ${esc(r.ask)} »<footer>Madame Lefèvre, la commanditaire</footer></blockquote>`;
-  h += `<p><strong>${esc(r.name)}</strong> (${esc(r.desc)}) : ${r.cost} points, intuition ${stars(r.stars)}.</p>`;
-  h += `<p class="muted">Accepter, c'est signer un avenant : ${AVENANT} points de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du cahier des charges des lots pas encore commencés.</p>`;
+  const l = lexicon(s.mode);
+  h += speechHtml(r.ask);
+  h += `<p><strong>${nameHtml(r.id)}</strong> (${esc(r.desc)}) : ${r.cost} points, intuition de Mme Lefèvre ${stars(r.stars)}.</p>`;
+  // La phrase sur l'avenant dépend de la marge : sans rien retirer, la demande tient-elle déjà ?
+  h += `<p class="muted">${esc(requestStatus(s, []).valid ? l.requestFits(r) : l.requestTight(r))}</p>`;
   h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${st.total} / ${st.budget} points</span></div>`;
   h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
   h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
@@ -329,7 +342,7 @@ function requestHtml() {
     ? `<fieldset class="removals"><legend>Retirer des lots</legend>${st.removable.map((id) => {
       const f = feature(id);
       const why = st.impossible[id] && !app.remove.includes(id) ? ` <span class="chip warn">Impossible sans « ${esc(feature(st.impossible[id]).name)} »</span>` : '';
-      return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${esc(f.name)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span>${why}</span></label>`;
+      return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span>${why}</span></label>`;
     }).join('')}</fieldset>`
     : '<p class="muted">Tous les lots sont commencés : plus rien ne peut être retiré.</p>';
   h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Accepter (avenant)</button><button type="button" class="button button-ghost" data-refuse>Refuser</button></div>`;
@@ -388,6 +401,8 @@ function renderComparison(columns, { title, intro = '', keepScroll = false }) {
   const series = columns.map((c) => ({ kind: c.kind, label: c.label, values: c.results.curve, team: c.team }));
   const frontier = columns[0].results.lastBuildSprint;
   app.chart = { series, frontier, periods: columns[0].results.curve.map((_, i) => i + 1) };
+  // Indicateurs pliés à chaque arrivée sur les résultats : les chiffres ne doivent pas lancer le débat.
+  if ($('screen-results').hidden) $('kpi-panel').open = false;
   $('results-title').textContent = title;
   $('results-intro').innerHTML = intro;
   $('results-intro').hidden = !intro;
@@ -408,7 +423,7 @@ function renderComparison(columns, { title, intro = '', keepScroll = false }) {
     + rows.map(([label, cell]) => `<tr><th scope="row">${label}</th>${columns.map((c) => `<td>${cell(c.results)}</td>`).join('')}</tr>`).join('') + '</tbody>';
   $('kpi').classList.toggle('kpi-wide', columns.length > 2);
   $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th></tr></thead><tbody>'
-    + truthTable().map((t) => `<tr><td>${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
+    + truthTable().map((t) => `<tr><td>${emo(feature(t.id).icon)}${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
   show('results', { keepScroll });
 }
 
@@ -635,6 +650,6 @@ export function init() {
 
 /** Ce que room-ui.js réutilise pour le jeu d'une équipe et les résultats collectifs. */
 export const ui = {
-  app, $, esc, plural, show, act, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
+  app, $, esc, plural, show, act, speechHtml, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
   openRequestDialog, refreshRequestDialog, renderComparison, isDragging: () => Boolean(drag),
 };

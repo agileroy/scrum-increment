@@ -16,6 +16,12 @@ export const FORBIDDEN = {
   increment: [/COPIL/, /cahier des charges/i, /chef de projet/i, /\blots?\b/i, /avenant/i],
 };
 
+/** Le contexte, commun aux deux approches : rien sur la façon de travailler. */
+export const STORY = "Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, et elle vous en confie la réalisation.";
+
+/** Signature des répliques de Mme Lefèvre. */
+export const SPEAKER = 'Madame Lefèvre, la boulangère';
+
 const WEATHER = {
   sunny: { icon: '☀️', label: 'Ensoleillé', text: 'Le projet avance comme prévu.' },
   stormy: { icon: '⛈️', label: 'Orageux', text: 'Le reste à faire ne tient plus dans le temps restant.' },
@@ -26,7 +32,11 @@ const cascade = {
   mode: 'cascade',
   round: 'Manche 1 · Projet',
   role: 'Chef de projet',
-  stakeholder: 'la commanditaire',
+  stakeholder: 'la boulangère',
+  approach: 'Vous optez pour une démarche projet : un cahier des charges complet, signé avant de commencer, et un COPIL toutes les deux semaines pour suivre l\'avancement.',
+  intuitionHelp: "Intuition : ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles. C'est son avis, pas une mesure.",
+  requestFits: (r) => `Accepter, c'est signer un avenant : ${r.cost} points de lot et ${AVENANT} points de recette en plus. Le cahier des charges garde assez de marge : rien à retirer.`,
+  requestTight: () => `Accepter, c'est signer un avenant : ${AVENANT} points de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du cahier des charges des lots pas encore commencés.`,
   deadline: (n, total) => `COPIL ${n} sur ${total}`,
   deadlineWeeks: (n) => weeksText(n),
   play: (n) => `Avancer jusqu'au COPIL ${n}`,
@@ -35,7 +45,7 @@ const cascade = {
   item: 'lot',
   journalTitle: 'Comptes rendus de COPIL',
   journalEmpty: 'Le projet démarre.',
-  requestChip: 'Demande de la commanditaire',
+  requestChip: 'Demande de la boulangère',
   valuePer: '/ 2 semaines',
   awaiting: 'Terminé, en attente de recette',
   recetteName: 'Recette et mise en production',
@@ -53,7 +63,7 @@ const cascade = {
   timeVsWork: ({ weeks, totalWeeks, done, total }) => `${weeks} semaine${weeks > 1 ? 's' : ''} sur ${totalWeeks} · ${done} points sur ${total}, recette comprise`,
   reportTitle: (n) => `Compte rendu du COPIL ${n}`,
   next: (n) => `Avancer jusqu'au COPIL ${n}`,
-  seeRequest: 'Voir la demande de la commanditaire',
+  seeRequest: 'Voir la demande de la boulangère',
   salesLine: (sales) => `Ventes pendant ces 2 semaines : ${euro(sales)}`,
   eventText: (e) => e.text.cascade,
   eventLog: (e) => e.log.cascade,
@@ -64,7 +74,7 @@ const cascade = {
     if (d.reason === 'timeout') return `${r} refusée faute de décision : le cahier des charges reste inchangé.`;
     return `${r} refusée : le cahier des charges reste inchangé.`;
   },
-  planLog: (total) => `Cahier des charges de ${total} points validé et signé par la commanditaire.`,
+  planLog: (total) => `Cahier des charges de ${total} points validé et signé par la boulangère.`,
   periodLog: (f) => `avancement ${f.progress} %, météo ${WEATHER[f.weather].label.toLowerCase()}${f.launched ? ', appli en ligne' : ''}.`,
   periodName: (n) => `COPIL ${n}`,
   endOfDev: (n) => `Le projet s'arrête au COPIL ${n}, en l'état.`,
@@ -77,6 +87,8 @@ const increment = {
   round: 'Manche 2 · Scrum',
   role: 'Product Owner',
   stakeholder: 'Mme Lefèvre',
+  approach: 'Vous optez pour Scrum : vous êtes Product Owner, l\'équipe livre un Increment utilisable à chaque Sprint, et chaque Sprint Review montre ce qui marche.',
+  intuitionHelp: "Intuition : ce que Mme Lefèvre pense que chaque élément va rapporter, de 1 à 5 étoiles. C'est son avis : les Sprint Reviews diront ce qu'en pensent ses clients.",
   deadline: (n, total) => `Sprint ${n} sur ${total}`,
   deadlineWeeks: (n) => weeksText(n),
   play: (n) => `Lancer le Sprint ${n}`,

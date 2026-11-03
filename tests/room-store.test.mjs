@@ -98,7 +98,7 @@ test('partie complète à 2 équipes : chiffres du moteur, demandes refusées fa
   const a = roundResults(teamState(r, 1));
   const b = roundResults(teamState(r, 2));
   assert.equal(a.cumulative, 0);
-  assert.equal(b.cumulative, 21200);
+  assert.equal(b.cumulative, 22800);
   const timeouts = teamState(r, 1).log.filter((e) => e.kind === 'decision' && e.reason === 'timeout');
   assert.deepEqual(timeouts.map((e) => e.request), ['anglais', 'promos', 'plateaux']);
   assert.equal(await env.host.launchPeriod(env.code, r), false);

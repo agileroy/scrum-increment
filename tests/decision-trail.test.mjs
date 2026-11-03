@@ -24,7 +24,7 @@ test('Équipe projet : plan validé, demande acceptée en retirant un lot, refus
   assert.match(all, /Version anglaise refusée/);
   assert.match(all, /Promotions flash acceptée par avenant .*en retirant : Livraison à domicile/);
   assert.match(all, /Plateaux pour les entreprises refusée faute de décision/);
-  assert.match(all, /Travail sous-estimé : Réservation de pain \(\+6 points\)/);
+  assert.match(all, /Travail sous-estimé : Paiement en ligne \(\+6 points\)/);
   assert.match(all, /météo orageux/);
   assert.equal(trailPeriod('cascade', 2), 'COPIL 2');
 });

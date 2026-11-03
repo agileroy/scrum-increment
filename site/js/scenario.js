@@ -32,18 +32,18 @@ export const CLIENT_LOSS = 0.9;
 
 /**
  * Fonctionnalités, dans l'ordre initial du plan et du Product Backlog.
- * stars : intuition de Mme Lefèvre (visible) ; value : valeur réelle en points (cachée).
+ * icon : pictogramme décoratif ; stars : intuition de Mme Lefèvre (visible) ; value : valeur réelle en points (cachée).
  */
 export const FEATURES = [
-  { id: 'vitrine',   name: 'Vitrine en ligne',          desc: 'Produits, prix et horaires',            cost: 5,  stars: 3, value: 2,  req: null },
-  { id: 'resa',      name: 'Réservation de pain',       desc: 'Réserver sa baguette pour le soir',     cost: 8,  stars: 4, value: 10, req: 'vitrine' },
-  { id: 'paiement',  name: 'Paiement en ligne',         desc: 'Payer au moment de la commande',        cost: 8,  stars: 5, value: 2,  req: 'resa' },
-  { id: 'livraison', name: 'Livraison à domicile',      desc: 'Livrer les commandes dans le quartier', cost: 14, stars: 5, value: 1,  req: 'resa' },
-  { id: 'fidelite',  name: 'Carte de fidélité',         desc: 'Le 10e pain offert',                    cost: 7,  stars: 4, value: 3,  req: 'vitrine' },
-  { id: 'avis',      name: 'Avis clients',              desc: 'Notes et commentaires',                 cost: 5,  stars: 3, value: 0,  req: 'vitrine' },
-  { id: 'cc',        name: 'Créneau click & collect',   desc: 'Choisir son heure de passage',          cost: 6,  stars: 3, value: 5,  req: 'resa' },
-  { id: 'gateaux',   name: 'Gâteaux sur mesure',        desc: "Commander un gâteau d'anniversaire",    cost: 9,  stars: 2, value: 7,  req: 'vitrine' },
-  { id: 'alerte',    name: 'Alerte « fournée chaude »', desc: 'Notification à la sortie du four',      cost: 4,  stars: 2, value: 6,  req: 'vitrine' },
+  { id: 'vitrine', icon: '🏪',   name: 'Vitrine en ligne',          desc: 'Produits, prix et horaires',            cost: 5,  stars: 3, value: 2,  req: null },
+  { id: 'resa', icon: '🥖',      name: 'Réservation de pain',       desc: 'Réserver sa baguette pour le soir',     cost: 8,  stars: 4, value: 10, req: 'vitrine' },
+  { id: 'paiement', icon: '💳',  name: 'Paiement en ligne',         desc: 'Payer au moment de la commande',        cost: 8,  stars: 5, value: 2,  req: 'resa' },
+  { id: 'livraison', icon: '🛵', name: 'Livraison à domicile',      desc: 'Livrer les commandes dans le quartier', cost: 14, stars: 5, value: 1,  req: 'resa' },
+  { id: 'fidelite', icon: '🎁',  name: 'Carte de fidélité',         desc: 'Le 10e pain offert',                    cost: 7,  stars: 4, value: 3,  req: 'vitrine' },
+  { id: 'avis', icon: '💬',      name: 'Avis clients',              desc: 'Notes et commentaires',                 cost: 5,  stars: 3, value: 0,  req: 'vitrine' },
+  { id: 'cc', icon: '⏰',        name: 'Créneau click & collect',   desc: 'Choisir son heure de passage',          cost: 6,  stars: 3, value: 5,  req: 'resa' },
+  { id: 'gateaux', icon: '🎂',   name: 'Gâteaux sur mesure',        desc: "Commander un gâteau d'anniversaire",    cost: 9,  stars: 2, value: 7,  req: 'vitrine' },
+  { id: 'alerte', icon: '🥐',    name: 'Alerte « fournée chaude »', desc: 'Notification à la sortie du four',      cost: 4,  stars: 2, value: 6,  req: 'vitrine' },
 ];
 
 /**
@@ -74,31 +74,40 @@ export const QUOTES = [
  * du Sprint `after`, identiques dans les deux manches. Même format que FEATURES, plus `after` et `ask`.
  */
 export const REQUESTS = [
-  { id: 'anglais',  name: 'Version anglaise',              desc: "L'appli traduite pour les touristes",       cost: 5, stars: 4, value: 0, req: 'vitrine', after: 1,
+  { id: 'anglais', icon: '🌍',  name: 'Version anglaise',              desc: "L'appli traduite pour les touristes",       cost: 5, stars: 4, value: 0, req: 'vitrine', after: 1,
     ask: "L'été, il y a des touristes dans le quartier : il nous faut absolument l'appli en anglais !" },
-  { id: 'promos',   name: 'Promotions flash',              desc: 'Des réductions envoyées aux clients',        cost: 6, stars: 4, value: 1, req: 'vitrine', after: 2,
+  { id: 'promos', icon: '📣',   name: 'Promotions flash',              desc: 'Des réductions envoyées aux clients',        cost: 6, stars: 4, value: 1, req: 'vitrine', after: 2,
     ask: 'La Mie Dorée a son appli : contre-attaquons avec des promotions flash, ça fera venir du monde !' },
-  { id: 'plateaux', name: 'Plateaux pour les entreprises', desc: 'Commander des plateaux petit-déjeuner',      cost: 6, stars: 2, value: 4, req: 'vitrine', after: 3,
+  { id: 'plateaux', icon: '🥪', name: 'Plateaux pour les entreprises', desc: 'Commander des plateaux petit-déjeuner',      cost: 6, stars: 2, value: 4, req: 'vitrine', after: 3,
     ask: "Le cabinet d'avocats d'à côté m'a demandé des plateaux petit-déjeuner. Je ne sais pas si ça vaut vraiment le coup…" },
 ];
 
 /**
- * Travail sous-estimé : découvert quand l'équipe commence l'élément (`target`), ou la recette finale
- * (manche 1 seulement). Fixe et identique pour les deux approches : le moteur reste déterministe.
+ * Travail sous-estimé : découvert quand l'équipe travaille sur l'élément (`target`), ou commence la recette
+ * finale (manche 1 seulement). Jamais pendant la première période : le premier COPIL ou Sprint se passe bien,
+ * et un élément commencé pendant la première période révèle sa surprise à la période suivante.
+ * Fixe et identique pour les deux approches : le moteur reste déterministe.
  */
 export const UNDERESTIMATES = [
   {
-    target: 'vitrine', extra: 4,
+    target: 'paiement', extra: 6,
     text: {
-      cascade: "Le lot « Vitrine en ligne » est plus gros que prévu : la charte graphique et l'accessibilité n'étaient pas dans l'estimation.",
-      increment: "« Vitrine en ligne » est plus grosse que prévu : la charte graphique et l'accessibilité n'étaient pas dans l'estimation.",
+      cascade: "Le lot « Paiement en ligne » est plus gros que prévu : la banque exige une sécurisation et une certification qui n'étaient pas dans l'estimation.",
+      increment: "« Paiement en ligne » est plus gros que prévu : la banque exige une sécurisation et une certification qui n'étaient pas dans l'estimation.",
     },
   },
   {
-    target: 'resa', extra: 6,
+    target: 'gateaux', extra: 6,
     text: {
-      cascade: 'Le lot « Réservation de pain » est plus gros que prévu : il faut le relier au logiciel de caisse de la boulangerie.',
-      increment: '« Réservation de pain » est plus grosse que prévu : il faut la relier au logiciel de caisse de la boulangerie.',
+      cascade: 'Le lot « Gâteaux sur mesure » est plus gros que prévu : photos, allergènes et délais de fabrication n\'étaient pas dans l\'estimation.',
+      increment: '« Gâteaux sur mesure » est plus gros que prévu : photos, allergènes et délais de fabrication n\'étaient pas dans l\'estimation.',
+    },
+  },
+  {
+    target: 'cc', extra: 4,
+    text: {
+      cascade: 'Le lot « Créneau click & collect » est plus gros que prévu : il faut limiter le nombre de commandes par créneau.',
+      increment: '« Créneau click & collect » est plus gros que prévu : il faut limiter le nombre de commandes par créneau.',
     },
   },
   {
@@ -118,7 +127,7 @@ export const QUOTES_PER_REVIEW = 3;
  */
 export const EVENTS = [
   {
-    id: 'concurrent', after: 2,
+    id: 'concurrent', after: 2, icon: '📰',
     title: 'Nouvelle du quartier',
     text: {
       cascade: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients toutes les deux semaines.",
@@ -131,7 +140,7 @@ export const EVENTS = [
   },
   {
     // Toujours présente, jamais annoncée avant : à la fin de la cinquième période, tout s'arrête en l'état.
-    id: 'coupure', after: 5, lastBuildSprint: 5,
+    id: 'coupure', after: 5, lastBuildSprint: 5, icon: '🏦',
     title: 'Coup dur',
     text: {
       cascade: "La banque coupe le prêt, sans préavis : le projet s'arrête maintenant, en l'état.",

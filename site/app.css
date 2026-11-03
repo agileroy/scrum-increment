@@ -311,13 +311,36 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 /* ---------------------------------------------------------------- Briefings */
 
 .briefing { display: flex; flex-direction: column; gap: 14px; }
-.speech {
-  position: relative; margin: 6px 0 0 6px; padding: 14px 18px; max-width: 62ch;
-  border-radius: 16px 16px 16px 4px; background: var(--crust-soft); color: var(--text);
-  font-size: 1.15rem; font-weight: 600; line-height: 1.4;
+.speech { display: flex; align-items: flex-end; gap: 10px; margin: 0; max-width: 66ch; }
+.speech .avatar {
+  flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--crust-soft); border: 2px solid var(--crust); font-size: 1.6rem; line-height: 1;
 }
-.speech::before { content: "«"; position: absolute; left: -8px; top: -16px; font-size: 2.6rem; line-height: 1; color: var(--crust); }
+.speech blockquote {
+  margin: 0; padding: 12px 16px; border-radius: 16px 16px 16px 4px; background: var(--crust-soft); color: var(--text);
+  font-size: 1.12rem; font-weight: 600; line-height: 1.4;
+}
+.speech blockquote p { margin: 0; }
 .speech footer { margin-top: 4px; font-size: 0.85rem; font-weight: 500; color: var(--crust); }
+.dialog .speech blockquote { font-size: 1rem; }
+.story { margin: 0; max-width: 70ch; color: var(--muted); font-size: 1rem; line-height: 1.5; }
+.story::before { content: "🥖"; margin-right: 8px; }
+.intuition-help { margin: 0; color: var(--muted); font-size: 0.88rem; }
+.intuition-help .stars { margin-right: 4px; }
+.board-main .intuition-help { margin: -4px 0 10px; }
+.wait-story { margin-bottom: 16px; }
+.emo { margin-right: 6px; font-style: normal; }
+.launch { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.pop { display: inline-block; font-size: 1.4rem; animation: pop 0.6s ease-out both; }
+@keyframes pop { 0% { transform: scale(0.3) rotate(-20deg); opacity: 0; } 60% { transform: scale(1.25) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+@media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
+.fold-panel summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fold-panel summary::-webkit-details-marker { display: none; }
+.fold-panel summary h3 { margin: 0; }
+.fold-hint::after { content: "Afficher ▾"; color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+.fold-panel[open] .fold-hint::after { content: "Masquer ▴"; }
+.fold-panel[open] summary { margin-bottom: 10px; }
+.results-grid { align-items: start; }
 .tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .tile {
   display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
@@ -462,7 +485,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .tvw { grid-column: 1 / -1; }
   .tvw-row { grid-template-columns: 96px minmax(0, 1fr) 42px; }
   .tile strong { font-size: 1.3rem; }
-  .speech { font-size: 1.02rem; }
+  .speech blockquote { font-size: 1.02rem; }
+  .speech .avatar { width: 38px; height: 38px; font-size: 1.3rem; }
   table { font-size: 0.85rem; }
   th, td { padding: 6px 4px; }
   th.num { white-space: normal; }

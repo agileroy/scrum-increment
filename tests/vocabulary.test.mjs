@@ -141,3 +141,30 @@ test('Briefings : aucun mot de l\'autre manche sur le cahier des charges et sur 
   for (const text of ['2 semaines', '10 + 2 points', 'En ligne', 'Retours clients', 'Nous sommes prêts']) assert.ok(role.includes(text), text);
   assert.ok(!/class="lead"/.test(html.slice(html.indexOf('id="screen-plan"'), html.indexOf('id="plan-list"'))), 'plus de paragraphe sur le cahier des charges');
 });
+
+test('Contexte, intuition et avenant : dans le vocabulaire de chaque manche, sans « commanditaire »', async () => {
+  const { STORY, SPEAKER } = await import('../site/js/vocabulary.js');
+  const { feature } = await import('../site/js/game-core.js');
+  for (const re of [...FORBIDDEN.cascade, ...FORBIDDEN.increment]) assert.ok(!re.test(STORY), `contexte commun : ${re}`);
+  assert.ok(!/projet|Scrum/.test(STORY), 'le contexte commun ne dit pas la démarche');
+  assert.equal(SPEAKER, 'Madame Lefèvre, la boulangère');
+  for (const mode of ['cascade', 'increment']) {
+    const l = lexicon(mode);
+    const texts = [l.approach, l.intuitionHelp, l.stakeholder];
+    if (mode === 'cascade') texts.push(l.requestFits(feature('anglais')), l.requestTight(feature('anglais')), l.requestChip, l.seeRequest, l.planLog(61));
+    for (const t of texts) {
+      for (const re of FORBIDDEN[mode]) assert.ok(!re.test(t), `${mode} : ${re} dans « ${t} »`);
+      assert.ok(!/commanditaire/.test(t), t);
+    }
+  }
+  assert.match(lexicon('cascade').approach, /démarche projet/);
+  assert.match(lexicon('increment').approach, /Scrum/);
+  assert.match(lexicon('cascade').requestFits(feature('anglais')), /rien à retirer/);
+});
+
+test('Plus de « commanditaire » dans les écrans', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['index.html', 'js/ui.js', 'js/vocabulary.js', 'js/game-core.js', 'js/room-ui.js']) {
+    assert.ok(!/commanditaire/.test(readFileSync(new URL(`../site/${f}`, import.meta.url), 'utf8')), f);
+  }
+});

@@ -74,7 +74,7 @@ test('Prérequis manquant : sauté sans points, le reste continue', () => {
 
 test('une fonctionnalité non terminée garde ses points', () => {
   const r = playSprint(newRound('increment'));
-  assert.equal(r.state.progress.resa, 1); // vitrine 5 + 4 points découverts, puis 1 point sur la réservation
+  assert.equal(r.state.progress.resa, 5); // vitrine 5, puis 5 points sur la réservation
   assert.equal(featureState(r.state, 'resa'), 'in-progress');
 });
 
@@ -116,9 +116,9 @@ test('Cahier des charges resserré : le travail découvert empêche la sortie av
   const { reports, results, state } = playAll(cascadeWith(LEAN));
   assert.equal(reports.length, 5);
   assert.ok(reports.every((r) => !r.launched));
-  // 39 points + 10 points découverts sur la vitrine et la réservation + recette de 8 + 4 points d'anomalies
+  // 39 points + 10 points découverts sur le click & collect et les gâteaux + recette de 8 + 4 points d'anomalies
   assert.equal(39 + 10 + 8 + 4, 61);
-  assert.deepEqual(state.extra, { vitrine: 4, resa: 6, recette: 4 });
+  assert.deepEqual(state.extra, { cc: 4, gateaux: 6, recette: 4 });
   assert.equal(results.cumulative, 0);
 });
 
@@ -158,9 +158,8 @@ test('Appli jamais sortie', () => {
 
 /* ---------- Manche 2 ---------- */
 
-test('Valeur révélée : réservation en ligne au Sprint 3', () => {
+test('Valeur révélée : réservation en ligne au Sprint 2', () => {
   let s = newRound('increment');
-  s = playSprint(s).state;
   s = playSprint(s).state;
   assert.ok(!s.revealed.includes('resa'));
   const r = playSprint(s);
@@ -198,9 +197,9 @@ test('retours clients : au plus trois, dans l\'ordre, sans répétition, indices
   let r = playSprint(s);
   assert.deepEqual(r.report.quotes.map((q) => q.id), ['tradition', 'anniv']);
   r = playSprint(r.state);
-  assert.deepEqual(r.report.quotes.map((q) => q.id), []); // réservation pas encore finie (6 points découverts)
-  r = playSprint(r.state);
   assert.deepEqual(r.report.quotes.map((q) => q.id), ['resa-ok', 'pas-livre', 'croissants']);
+  r = playSprint(r.state);
+  assert.deepEqual(r.report.quotes.map((q) => q.id), ['comptoir']);
   const shown = new Set();
   let st = newRound('increment');
   st.order = SMART_ORDER.slice();
@@ -270,8 +269,8 @@ const REFERENCE = [
   ['manche 1, cahier des charges de 61 points', () => cascadeWithoutReviews(), 0],
   ['manche 1, cahier des charges resserré de 39 points', () => cascadeWith(LEAN), 0],
   ['manche 1, tout petit cahier des charges de 26 points', () => cascadeWith(['vitrine', 'resa', 'alerte', 'gateaux']), 12150],
-  ['manche 2, ordre initial', () => newRound('increment'), 10500],
-  ['manche 2, à l\'écoute', () => ({ ...newRound('increment'), order: SMART_ORDER.slice() }), 21200],
+  ['manche 2, ordre initial', () => newRound('increment'), 13200],
+  ['manche 2, à l\'écoute', () => ({ ...newRound('increment'), order: SMART_ORDER.slice() }), 22800],
 ];
 
 for (const [name, start, expected] of REFERENCE) {
@@ -287,7 +286,7 @@ test('indicateurs de la manche 2 dans l\'ordre initial', () => {
   const { results } = playAll(newRound('increment'));
   assert.equal(results.firstSale, 2);
   assert.equal(results.invested, 10 * 500);
-  assert.equal(results.liveAtEnd.length, 4);
+  assert.equal(results.liveAtEnd.length, 5);
   assert.deepEqual(results.lowUse.slice().sort(), ['livraison']);
 });
 
@@ -400,7 +399,8 @@ test('Demande dans le Product Backlog (manche 2)', () => {
 test('Version anglaise en ligne : un retour indique que personne ne l\'utilise', () => {
   let s = newRound('increment');
   s = playSprint(s).state;
-  s.order = ['vitrine', 'anglais', ...s.order.filter((x) => !['vitrine', 'anglais'].includes(x))];
+  // la réservation passe en dernier : sa mise en ligne prendrait les trois places de retours
+  s.order = ['vitrine', 'anglais', 'alerte', ...s.order.filter((x) => !['vitrine', 'anglais', 'alerte', 'resa'].includes(x)), 'resa'];
   const r = playSprint(s);
   assert.ok(r.state.live.includes('anglais'));
   assert.ok(r.report.quotes.some((q) => q.id === 'anglais-ok'));
@@ -430,9 +430,10 @@ test('Soleil jusqu\'à la coupure : orage au COPIL 5 (cahier des charges resserr
   assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'sunny', 'sunny', 'sunny', 'stormy']);
 });
 
-test('Cahier des charges sans marge : orage dès le travail découvert au COPIL 1', () => {
+test('Cahier des charges sans marge : soleil au COPIL 1, orage dès le paiement découvert au COPIL 2', () => {
   const { reports } = playDevelopment(cascadeWithoutReviews());
-  assert.deepEqual(reports.map((r) => r.weather), ['stormy', 'stormy', 'stormy', 'stormy', 'stormy']);
+  assert.deepEqual(reports.map((r) => r.weather), ['sunny', 'stormy', 'stormy', 'stormy', 'stormy']);
+  assert.deepEqual(reports[1].discoveries, [{ target: 'paiement', extra: 6 }]);
 });
 
 test('Livré avant la coupure', () => {
@@ -566,20 +567,37 @@ test('moveFeatureTo : bornes, même rang, règles des flèches', () => {
 
 /* ---------- Travail sous-estimé ---------- */
 
-test('Découverte en manche 2 : la réservation passe de 8 à 14 points quand l\'équipe la commence', () => {
-  const r = playSprint(newRound('increment'));
-  assert.deepEqual(r.report.discoveries, [{ target: 'vitrine', extra: 4 }, { target: 'resa', extra: 6 }]);
-  assert.equal(effectiveCost(r.state, 'resa'), 14);
+test('Découverte en manche 2 : le paiement passe de 8 à 14 points quand l\'équipe le commence', () => {
+  const first = playSprint(newRound('increment'));
+  assert.deepEqual(first.report.discoveries, []);
+  const r = playSprint(first.state);
+  assert.deepEqual(r.report.discoveries, [{ target: 'paiement', extra: 6 }]);
+  assert.equal(effectiveCost(r.state, 'paiement'), 14);
   assert.equal(r.state.recetteCost, 8); // pas de recette finale en manche 2
-  assert.ok(r.state.log.some((e) => e.kind === 'discovery' && e.target === 'resa' && e.extra === 6));
+  assert.ok(r.state.log.some((e) => e.kind === 'discovery' && e.target === 'paiement' && e.extra === 6));
 });
 
-test('Découverte au moment où l\'élément commence, pas avant', () => {
+test('Premier Sprint sans surprise : les gâteaux commencés au Sprint 1 révèlent leurs 6 points au Sprint 2', () => {
   let s = newRound('increment');
   s.order = ['vitrine', 'alerte', 'gateaux', ...s.order.filter((x) => !['vitrine', 'alerte', 'gateaux'].includes(x))];
   const r = playSprint(s);
-  assert.deepEqual(r.report.discoveries.map((d) => d.target), ['vitrine']);
-  assert.equal(r.state.extra.resa, undefined);
+  assert.deepEqual(r.report.discoveries, []);
+  assert.equal(r.state.progress.gateaux, 1);
+  assert.equal(r.state.extra.gateaux, undefined);
+  const r2 = playSprint(r.state);
+  assert.deepEqual(r2.report.discoveries.map((d) => d.target), ['gateaux']);
+  assert.equal(effectiveCost(r2.state, 'gateaux'), 15);
+});
+
+test('Premier COPIL sans surprise, quel que soit le cahier des charges', () => {
+  for (const second of ['resa', 'gateaux', 'alerte', 'fidelite', 'avis']) {
+    let s = newRound('cascade');
+    s = toggleInPlan(s, 'livraison');
+    s.order = ['vitrine', second, ...s.order.filter((x) => !['vitrine', second].includes(x))];
+    const r = playSprint(validatePlan(s));
+    assert.deepEqual(r.report.discoveries, [], second);
+    assert.equal(r.report.weather, 'sunny', second);
+  }
 });
 
 test('Recette : 4 points d\'anomalies découverts quand elle commence (manche 1 seulement)', () => {

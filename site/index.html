@@ -77,9 +77,11 @@
         <h2 class="title">Le cahier des charges</h2>
       </div>
       <div class="briefing" aria-label="Votre mission de chef de projet">
-        <blockquote class="speech">Je veux savoir exactement ce que j'aurai, et quand. Tout doit être prêt dans 12 semaines.<footer>Madame Lefèvre, la commanditaire</footer></blockquote>
+        <p class="story" id="plan-story"></p>
+        <figure class="speech"><span class="avatar" aria-hidden="true">👩‍🍳</span><blockquote><p>«&nbsp;Je veux savoir exactement ce que j'aurai, et quand. Tout doit être prêt dans 12 semaines.&nbsp;»</p><footer>Madame Lefèvre, la boulangère</footer></blockquote></figure>
         <ul class="tiles"><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><strong>12 semaines</strong><span>Un COPIL toutes les 2 semaines</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><strong>72 points</strong><span>L'équipe abat 12 points tous les 15 jours</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg><strong>8 points</strong><span>Recette et mise en production, à la fin</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 13h7M9 17h5"/></svg><strong>Contrat</strong><span>Une fois validé, tout changement passe par un avenant</span></li></ul>
         <p class="mission">Vous êtes chef de projet. Choisissez les lots et leur ordre : 64 points à répartir.</p>
+        <p class="intuition-help"><span class="stars" aria-hidden="true">★★★☆☆</span> Intuition : ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles. C'est son avis, pas une mesure.</p>
       </div>
       <div class="panel plan-gauge">
         <div class="panel-head"><strong>Points planifiés</strong><span class="count" id="plan-total"></span></div>
@@ -109,6 +111,7 @@
         <div class="board-main">
           <h3 class="list-title" id="list-title"></h3>
           <p class="muted list-hint" id="list-hint"></p>
+          <p class="intuition-help" id="board-intuition"></p>
           <ol class="backlog" id="board-list"></ol>
         </div>
         <aside class="panel journal-panel">
@@ -126,7 +129,7 @@
         <p class="lead">Même budget, mêmes fonctionnalités, mêmes imprévus. Seule la façon de livrer change, et le vocabulaire avec elle.</p>
       </div>
       <div class="briefing" aria-label="Votre mission de Product Owner">
-        <blockquote class="speech">Je veux vendre le plus tôt possible. Montrez-moi ce qui marche, et on ajustera.<footer>Madame Lefèvre</footer></blockquote>
+        <figure class="speech"><span class="avatar" aria-hidden="true">👩‍🍳</span><blockquote><p>«&nbsp;Je veux vendre le plus tôt possible. Montrez-moi ce qui marche, et on ajustera.&nbsp;»</p><footer>Madame Lefèvre, la boulangère</footer></blockquote></figure>
         <ul class="tiles"><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><strong>2 semaines</strong><span>Un Sprint, conclu par une Sprint Review</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><strong>10 + 2 points</strong><span>10 pour construire, 2 pour la Definition of Done</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18h3"/><path d="M9.5 10.5l2 2 3.5-4"/></svg><strong>En ligne</strong><span>Une fonctionnalité terminée rapporte dès le Sprint suivant</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg><strong>Retours clients</strong><span>Chaque Sprint Review révèle la vraie valeur</span></li></ul>
         <p class="mission">Ordonnez le Product Backlog : l'équipe prend les éléments par le haut.</p>
         <p class="mission-note">Les nouvelles idées de Mme Lefèvre arriveront en bas du Product Backlog, sans avenant.</p>
@@ -154,27 +157,8 @@
         <h2 class="title" id="results-title">Un projet, puis Scrum : deux courbes</h2>
       </div>
       <div class="approaches" id="results-intro" hidden></div>
-      <section class="panel" aria-labelledby="chart-title">
-        <h3 id="chart-title">Ventes cumulées sur 20 semaines</h3>
-        <div class="chart" id="chart"></div>
-        <div class="legend" id="legend"></div>
-      </section>
-      <div class="results-grid">
-        <section class="panel" aria-labelledby="kpi-title">
-          <h3 id="kpi-title">Les indicateurs</h3>
-          <div class="table-wrap"><table id="kpi"></table></div>
-        </section>
-        <section class="panel" aria-labelledby="truth-title">
-          <h3 id="truth-title">Intuition contre réalité</h3>
-          <div class="table-wrap"><table id="truth"></table></div>
-        </section>
-      </div>
-      <section class="panel" id="decisions" aria-labelledby="decisions-title" hidden>
-        <h3 id="decisions-title">Ce qu'ont décidé les équipes</h3>
-        <div class="team-grid decisions-grid" id="decisions-body"></div>
-      </section>
       <section class="panel" aria-labelledby="debrief-title">
-        <h3 id="debrief-title">Pour le débrief</h3>
+        <h3 id="debrief-title"><span class="emo" aria-hidden="true">💬</span>Pour le débrief</h3>
         <ol class="questions" id="debrief-questions">
           <li>À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu'est-ce qui l'a permis ?</li>
           <li>Pourquoi le Scrum Guide demande-t-il qu'un Increment soit utilisable ? Que se passe-t-il quand il ne l'est pas ?</li>
@@ -185,8 +169,27 @@
           <li>Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu'est-ce que ça change ?</li>
           <li>COPIL et cahier des charges, puis Sprint Review et Product Backlog : qu'est-ce que le changement de vocabulaire a changé dans votre façon de décider ?</li>
         </ol>
-        <button type="button" class="button button-ghost" id="replay">Rejouer</button>
       </section>
+      <section class="panel" aria-labelledby="chart-title">
+        <h3 id="chart-title">Ventes cumulées sur 20 semaines</h3>
+        <div class="chart" id="chart"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <div class="results-grid">
+        <details class="panel fold-panel" id="kpi-panel">
+          <summary><h3 id="kpi-title"><span class="emo" aria-hidden="true">📊</span>Les indicateurs</h3><span class="fold-hint" aria-hidden="true"></span></summary>
+          <div class="table-wrap"><table id="kpi"></table></div>
+        </details>
+        <section class="panel" aria-labelledby="truth-title">
+          <h3 id="truth-title">Intuition contre réalité</h3>
+          <div class="table-wrap"><table id="truth"></table></div>
+        </section>
+      </div>
+      <section class="panel" id="decisions" aria-labelledby="decisions-title" hidden>
+        <h3 id="decisions-title">Ce qu'ont décidé les équipes</h3>
+        <div class="team-grid decisions-grid" id="decisions-body"></div>
+      </section>
+      <div class="actions"><button type="button" class="button button-ghost" id="replay">Rejouer</button></div>
     </section>
 
     <!-- Mode collectif : écran du formateur -->
@@ -211,7 +214,8 @@
         <h2 class="title">Vous êtes le Product Owner</h2>
       </div>
       <div class="briefing" aria-label="Votre mission de Product Owner">
-        <blockquote class="speech">Je veux vendre le plus tôt possible. Montrez-moi ce qui marche, et on ajustera.<footer>Madame Lefèvre</footer></blockquote>
+        <p class="story" id="role-story"></p>
+        <figure class="speech"><span class="avatar" aria-hidden="true">👩‍🍳</span><blockquote><p>«&nbsp;Je veux vendre le plus tôt possible. Montrez-moi ce qui marche, et on ajustera.&nbsp;»</p><footer>Madame Lefèvre, la boulangère</footer></blockquote></figure>
         <ul class="tiles"><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><strong>2 semaines</strong><span>Un Sprint, conclu par une Sprint Review</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><strong>10 + 2 points</strong><span>10 pour construire, 2 pour la Definition of Done</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18h3"/><path d="M9.5 10.5l2 2 3.5-4"/></svg><strong>En ligne</strong><span>Une fonctionnalité terminée rapporte dès le Sprint suivant</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg><strong>Retours clients</strong><span>Chaque Sprint Review révèle la vraie valeur</span></li></ul>
         <p class="mission">Ordonnez le Product Backlog, puis appuyez sur « Nous sommes prêts » : le formateur lance les Sprints.</p>
         <p class="mission-note">Les nouvelles idées de Mme Lefèvre arriveront en bas du Product Backlog.</p>

@@ -106,10 +106,18 @@ test('les retours des demandes viennent après les autres', () => {
 test('Travail sous-estimé : cibles existantes, recette en manche 1 seulement', async () => {
   const { UNDERESTIMATES, FEATURES } = await import('../site/js/scenario.js');
   const ids = FEATURES.map((f) => f.id);
-  assert.deepEqual(UNDERESTIMATES.map((u) => [u.target, u.extra]), [['vitrine', 4], ['resa', 6], ['recette', 4]]);
+  assert.deepEqual(UNDERESTIMATES.map((u) => [u.target, u.extra]), [['paiement', 6], ['gateaux', 6], ['cc', 4], ['recette', 4]]);
   for (const u of UNDERESTIMATES) {
     if (u.target === 'recette') { assert.equal(u.mode, 'cascade'); assert.ok(u.text.cascade); continue; }
     assert.ok(ids.includes(u.target));
     assert.ok(u.text.cascade && u.text.increment);
   }
+});
+
+test('Chaque fonctionnalité et chaque demande a son pictogramme, sans doublon', async () => {
+  const { FEATURES, REQUESTS, EVENTS } = await import('../site/js/scenario.js');
+  const icons = [...FEATURES, ...REQUESTS].map((f) => f.icon);
+  assert.ok(icons.every(Boolean));
+  assert.equal(new Set(icons).size, icons.length);
+  assert.ok(EVENTS.every((e) => e.icon));
 });

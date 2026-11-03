@@ -11,7 +11,7 @@ import {
   isConnected, isReady, canBeReady, planReady, timeLeft, formatSeconds,
 } from './room-core.js?v=__VERSION__';
 import { MODES, reportFromState, finishSummary, roundResults, periodWeeks, decisionTrail } from './game-core.js?v=__VERSION__';
-import { lexicon, trailText, trailPeriod } from './vocabulary.js?v=__VERSION__';
+import { lexicon, trailText, trailPeriod, STORY } from './vocabulary.js?v=__VERSION__';
 import { PLANNED_SPRINTS, HORIZON_WEEKS } from './scenario.js?v=__VERSION__';
 import { formatEuro } from './chart.js?v=__VERSION__';
 
@@ -289,6 +289,7 @@ export async function startRoomMode() {
     $('wait-chip').textContent = chip;
     $('wait-title').textContent = title;
     $('wait-text').textContent = text;
+    $('wait-text').hidden = !text;
     $('wait-extra').innerHTML = extra;
     ui.show('wait', { keepScroll: true });
   }
@@ -513,7 +514,10 @@ export async function startRoomMode() {
     if (meta.status === 'revealed') { app.session = null; ui.closeDialog(); renderCollectiveResults(); return; }
     if (meta.status === 'lobby' || !room.teams?.[n]?.state) {
       app.session = null;
-      showWait({ chip: label, title: `Bienvenue, ${room.players[uid].name}`, text: 'Le formateur va lancer la partie. Vous jouerez en équipe : chaque membre peut agir depuis son téléphone.', extra: teammatesHtml(n) });
+      // Le contexte, sans la façon de travailler : le formateur peut encore changer un participant d'équipe,
+      // et la répartition des approches reste secrète jusqu'à la révélation.
+      const story = `<div class="briefing wait-story"><p class="story">${esc(STORY)}</p>${ui.speechHtml('Ma seule question : quand est-ce que ça me rapporte ?')}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe, chaque membre depuis son téléphone. Votre façon de travailler vous sera donnée au lancement.</p></div>`;
+      showWait({ chip: label, title: `Bienvenue, ${room.players[uid].name}`, text: '', extra: story + teammatesHtml(n) });
       return;
     }
     // Un glisser-déposer en cours : la mise à jour attend la fin du geste.
@@ -545,6 +549,7 @@ export async function startRoomMode() {
       ui.show('plan', { keepScroll: true });
     } else if (state.mode === MODES.increment && !seen.role && state.sprint === 0) {
       $('role-chip').textContent = label;
+      $('role-story').textContent = `${STORY} ${lexicon(MODES.increment).approach}`;
       ui.renderBoard();
       ui.show('role', { keepScroll: true });
     } else {

@@ -112,7 +112,7 @@ function checkPlan(items, budget) {
   if (items.length === 0) message = 'Le cahier des charges est vide : ajoutez au moins un lot.';
   else if (over > 0) message = `Le cahier des charges dépasse de ${over} point${over > 1 ? 's' : ''} : retirez au moins un lot.`;
   else if (missing.length) message = `« ${feature(missing[0].id).name} » nécessite « ${feature(missing[0].req).name} ».`;
-  else message = 'Le cahier des charges tient dans le budget : la commanditaire est prête à signer.';
+  else message = 'Le cahier des charges tient dans le budget : la boulangère est prête à signer.';
   return { total, budget, over, missing, impossible, valid: items.length > 0 && over === 0 && missing.length === 0, message };
 }
 
@@ -238,7 +238,8 @@ function earn(state, sprint) {
   return sales;
 }
 
-// Découverte du travail sous-estimé, au premier point de travail sur l'élément (ou la recette).
+// Découverte du travail sous-estimé, au premier point de travail sur l'élément (ou la recette),
+// jamais pendant la première période : un élément commencé en période 1 la révèle à la suivante.
 function discover(state, target, discoveries) {
   const u = underestimate(state.mode, target);
   if (!u || state.extra[target] !== undefined) return;
@@ -258,7 +259,7 @@ function build(state) {
     if (has(state.done, id)) continue;
     const f = feature(id);
     if (f.req && !has(state.done, f.req)) continue;
-    if (state.progress[id] === 0) discover(state, id, discoveries);
+    if (state.sprint > 1) discover(state, id, discoveries);
     const use = Math.min(capacity, effectiveCost(state, id) - state.progress[id]);
     state.progress[id] += use;
     state.spent += use;
@@ -272,7 +273,7 @@ function build(state) {
   if (state.mode === MODES.cascade) {
     const allDone = items.every((id) => has(state.done, id));
     if (allDone && capacity > 0 && state.recette < state.recetteCost) {
-      if (state.recette === 0) discover(state, 'recette', discoveries);
+      discover(state, 'recette', discoveries);
       const use = Math.min(capacity, state.recetteCost - state.recette);
       state.recette += use;
       state.spent += use;
