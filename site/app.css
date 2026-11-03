@@ -541,3 +541,4 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .choice .button { margin-top: auto; align-self: flex-start; }
 .meter.done span { background: var(--live-text); }
 @media (max-width: 560px) { .choices { grid-template-columns: minmax(0, 1fr); } }
+.board-head > .team-bar { flex-direction: row; align-items: center; justify-content: flex-end; margin-left: auto; }

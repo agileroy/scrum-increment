@@ -24,17 +24,22 @@ Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la missi
 - **THEN** une légende sous la mission explique que les étoiles « Intuition » sont l'avis de Mme Lefèvre sur ce que chaque lot va rapporter, pas une mesure
 
 ### Requirement: Fenêtre de demande de changement (manche 1)
-En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande en deux temps. D'abord la situation : la réplique de Mme Lefèvre, la charge de la demande (jours/homme de lot et 10 jours/homme de recette pour l'avenant), l'intuition de Mme Lefèvre, puis deux choix côte à côte. « Si vous acceptez » SHALL dire combien de jours/homme de lots pas commencés il faudra retirer au moins, en distinguant ce qu'impose le budget signé (obligatoire) et ce qu'impose de finir dans les temps, travail découvert compris ; ou que rien n'est à retirer ; ou que c'est impossible. « Si vous refusez » SHALL dire si le projet tient dans les temps, ou de combien le travail découvert le dépasse déjà, le COPIL devant alors arbitrer quand même. Ensuite, si l'équipe accepte et qu'il faut retirer des lots : les lots pas commencés avec des cases à cocher, une jauge du retiré face à l'objectif, l'état du budget signé et des délais, « Signer l'avenant » (inactif tant que le budget signé n'est pas tenu ou qu'un prérequis manque) et « Revenir au choix ». « Refuser » SHALL toujours être possible ; fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande en deux temps. D'abord la situation : la réplique de Mme Lefèvre, la charge de la demande (jours/homme de lot et 10 jours/homme de recette pour l'avenant), l'intuition de Mme Lefèvre, puis deux choix côte à côte. « Si vous acceptez » SHALL dire de combien de jours/homme de lots pas commencés il faudra réduire le cahier des charges (demande, avenant et travail découvert compris), ou que rien n'est à retirer, ou que c'est impossible. « Si vous refusez » SHALL dire que le cahier des charges tient dans le temps prévu, ou de combien il faudra quand même le réduire à cause du travail découvert, le COPIL devant alors arbitrer. Le travail découvert MUST NOT être mentionné tant qu'il n'y en a pas eu, pour ne rien annoncer de ce qui vient. Ensuite, si l'équipe accepte et qu'il faut retirer des lots : les lots pas commencés avec des cases à cocher, une jauge du retiré face à l'objectif, ce qui reste à retirer (pour tenir le budget signé, puis pour finir dans les temps), « Signer l'avenant » (inactif tant que le budget signé n'est pas tenu ou qu'un prérequis manque) et « Revenir au choix ». « Refuser » SHALL toujours être possible ; fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+
+#### Scenario: Rien de découvert, rien d'annoncé
+- **GIVEN** la demande « Version anglaise » au COPIL 1, aucun travail découvert
+- **WHEN** la fenêtre s'affiche
+- **THEN** « Si vous acceptez » demande de réduire le cahier des charges de 20 jours/homme, sans parler de travail découvert, et « Si vous refusez » dit que le cahier des charges tient dans le temps prévu
 
 #### Scenario: Situation au COPIL 2
 - **GIVEN** le cahier des charges sans les avis clients, le paiement découvert, la demande « Promotions flash »
 - **WHEN** la fenêtre s'affiche
-- **THEN** « Si vous acceptez » demande de retirer au moins 55 jours/homme (25 pour le budget signé, 55 pour les délais), et « Si vous refusez » annonce que le travail découvert dépasse déjà le temps restant de 15 jours/homme
+- **THEN** « Si vous acceptez » demande de réduire le cahier des charges d'au moins 55 jours/homme, travail découvert (30 jours/homme) compris, et « Si vous refusez » annonce qu'il faudra quand même le réduire d'au moins 15 jours/homme
 
 #### Scenario: Faire de la place
 - **GIVEN** la même situation, le joueur ayant choisi d'accepter
 - **WHEN** il coche la livraison et la fidélité (105 jours/homme)
-- **THEN** le budget signé est tenu, le projet reste dans les temps, et « Signer l'avenant » est actif
+- **THEN** l'objectif est atteint et « Signer l'avenant » est actif
 
 #### Scenario: Touche Échap
 - **GIVEN** la fenêtre d'une demande de changement

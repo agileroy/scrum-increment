@@ -367,22 +367,23 @@ function requestHtml() {
   h += speechHtml(r.ask);
   h += `<p><strong>${nameHtml(r.id)}</strong> (${esc(r.desc)}) : ${jh(r.cost)} de lot, plus ${jh(AVENANT)} de recette (avenant). Intuition de Mme Lefèvre ${stars(r.stars)}.</p>`;
 
+  // Travail découvert jusqu'ici : on n'en parle que s'il y en a, pour ne rien annoncer de ce qui vient.
+  const discovered = Object.values(s.extra ?? {}).reduce((sum, x) => sum + x, 0);
+  const because = discovered ? `, à cause des ${jh(discovered)} découverts en cours de route` : '';
+
   if (app.requestStep !== 'remove') {
-    // 1. La situation : ce qu'impose chaque choix.
+    // 1. La situation : deux choix, et ce que chacun impose.
     let accept;
     if (needBudget > removableTotal) {
-      accept = `<p>Impossible : il faudrait retirer ${jh(needBudget)} pour tenir le budget signé, et il n'en reste pas assez parmi les lots pas commencés.</p>`;
+      accept = `<p>Impossible : il faudrait retirer ${jh(needBudget)} de lots pas encore commencés, et il n'en reste pas assez.</p>`;
     } else if (target === 0) {
-      accept = '<p>☀️ Le cahier des charges absorbe la demande : rien à retirer, et le projet reste dans les temps.</p>';
+      accept = '<p>☀️ Le cahier des charges absorbe la demande : rien à retirer.</p>';
     } else {
-      accept = `<p>Il faudra retirer au moins <strong>${jh(target)}</strong> de lots pas encore commencés :</p><ul>`
-        + (needBudget ? `<li>${jh(needBudget)} pour tenir le budget signé (obligatoire) ;</li>` : '<li>le budget signé tient déjà ;</li>')
-        + (needTime ? `<li>${jh(needTime)} pour finir dans les temps, travail découvert compris${needTime > removableTotal ? ' (impossible en entier : le projet restera orageux)' : ''}.</li>` : '<li>les délais tiennent déjà.</li>')
-        + '</ul>';
+      accept = `<p>Il faudra réduire le cahier des charges d'au moins <strong>${jh(target)}</strong> de lots pas encore commencés${needTime > needBudget ? `, pour absorber la demande et le travail découvert en cours de route (${jh(discovered)})` : ''}.</p>`;
     }
     const refuse = refuseGap
-      ? `<p>⛈️ Le cahier des charges ne change pas, mais le travail découvert dépasse déjà le temps restant de <strong>${jh(refuseGap)}</strong> : le COPIL devra arbitrer quand même.</p>`
-      : '<p>☀️ Le cahier des charges ne change pas, et le projet tient dans les temps.</p>';
+      ? `<p>⛈️ Le cahier des charges ne change pas, mais il faudra quand même le réduire d'au moins <strong>${jh(refuseGap)}</strong>${because} : le COPIL devra arbitrer.</p>`
+      : '<p>☀️ Le cahier des charges ne change pas, et il tient dans le temps prévu.</p>';
     const acceptButton = needBudget > removableTotal
       ? ''
       : target === 0
@@ -393,16 +394,17 @@ function requestHtml() {
     return h;
   }
 
-  // 2. Accepter : retirer des lots jusqu'à la cible.
+  // 2. Accepter : retirer des lots jusqu'à l'objectif.
   const st = requestStatus(s, app.remove);
   const removed = app.remove.reduce((sum, id) => sum + feature(id).cost, 0);
   const timeGap = Math.max(0, st.forecast.accept.remaining - left);
   h += `<div class="panel-head"><strong>Retiré : ${jh(removed)}</strong><span class="count">objectif : ${jh(target)}</span></div>`;
   h += `<div class="meter ${removed >= target ? 'done' : ''}"><span style="width:${target ? Math.min(100, (removed / target) * 100) : 100}%"></span></div>`;
-  h += '<ul class="forecast">'
-    + `<li class="${st.over > 0 ? 'stormy' : 'sunny'}">${st.over > 0 ? `Budget signé : il manque ${jh(st.over)} (obligatoire pour signer).` : 'Budget signé : tenu ✓'}</li>`
-    + `<li class="${timeGap > 0 ? 'stormy' : 'sunny'}">${timeGap > 0 ? `Délais : il manque ${jh(timeGap)}, le projet sera orageux et le COPIL devra arbitrer.` : 'Délais : le projet reste dans les temps ☀️'}</li>`
-    + '</ul>';
+  let state;
+  if (st.over > 0) state = `<li class="stormy">Encore ${jh(st.over)} à retirer pour tenir le budget signé.</li>`;
+  else if (timeGap > 0) state = `<li class="stormy">Budget signé tenu : vous pouvez signer. Mais il manque encore ${jh(timeGap)} pour finir dans les temps : le COPIL devra arbitrer.</li>`;
+  else state = '<li class="sunny">Objectif atteint ✓ : le cahier des charges tient dans le temps prévu.</li>';
+  h += `<ul class="forecast">${state}</ul>`;
   const missing = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
   if (missing.length) h += `<p class="item-alert">Deviendraient impossibles : ${missing.map((id) => esc(feature(id).name)).join(', ')}</p>`;
   h += st.removable.length
