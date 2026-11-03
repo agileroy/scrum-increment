@@ -14,7 +14,7 @@ Tous les membres d'une équipe SHALL voir le même cahier des charges ou Product
 - **THEN** les deux déplacements sont appliqués, et les deux écrans affichent le même ordre
 
 ### Requirement: Jeu dans le vocabulaire de l'équipe
-Une équipe « projet » SHALL jouer la manche 1 du solo (cahier des charges, COPIL, recette, avenants) et une équipe « Scrum » la manche 2 (Product Backlog, Sprints, Sprint Review, Definition of Done), avec le vocabulaire de chaque manche. Les téléphones MUST NOT montrer l'existence de l'autre approche avant la révélation. Une équipe « Scrum » SHALL voir, avant le premier Sprint, une présentation de son rôle de Product Owner en briefing, comme la transition du solo (réplique de Madame Lefèvre, quatre tuiles de la manche 2, mission en une phrase avec le signal « Nous sommes prêts »), sans le tableau des équivalences de vocabulaire.
+Une équipe « projet » SHALL jouer la manche 1 du solo (cahier des charges, COPIL, recette, avenants) et une équipe « Scrum » la manche 2 (Product Backlog, Sprints, Sprint Review, Definition of Done), avec le vocabulaire de chaque manche. Les écrans des participants MUST NOT montrer l'existence de l'autre approche avant la révélation. Une équipe « Scrum » SHALL voir, avant le premier Sprint, une présentation de son rôle de Product Owner en briefing, comme la transition du solo (réplique de Madame Lefèvre, quatre tuiles de la manche 2, mission en une phrase avec le signal « Nous sommes prêts »), sans le tableau des équivalences de vocabulaire.
 
 #### Scenario: Équipe Scrum au départ
 - **GIVEN** une partie lancée
