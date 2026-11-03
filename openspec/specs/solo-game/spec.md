@@ -6,7 +6,7 @@ Parcours du joueur seul, de l'accueil aux résultats : plan de la manche 1, tabl
 ## Requirements
 
 ### Requirement: Plan de la manche 1
-Avant le premier COPIL, l'écran du cahier des charges SHALL expliquer la règle (12 semaines, 6 COPIL, 12 points tous les 15 jours, dont 8 points de recette et de mise en production finales, cahier des charges contractuel une fois validé) et lister les lots avec leur rang, leur coût, l'intuition de la commanditaire et leur prérequis. Le joueur SHALL pouvoir retirer ou remettre un lot et changer son rang. Une jauge SHALL comparer les points planifiés aux 64 points, et un message SHALL dire ce qui bloque ou que le cahier des charges tient. La validation SHALL rester inactive tant qu'il est invalide.
+Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la mission en briefing : une réplique de Madame Lefèvre, puis la règle en quatre tuiles chiffrées (12 semaines avec un COPIL toutes les 2 semaines ; 72 points, l'équipe abattant 12 points tous les 15 jours ; 8 points de recette et de mise en production finales ; cahier des charges contractuel une fois validé, tout changement passant par un avenant), puis la mission en une phrase juste au-dessus de la jauge. L'écran MUST NOT présenter ces règles en paragraphe. Il SHALL lister les lots avec leur rang, leur coût, l'intuition de la commanditaire et leur prérequis. Le joueur SHALL pouvoir retirer ou remettre un lot et changer son rang. Une jauge SHALL comparer les points planifiés aux 64 points, et un message SHALL dire ce qui bloque ou que le cahier des charges tient. La validation SHALL rester inactive tant qu'il est invalide.
 
 #### Scenario: Dépassement
 - **GIVEN** le cahier des charges initial de 66 points
@@ -18,8 +18,13 @@ Avant le premier COPIL, l'écran du cahier des charges SHALL expliquer la règle
 - **WHEN** le joueur retire la réservation de pain
 - **THEN** le message indique que « Paiement en ligne » nécessite « Réservation de pain » et la validation est impossible
 
+#### Scenario: Briefing lisible d'un coup d'œil
+- **GIVEN** un téléphone de 360 px de large
+- **WHEN** l'écran du cahier des charges s'affiche
+- **THEN** la réplique de Mme Lefèvre et les quatre tuiles (12 semaines, 72 points, 8 points, contrat) tiennent sans défilement horizontal, et la phrase de mission précède la jauge
+
 ### Requirement: Tableau de Sprint
-Pendant le développement, l'écran SHALL afficher la manche, la prochaine échéance (« COPIL N sur M » ou « Sprint N sur M ») et ses semaines, la capacité, l'indicateur de tête de la manche (avancement en manche 1, ventes cumulées en manche 2), les fonctionnalités en ligne, les clients potentiels, la liste ordonnée et le journal. Chaque élément SHALL afficher son avancement, l'intuition, la valeur réelle si elle est révélée et son état. En manche 1, la liste « Cahier des charges » SHALL être figée et finir par « Recette et mise en production ». En manche 2, chaque élément non terminé du Product Backlog SHALL pouvoir monter ou descendre d'un rang.
+Pendant le développement, l'écran SHALL afficher la manche, la prochaine échéance (« COPIL N sur M » ou « Sprint N sur M ») et ses semaines, la capacité, la liste ordonnée et le journal. En manche 1, les indicateurs SHALL être ceux d'un pilotage de projet : temps écoulé contre travail fait (deux barres en pourcentage : semaines écoulées sur 12, avancement du plan recette comprise), météo du projet et capacité ; les ventes cumulées n'y apparaissent qu'après la sortie de l'appli, et l'écran MUST NOT afficher de part de clients ni de ligne « Ventes réelles » sur les lots. En manche 2, les indicateurs SHALL être les ventes cumulées, la capacité, les fonctionnalités en ligne et les clients potentiels. Chaque élément SHALL afficher son avancement, l'intuition et son état, et en manche 2 sa valeur réelle si elle est révélée. En manche 1, la liste « Cahier des charges » SHALL être figée et finir par « Recette et mise en production ». En manche 2, chaque élément non terminé du Product Backlog SHALL pouvoir monter ou descendre d'un rang.
 
 #### Scenario: Plan figé
 - **GIVEN** la manche 1 en cours
@@ -31,13 +36,23 @@ Pendant le développement, l'écran SHALL afficher la manche, la prochaine éch�
 - **WHEN** le tableau s'affiche
 - **THEN** il indique « COPIL 3 sur 6 · semaines 5 et 6 »
 
+#### Scenario: Pilotage sans ventes
+- **GIVEN** la manche 1 au COPIL 2, appli pas encore sortie
+- **WHEN** le tableau s'affiche
+- **THEN** il montre le temps écoulé contre le travail fait, la météo et la capacité, et aucun mot sur les ventes ou les clients
+
 ### Requirement: Fin de Sprint
-Après chaque période, une fenêtre SHALL faire le bilan, puis un bouton SHALL mener à la période suivante ou à la fin du projet. En manche 1, c'est le compte rendu de COPIL : avancement du cahier des charges, météo du projet ou annonce de la sortie, ventes, absence de retour client avant la sortie. En manche 2, c'est la Sprint Review : fonctionnalités mises en ligne, ventes et au plus trois nouveaux retours clients. Les imprévus et la demande de changement de la période SHALL y être annoncés, dans le vocabulaire de la manche.
+Après chaque période, une fenêtre SHALL faire le bilan, puis un bouton SHALL mener à la période suivante ou à la fin du projet. En manche 1, c'est le compte rendu de COPIL : météo du projet, temps écoulé et travail fait ; il MUST NOT parler de ventes ni de clients avant la sortie de l'appli, puis il SHALL annoncer la sortie et donner les ventes de la période. En manche 2, c'est la Sprint Review : fonctionnalités mises en ligne, ventes et au plus trois nouveaux retours clients. Les imprévus et la demande de changement de la période SHALL y être annoncés, dans le vocabulaire de la manche.
 
 #### Scenario: Aucun retour avant la sortie
 - **GIVEN** la manche 1, appli pas encore sortie
-- **WHEN** le compte rendu de COPIL s'affiche
-- **THEN** il indique qu'il n'y a aucun retour client, car l'appli n'est pas encore sortie
+- **WHEN** le compte rendu du COPIL 2 s'affiche
+- **THEN** il donne la météo, le temps écoulé et le travail fait, et ne contient ni ventes ni retours clients, ni phrase qui en signale l'absence
+
+#### Scenario: COPIL après la sortie
+- **GIVEN** la manche 1 avec un cahier des charges resserré, appli sortie au COPIL 4
+- **WHEN** le compte rendu du COPIL 5 s'affiche
+- **THEN** il indique que l'appli est en ligne et donne les ventes de ces 2 semaines, sans retours clients
 
 #### Scenario: Premiers retours dès le Sprint 1
 - **GIVEN** la manche 2, quel que soit l'ordre du Product Backlog
@@ -167,3 +182,19 @@ Dans le cahier des charges avant validation et dans le Product Backlog, chaque �
 - **GIVEN** la manche 2, vitrine en ligne
 - **WHEN** le Product Backlog s'affiche
 - **THEN** la vitrine ne peut pas être saisie, mais les autres éléments peuvent être glissés au-dessus ou en dessous d'elle
+
+### Requirement: Annonce du travail sous-estimé
+Le compte rendu de COPIL ou la Sprint Review de la période SHALL annoncer chaque découverte de travail sous-estimé dans le vocabulaire de la manche, et l'élément concerné SHALL afficher son coût sous la forme « coût prévu + travail découvert » (par exemple « 8 + 6 pts »).
+
+#### Scenario: Découverte annoncée au COPIL
+- **GIVEN** la manche 1, la réservation commencée pendant la période 2
+- **WHEN** le compte rendu du COPIL 2 s'affiche
+- **THEN** il annonce que la réservation doit être reliée au logiciel de caisse (+6 points), et le lot affiche « 8 + 6 pts »
+
+### Requirement: Briefing de la manche 2
+L'écran de transition vers la manche 2 SHALL présenter la nouvelle mission avec la même mise en page que le cahier des charges : une réplique de Madame Lefèvre, quatre tuiles (Sprint de 2 semaines conclu par une Sprint Review ; 10 points pour construire et 2 pour la Definition of Done ; une fonctionnalité terminée est en ligne et rapporte dès le Sprint suivant ; chaque Sprint Review révèle la vraie valeur grâce aux retours clients) et la mission en une phrase. Le tableau des équivalences de vocabulaire SHALL rester sur cet écran.
+
+#### Scenario: Transition
+- **GIVEN** la fin de la manche 1
+- **WHEN** le joueur ferme la fin du projet
+- **THEN** il voit la réplique de Mme Lefèvre, les quatre tuiles de la manche 2, le tableau « Ce qui change » et « Commencer la manche 2 »
