@@ -3,17 +3,20 @@
 // tests/vocabulary.test.mjs vérifie qu'aucune manche n'emploie les mots de l'autre.
 
 import { feature, periodWeeks } from './game-core.js?v=__VERSION__';
-import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT, UNDERESTIMATES } from './scenario.js?v=__VERSION__';
+import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT, UNDERESTIMATES, MAN_DAYS_PER_POINT } from './scenario.js?v=__VERSION__';
 
 const euro = (n) => `${Math.round(n).toLocaleString('fr-FR')} €`;
 const plural = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 const names = (ids) => ids.map((id) => feature(id).name).join(', ');
+// Charge : en jours/homme en manche 1 (projet), en points en manche 2 (Scrum).
+const md = (pts) => pts * MAN_DAYS_PER_POINT;
+const jh = (pts) => `${md(pts)} jours/homme`;
 const weeksText = (period) => { const [a, b] = periodWeeks(period); return `semaines ${a} et ${b}`; };
 
 /** Mots qu'une manche ne doit jamais employer (ceux de l'autre manche). */
 export const FORBIDDEN = {
-  cascade: [/Sprint/, /Product Backlog/, /Definition of Done/, /Product Owner/],
-  increment: [/COPIL/, /cahier des charges/i, /chef de projet/i, /\blots?\b/i, /avenant/i],
+  cascade: [/Sprint/, /Product Backlog/, /Definition of Done/, /Product Owner/, /\bpoints?\b/i, /\bpts\b/],
+  increment: [/COPIL/, /cahier des charges/i, /chef de projet/i, /\blots?\b/i, /avenant/i, /jours?\/homme/i, /\bj\/h\b/],
 };
 
 /** Le contexte, commun aux deux approches : rien sur la façon de travailler. */
@@ -33,10 +36,23 @@ const cascade = {
   round: 'Manche 1 · Projet',
   role: 'Chef de projet',
   stakeholder: 'la boulangère',
+  /** Charge courte (« 40 j/h ») et longue (« 40 jours/homme »), à partir des points du moteur. */
+  size: (pts) => `${md(pts)} j/h`,
+  sizeLong: (pts) => jh(pts),
+  sizeOf: (done, cost, extra) => `${md(done)} / ${extra ? `${md(cost)} + ${md(extra)}` : md(cost)} j/h`,
+  extraTitle: (pts) => `${jh(pts)} découverts en cours de route`,
+  anomalies: (pts) => `dont ${jh(pts)} d'anomalies`,
+  descopeButton: 'Arbitrer : retirer des lots',
+  descopeTitle: 'Arbitrage du COPIL',
+  descopeIntro: (remaining, left) => `Reste à faire : ${jh(remaining)}. Temps restant jusqu'à la fin prévue : ${jh(left)}. Le COPIL peut retirer du cahier des charges des lots pas encore commencés, avec l'accord de la boulangère.`,
+  descopeGauge: 'Reste à faire après l\'arbitrage',
+  descopeConfirm: 'Retirer ces lots',
+  descopeHint: 'Le projet est orageux : le COPIL peut arbitrer et retirer des lots pas encore commencés.',
+  descopeLog: (removed) => `Arbitrage du COPIL : ${names(removed)} ${removed.length > 1 ? 'retirés' : 'retiré'} du cahier des charges.`,
   approach: 'Vous optez pour une démarche projet : un cahier des charges complet, signé avant de commencer, et un COPIL toutes les deux semaines pour suivre l\'avancement.',
   intuitionHelp: "Intuition : ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles. C'est son avis, pas une mesure.",
-  requestFits: (r) => `Accepter, c'est signer un avenant : ${r.cost} points de lot et ${AVENANT} points de recette en plus. Le cahier des charges garde assez de marge : rien à retirer.`,
-  requestTight: () => `Accepter, c'est signer un avenant : ${AVENANT} points de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du cahier des charges des lots pas encore commencés.`,
+  requestFits: (r) => `Accepter, c'est signer un avenant : ${jh(r.cost)} de lot et ${jh(AVENANT)} de recette en plus. Le cahier des charges garde assez de marge : rien à retirer.`,
+  requestTight: () => `Accepter, c'est signer un avenant : ${jh(AVENANT)} de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du cahier des charges des lots pas encore commencés.`,
   deadline: (n, total) => `COPIL ${n} sur ${total}`,
   deadlineWeeks: (n) => weeksText(n),
   play: (n) => `Avancer jusqu'au COPIL ${n}`,
@@ -51,30 +67,30 @@ const cascade = {
   recetteName: 'Recette et mise en production',
   recetteReady: 'Tous les lots du cahier des charges sont terminés.',
   recetteWaiting: 'Commence quand tous les lots sont terminés.',
-  recetteAvenant: (pts) => `dont ${pts} points d'avenant`,
+  recetteAvenant: (pts) => `dont ${jh(pts)} d'avenant`,
   weather: (w) => WEATHER[w],
   // Pilotage de projet : pas de ventes ni de clients tant que l'appli n'est pas sortie
   // (le bloc « Temps contre travail » est dessiné par ui.js).
   stats: (s, { weather, launched, cumulative }) => [
     [`${WEATHER[weather].icon} ${WEATHER[weather].label}`, 'Météo du projet'],
-    [`${TEAM_CAPACITY} pts`, 'Capacité toutes les 2 semaines'],
+    [`${md(TEAM_CAPACITY)} j/h`, 'Capacité toutes les 2 semaines'],
     ...(launched ? [[euro(cumulative), 'Ventes cumulées']] : []),
   ],
-  timeVsWork: ({ weeks, totalWeeks, done, total }) => `${weeks} semaine${weeks > 1 ? 's' : ''} sur ${totalWeeks} · ${done} points sur ${total}, recette comprise`,
+  timeVsWork: ({ weeks, totalWeeks, done, total }) => `${weeks} semaine${weeks > 1 ? 's' : ''} sur ${totalWeeks} · ${md(done)} jours/homme sur ${md(total)}, recette comprise`,
   reportTitle: (n) => `Compte rendu du COPIL ${n}`,
   next: (n) => `Avancer jusqu'au COPIL ${n}`,
   seeRequest: 'Voir la demande de la boulangère',
   salesLine: (sales) => `Ventes pendant ces 2 semaines : ${euro(sales)}`,
   eventText: (e) => e.text.cascade,
   eventLog: (e) => e.log.cascade,
-  requestAnnounce: (r) => `${r.name} : ${r.cost} points, plus ${AVENANT} points d'avenant. Le COPIL doit trancher avant de continuer.`,
+  requestAnnounce: (r) => `${r.name} : ${jh(r.cost)}, plus ${jh(AVENANT)} d'avenant. Le COPIL doit trancher avant de continuer.`,
   decision: (d) => {
     const r = feature(d.request).name;
-    if (d.decision === 'accepted') return `${r} acceptée par avenant (+${AVENANT} points de recette)${d.removed.length ? `, en retirant : ${names(d.removed)}` : ''}.`;
+    if (d.decision === 'accepted') return `${r} acceptée par avenant (+${jh(AVENANT)} de recette)${d.removed.length ? `, en retirant : ${names(d.removed)}` : ''}.`;
     if (d.reason === 'timeout') return `${r} refusée faute de décision : le cahier des charges reste inchangé.`;
     return `${r} refusée : le cahier des charges reste inchangé.`;
   },
-  planLog: (total) => `Cahier des charges de ${total} points validé et signé par la boulangère.`,
+  planLog: (total) => `Cahier des charges de ${jh(total)} validé et signé par la boulangère.`,
   periodLog: (f) => `avancement ${f.progress} %, météo ${WEATHER[f.weather].label.toLowerCase()}${f.launched ? ', appli en ligne' : ''}.`,
   periodName: (n) => `COPIL ${n}`,
   endOfDev: (n) => `Le projet s'arrête au COPIL ${n}, en l'état.`,
@@ -87,6 +103,11 @@ const increment = {
   round: 'Manche 2 · Scrum',
   role: 'Product Owner',
   stakeholder: 'Mme Lefèvre',
+  size: (pts) => `${pts} pts`,
+  sizeLong: (pts) => plural(pts, 'point'),
+  sizeOf: (done, cost, extra) => `${done} / ${extra ? `${cost} + ${extra}` : cost} pts`,
+  extraTitle: (pts) => `${plural(pts, 'point')} découverts en cours de route`,
+  anomalies: (pts) => `dont ${plural(pts, 'point')} d'anomalies`,
   approach: 'Vous optez pour Scrum : vous êtes Product Owner, l\'équipe livre un Increment utilisable à chaque Sprint, et chaque Sprint Review montre ce qui marche.',
   intuitionHelp: "Intuition : ce que Mme Lefèvre pense que chaque élément va rapporter, de 1 à 5 étoiles. C'est son avis : les Sprint Reviews diront ce qu'en pensent ses clients.",
   deadline: (n, total) => `Sprint ${n} sur ${total}`,
@@ -143,6 +164,7 @@ export function logEntry(mode, entry) {
     case 'request': { const r = feature(entry.request); return { kind: 'request', label: `Demande de ${lex.stakeholder}`, text: `${r.name} : « ${r.ask} »` }; }
     case 'decision': return { kind: 'decision', text: lex.decision(entry) };
     case 'discovery': return { kind: 'discovery', label: 'Travail sous-estimé', text: discoveryText(mode, entry) };
+    case 'descope': return { kind: 'decision', text: lex.descopeLog(entry.removed) };
     default: throw new Error(`Entrée de journal inconnue : ${entry.kind}`);
   }
 }
@@ -158,12 +180,13 @@ export function trailText(mode, fact) {
   const lex = lexicon(mode);
   const name = (id) => feature(id).name;
   switch (fact.kind) {
-    case 'plan': return `Cahier des charges de ${fact.total} points validé${fact.dropped.length ? `, sans : ${names(fact.dropped)}` : ', avec tous les lots'}.`;
+    case 'plan': return `Cahier des charges de ${jh(fact.total)} validé${fact.dropped.length ? `, sans : ${names(fact.dropped)}` : ', avec tous les lots'}.`;
     case 'status': return `Avancement ${fact.progress} %, météo ${WEATHER[fact.weather].label.toLowerCase()}.`;
     case 'release': return "L'appli sort : tous les lots du cahier des charges sont en ligne.";
     case 'live': return `Mis en ligne : ${names(fact.ids)}.`;
     case 'moved': return `« ${name(fact.id)} » ${fact.to < fact.from ? 'remontée' : 'descendue'} du rang ${fact.from} au rang ${fact.to}.`;
-    case 'discovery': return `Travail sous-estimé : ${fact.target === 'recette' ? lex.recetteName : name(fact.target)} (+${fact.extra} points).`;
+    case 'discovery': return `Travail sous-estimé : ${fact.target === 'recette' ? lex.recetteName : name(fact.target)} (+${lex.sizeLong(fact.extra)}).`;
+    case 'descope': return lex.descopeLog(fact.removed);
     case 'decision': return lex.decision(fact);
     default: throw new Error(`Fait inconnu : ${fact.kind}`);
   }
@@ -172,7 +195,7 @@ export function trailText(mode, fact) {
 /** Annonce d'une découverte de travail sous-estimé : « texte (+6 points) ». */
 export function discoveryText(mode, { target, extra }) {
   const u = UNDERESTIMATES.find((x) => x.target === target && (!x.mode || x.mode === mode));
-  return `${u.text[mode]} (+${extra} points)`;
+  return `${u.text[mode]} (+${lexicon(mode).sizeLong(extra)})`;
 }
 
 /** Textes de l'écran de fin du projet, communs aux deux manches (exploitation sans Sprint ni COPIL). */

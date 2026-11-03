@@ -4,7 +4,7 @@ import {
   newRound, planStatus, toggleInPlan, moveFeature, validatePlan, playSprint, finishRound,
   roundResults, canMove, featureState, developmentOver, truthTable,
   requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, moveFeatureTo, periodWeeks, projectWeather, planStatus as status,
-  effectiveCost, underestimate,
+  effectiveCost, underestimate, canDescope, descopeStatus, descope, decisionTrail,
 } from '../site/js/game-core.js';
 
 const SMART_ORDER = ['vitrine', 'resa', 'alerte', 'gateaux', 'cc', 'fidelite', 'paiement', 'livraison', 'avis'];
@@ -86,7 +86,7 @@ test('Plan par défaut : 66 points, validation refusée', () => {
   assert.equal(st.total, 66);
   assert.equal(st.over, 2);
   assert.equal(st.valid, false);
-  assert.match(st.message, /dépasse de 2 points/);
+  assert.match(st.message, /dépasse de 10 jours\/homme/);
   assert.throws(() => validatePlan(s));
   assert.throws(() => playSprint(s));
 });
@@ -613,4 +613,41 @@ test('Le budget du cahier des charges reste celui des estimations', () => {
   assert.equal(planStatus(s).total, 39);
   const after = playSprint(s).state;
   assert.equal(planStatus(after).total, 39);
+});
+
+/* ---------- Arbitrage du COPIL (manche 1) ---------- */
+
+test('Arbitrage : fermé tant que le projet est ensoleillé, ouvert dès l\'orage', () => {
+  let s = cascadeWithoutReviews();
+  assert.equal(canDescope(s), false); // avant le premier COPIL : soleil
+  s = sprint(s).state;
+  assert.equal(canDescope(s), false); // COPIL 1 : soleil
+  s = sprint(s).state;
+  assert.equal(canDescope(s), true);  // COPIL 2 : orage (paiement découvert)
+  assert.equal(canDescope(newRound('increment')), false);
+});
+
+test('Arbitrage : retirer livraison, fidélité et click & collect au COPIL 2 fait sortir l\'appli au COPIL 5', () => {
+  let s = cascadeWithoutReviews();
+  s = sprint(sprint(s).state).state;
+  const st = descopeStatus(s, ['livraison', 'fidelite', 'cc']);
+  assert.equal(st.valid, true);
+  assert.equal(st.weather, 'sunny');
+  s = descope(s, ['livraison', 'fidelite', 'cc']);
+  assert.ok(!s.included.includes('livraison'));
+  assert.ok(s.log.some((e) => e.kind === 'descope' && e.sprint === 2));
+  assert.ok(decisionTrail(s).find((p) => p.period === 2).facts.some((f) => f.kind === 'descope'));
+  const { reports, results } = playAll(s);
+  assert.equal(reports.at(-1).launched, true);
+  assert.equal(results.cumulative, 9842);
+});
+
+test('Arbitrage : lot commencé, prérequis cassé ou rien de coché sont refusés', () => {
+  let s = cascadeWithoutReviews();
+  s = sprint(sprint(s).state).state;
+  assert.equal(descopeStatus(s, []).valid, false);
+  assert.match(descopeStatus(s, ['paiement']).message, /déjà commencé/);
+  assert.equal(descopeStatus(s, ['resa']).valid, false);
+  assert.throws(() => descope(s, ['paiement']));
+  assert.match(descopeStatus(s, ['livraison']).message, /soleil|orageux/);
 });

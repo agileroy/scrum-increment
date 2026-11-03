@@ -514,9 +514,8 @@ export async function startRoomMode() {
     if (meta.status === 'revealed') { app.session = null; ui.closeDialog(); renderCollectiveResults(); return; }
     if (meta.status === 'lobby' || !room.teams?.[n]?.state) {
       app.session = null;
-      // Le contexte, sans la façon de travailler : le formateur peut encore changer un participant d'équipe,
-      // et la répartition des approches reste secrète jusqu'à la révélation.
-      const story = `<div class="briefing wait-story"><p class="story">${esc(STORY)}</p>${ui.speechHtml('Ma seule question : quand est-ce que ça me rapporte ?')}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe, chaque membre depuis son téléphone. Votre façon de travailler vous sera donnée au lancement.</p></div>`;
+      // Le contexte et la démarche de l'équipe dès l'attente ; l'écran projeté, lui, reste neutre.
+      const story = `<div class="briefing wait-story"><p class="story">${esc(`${STORY} ${lexicon(teamMode(n)).approach}`)}</p>${ui.speechHtml('Ma seule question : quand est-ce que ça me rapporte ?')}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe, chaque membre depuis son téléphone.</p></div>`;
       showWait({ chip: label, title: `Bienvenue, ${room.players[uid].name}`, text: '', extra: story + teammatesHtml(n) });
       return;
     }
@@ -580,6 +579,8 @@ export async function startRoomMode() {
       else { ui.closeDialog(); app.remove = []; ui.openRequestDialog(); }
     } else if (app.dialogKind === 'request') {
       ui.closeDialog(); // tranchée par un autre membre
+    } else {
+      ui.refreshDescopeDialog(); // arbitrage : suit les décisions des coéquipiers
     }
   }
 

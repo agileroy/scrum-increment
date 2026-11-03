@@ -7,9 +7,9 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
+  requestStatus, decideRequest, isRequest, canDescope, descopeStatus, descope, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
-import { EURO_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
+import { EURO_PER_POINT, MAN_DAYS_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
 import { lexicon, logEntry, exploitationText, discoveryText, STORY, SPEAKER } from './vocabulary.js?v=__VERSION__';
 import { chartSvg, legendHtml, formatEuro } from './chart.js?v=__VERSION__';
 
@@ -23,7 +23,9 @@ const compactQuery = window.matchMedia('(max-width: 560px)');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const lex = () => lexicon(app.round.mode);
-const stars = (n) => `<span class="stars" aria-label="Intuition de Mme Lefèvre : ${n} sur 5">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+const stars = (n, decorative = false) => `<span class="stars" ${decorative ? 'aria-hidden="true"' : `aria-label="Intuition de Mme Lefèvre : ${n} sur 5"`}>${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+// Jauge du cahier des charges (manche 1), en jours/homme.
+const ratio = (total, budget) => `${total * MAN_DAYS_PER_POINT} / ${lexicon(MODES.cascade).sizeLong(budget)}`;
 
 // Pictogramme décoratif d'une fonctionnalité : le nom reste le texte lu.
 const emo = (icon) => (icon ? `<span class="emo" aria-hidden="true">${icon}</span>` : '');
@@ -104,7 +106,7 @@ function planItemHtml(state, id, index, impossible) {
     <div>
       <div class="item-head"><span class="item-name">${nameHtml(id)}</span>${chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
-      <div class="item-meta"><span>${f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${f.req ? `<span>Nécessite : ${esc(feature(f.req).name)}</span>` : ''}</div>
+      <div class="item-meta"><span>${esc(lexicon(state.mode).size(f.cost))}</span><span>Intuition ${stars(f.stars)}</span>${f.req ? `<span>Nécessite : ${esc(feature(f.req).name)}</span>` : ''}</div>
       ${note}
     </div>
     <div class="item-controls">
@@ -124,7 +126,7 @@ function boardItemHtml(state, id, index, count) {
   let value = '';
   if (state.mode === MODES.increment) {
     value = state.revealed.includes(id)
-      ? `<span class="value-known">Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} ${l.valuePer}</span>`
+      ? `<span class="value-known">💶 Ventes réelles : ${formatEuro(f.value * EURO_PER_POINT)} ${l.valuePer}</span>`
       : '<span>Ventes réelles : ?</span>';
   }
   const chip = isRequest(id) ? `<span class="chip request">${esc(l.requestChip)}</span>` : '';
@@ -136,7 +138,7 @@ function boardItemHtml(state, id, index, count) {
     <div>
       <div class="item-head"><span class="item-name">${nameHtml(id)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
       <div class="item-desc">${esc(f.desc)}</div>
-      <div class="item-meta"><span>${p} / ${extra ? `<span class="extra" title="${extra} points découverts en cours de route">${f.cost} + ${extra}</span>` : f.cost} pts</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
+      <div class="item-meta"><span${extra ? ` class="extra" title="${esc(l.extraTitle(extra))}"` : ''}>${esc(l.sizeOf(p, f.cost, extra))}</span><span>Intuition ${stars(f.stars)}</span>${value}</div>
       ${dep.note}
       <div class="bar"><span style="width:${(p / cost) * 100}%"></span></div>
     </div>
@@ -154,7 +156,7 @@ function recetteHtml(state) {
     <div>
       <div class="item-head"><span class="item-name">${esc(l.recetteName)}</span>${state.launched ? '<span class="chip live">Appli en ligne</span>' : ''}</div>
       <div class="item-desc">${esc(ready ? l.recetteReady : l.recetteWaiting)}</div>
-      <div class="item-meta"><span>${state.recette} / ${state.recetteCost} pts</span>${avenants ? `<span>${esc(l.recetteAvenant(avenants))}</span>` : ''}${anomalies ? `<span class="extra">dont ${anomalies} points d'anomalies</span>` : ''}</div>
+      <div class="item-meta"><span>${esc(l.sizeOf(state.recette, state.recetteCost, 0))}</span>${avenants ? `<span>${esc(l.recetteAvenant(avenants))}</span>` : ''}${anomalies ? `<span class="extra">${esc(l.anomalies(anomalies))}</span>` : ''}</div>
       <div class="bar"><span style="width:${(state.recette / state.recetteCost) * 100}%"></span></div>
     </div>
     <div class="item-controls"></div>
@@ -166,7 +168,7 @@ function recetteHtml(state) {
 function renderPlan() {
   const s = app.round;
   const st = planStatus(s);
-  $('plan-total').textContent = `${st.total} / ${st.budget} points`;
+  $('plan-total').textContent = ratio(st.total, st.budget);
   const meter = $('plan-meter');
   meter.classList.toggle('over', st.over > 0);
   meter.firstElementChild.style.width = `${Math.min(100, (st.total / st.budget) * 100)}%`;
@@ -201,7 +203,11 @@ function renderBoard() {
   app.session?.renderBar();
   $('list-title').textContent = l.listTitle;
   $('list-hint').textContent = l.listHint;
-  $('board-intuition').textContent = l.intuitionHelp;
+  $('board-intuition').innerHTML = `${stars(3, true)} ${esc(l.intuitionHelp)}`;
+  // Manche 1 : arbitrage du COPIL quand le reste à faire dépasse le temps restant.
+  const arbitrage = cascade && canDescope(s);
+  $('descope-bar').hidden = !arbitrage;
+  if (arbitrage) { $('descope-hint').textContent = l.descopeHint; $('descope-open').textContent = l.descopeButton; }
   $('journal-title').textContent = l.journalTitle;
   const tiles = l.stats(s, {
     weather: cascade ? projectWeather(s) : null,
@@ -260,6 +266,7 @@ function reportHtml(state, report, { team = false } = {}) {
       h += `<p>Temps écoulé : <strong>${weeks} semaines sur ${PLANNED_SPRINTS * SPRINT_WEEKS}</strong> · Travail fait : <strong>${report.progress} %</strong></p>`;
     }
     if (report.sales > 0) h += `<p>${esc(l.salesLine(report.sales))}</p>`;
+    if (report.weather === 'stormy' && !report.developmentOver) h += `<p class="hint">${esc(l.descopeHint)}</p>`;
   } else {
     h += report.completed.length
       ? `<p class="good launch"><span class="emo pop" aria-hidden="true">🚀</span><span>Mis en ligne : <strong>${report.completed.map(nameHtml).join(', ')}</strong></span></p>`
@@ -269,7 +276,10 @@ function reportHtml(state, report, { team = false } = {}) {
     h += report.quotes.length
       ? report.quotes.map((q) => `<blockquote class="quote">« ${esc(q.text)} »<footer>${esc(q.who)}</footer></blockquote>`).join('')
       : '<p class="muted">Pas de nouveau retour.</p>';
-    if (report.completed.length) h += '<p class="muted">La vraie valeur des fonctionnalités en ligne apparaît maintenant dans le Product Backlog.</p>';
+    // La valeur réelle de ce qui vient d'être mis en ligne est désormais connue : on la dit, et le Product Backlog l'affiche.
+    if (report.completed.length) {
+      h += `<div class="reveal"><p><strong>Ce que ça rapporte vraiment</strong>, désormais affiché dans le Product Backlog :</p><ul>${report.completed.map((id) => `<li>${nameHtml(id)} : <strong>${formatEuro(feature(id).value * EURO_PER_POINT)}</strong> par Sprint · intuition ${stars(feature(id).stars)}</li>`).join('')}</ul></div>`;
+    }
   }
   for (const d of report.discoveries ?? []) {
     h += `<p class="discovery">${emo('🔍')}<strong>Travail sous-estimé :</strong> ${esc(discoveryText(state.mode, d))}</p>`;
@@ -330,10 +340,10 @@ function requestHtml() {
   let h = '<h2 id="dialog-title">Demande de changement</h2>';
   const l = lexicon(s.mode);
   h += speechHtml(r.ask);
-  h += `<p><strong>${nameHtml(r.id)}</strong> (${esc(r.desc)}) : ${r.cost} points, intuition de Mme Lefèvre ${stars(r.stars)}.</p>`;
+  h += `<p><strong>${nameHtml(r.id)}</strong> (${esc(r.desc)}) : ${esc(l.sizeLong(r.cost))}, intuition de Mme Lefèvre ${stars(r.stars)}.</p>`;
   // La phrase sur l'avenant dépend de la marge : sans rien retirer, la demande tient-elle déjà ?
   h += `<p class="muted">${esc(requestStatus(s, []).valid ? l.requestFits(r) : l.requestTight(r))}</p>`;
-  h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${st.total} / ${st.budget} points</span></div>`;
+  h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${ratio(st.total, st.budget)}</span></div>`;
   h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
   h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
   const broken = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
@@ -342,7 +352,7 @@ function requestHtml() {
     ? `<fieldset class="removals"><legend>Retirer des lots</legend>${st.removable.map((id) => {
       const f = feature(id);
       const why = st.impossible[id] && !app.remove.includes(id) ? ` <span class="chip warn">Impossible sans « ${esc(feature(st.impossible[id]).name)} »</span>` : '';
-      return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${f.cost} pts · ${stars(f.stars)}</span>${why}</span></label>`;
+      return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${esc(l.size(f.cost))} · ${stars(f.stars)}</span>${why}</span></label>`;
     }).join('')}</fieldset>`
     : '<p class="muted">Tous les lots sont commencés : plus rien ne peut être retiré.</p>';
   h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Accepter (avenant)</button><button type="button" class="button button-ghost" data-refuse>Refuser</button></div>`;
@@ -369,6 +379,51 @@ function decide(accept) {
   app.remove = [];
   app.afterDialog = null;
   if (!app.round.pendingRequest) $('dialog').close();
+}
+
+/* ---------------------------------------------------------------- Arbitrage du COPIL (manche 1) */
+
+function descopeHtml() {
+  const s = app.round;
+  const l = lexicon(s.mode);
+  const st = descopeStatus(s, app.remove);
+  let h = `<h2 id="dialog-title">${esc(l.descopeTitle)}</h2>`;
+  h += `<p>${esc(l.descopeIntro(remainingNow(s), st.left))}</p>`;
+  h += `<div class="panel-head"><strong>${esc(l.descopeGauge)}</strong><span class="count">${ratio(st.remaining, st.left)}</span></div>`;
+  h += `<div class="meter ${st.weather === 'stormy' ? 'over' : ''}"><span style="width:${Math.min(100, st.left ? (st.remaining / st.left) * 100 : 100)}%"></span></div>`;
+  h += `<p class="hint ${st.valid || !app.remove.length ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
+  h += `<fieldset class="removals"><legend>Retirer des lots pas encore commencés</legend>${st.removable.map((id) => {
+    const f = feature(id);
+    const why = st.impossible[id] ? ` <span class="chip warn">Impossible sans « ${esc(feature(st.impossible[id]).name)} »</span>` : '';
+    return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-descope="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${esc(l.size(f.cost))} · ${stars(f.stars)}</span>${why}</span></label>`;
+  }).join('')}</fieldset>`;
+  h += `<div class="actions"><button type="button" class="button button-primary" data-descope-ok ${st.valid ? '' : 'disabled'}>${esc(l.descopeConfirm)}</button><button type="button" class="button button-ghost" data-close>Annuler</button></div>`;
+  return h;
+}
+
+const remainingNow = (s) => descopeStatus(s, []).remaining;
+
+function openDescopeDialog() {
+  app.remove = [];
+  openDialog(descopeHtml(), null, 'descope');
+}
+
+/** Rafraîchit la fenêtre d'arbitrage (état changé par un coéquipier), ou la ferme si l'arbitrage n'est plus possible. */
+function refreshDescopeDialog() {
+  if (app.dialogKind !== 'descope') return;
+  if (!canDescope(app.round)) { closeDialog(); app.remove = []; return; }
+  const st = descopeStatus(app.round, []);
+  app.remove = app.remove.filter((id) => st.removable.includes(id));
+  const focused = document.activeElement?.dataset?.descope;
+  $('dialog-body').innerHTML = `<div class="dialog-content">${descopeHtml()}</div>`;
+  if (focused) $('dialog-body').querySelector(`[data-descope="${focused}"]`)?.focus();
+}
+
+function confirmDescope() {
+  const remove = app.remove.slice();
+  act((s) => (canDescope(s) && descopeStatus(s, remove).valid ? descope(s, remove) : s), renderBoard);
+  app.remove = [];
+  closeDialog();
 }
 
 /** Ferme la fenêtre sans enchaîner (l'événement « close » arrive plus tard : il est ignoré). */
@@ -608,6 +663,7 @@ export function init() {
   });
 
   $('play-sprint').addEventListener('click', () => { if (!app.session) onPlaySprint(); });
+  $('descope-open').addEventListener('click', () => { if (canDescope(app.round)) openDescopeDialog(); });
 
   $('start-round-2').addEventListener('click', () => {
     app.round = newRound(MODES.increment);
@@ -626,8 +682,15 @@ export function init() {
     if (e.target.closest('[data-close]')) dialog.close();
     else if (e.target.closest('[data-accept]:not(:disabled)')) decide(true);
     else if (e.target.closest('[data-refuse]')) decide(false);
+    else if (e.target.closest('[data-descope-ok]:not(:disabled)')) confirmDescope();
   });
   dialog.addEventListener('change', (e) => {
+    const cut = e.target.dataset.descope;
+    if (cut) {
+      app.remove = e.target.checked ? [...app.remove, cut] : app.remove.filter((x) => x !== cut);
+      refreshDescopeDialog();
+      return;
+    }
     const id = e.target.dataset.remove;
     if (!id) return;
     app.remove = e.target.checked ? [...app.remove, id] : app.remove.filter((x) => x !== id);
@@ -650,6 +713,6 @@ export function init() {
 
 /** Ce que room-ui.js réutilise pour le jeu d'une équipe et les résultats collectifs. */
 export const ui = {
-  app, $, esc, plural, show, act, speechHtml, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
+  app, $, esc, plural, show, act, speechHtml, refreshDescopeDialog, renderPlan, renderBoard, openDialog, closeDialog, reportHtml, finishHtml,
   openRequestDialog, refreshRequestDialog, renderComparison, isDragging: () => Boolean(drag),
 };

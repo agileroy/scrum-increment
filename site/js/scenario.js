@@ -23,6 +23,11 @@ export const DONE_COST = 2;
 export const RECETTE = 8;
 /** Manche 1 : points de recette ajoutés par chaque demande de changement acceptée. */
 export const AVENANT = 2;
+/**
+ * Manche 1 : un point de travail affiché en jours/homme (une équipe de 6 personnes abat 60 jours/homme
+ * en 2 semaines). Le moteur compte en points ; seule la manche 1 parle en jours/homme.
+ */
+export const MAN_DAYS_PER_POINT = 5;
 /** Manche 1 : capacité totale du projet, recette comprise. */
 export const PROJECT_CAPACITY = PLANNED_SPRINTS * TEAM_CAPACITY;
 /** Manche 1 : points disponibles pour les fonctionnalités du plan, sans avenant. */

@@ -6,10 +6,13 @@
 import {
   FEATURES, REQUESTS, QUOTES, QUOTES_PER_REVIEW, EVENTS, EURO_PER_POINT, COST_PER_POINT,
   PLANNED_SPRINTS, LAST_SPRINT, TEAM_CAPACITY, DONE_COST, RECETTE, AVENANT, PROJECT_CAPACITY,
-  CLIENT_LOSS, COMPETITOR_FROM, SPRINT_WEEKS, UNDERESTIMATES,
+  CLIENT_LOSS, COMPETITOR_FROM, SPRINT_WEEKS, UNDERESTIMATES, MAN_DAYS_PER_POINT,
 } from './scenario.js?v=__VERSION__';
 
 export const MODES = { cascade: 'cascade', increment: 'increment' };
+
+// Messages du cahier des charges (manche 1) : la charge se dit en jours/homme.
+const manDays = (pts) => `${pts * MAN_DAYS_PER_POINT} jours/homme`;
 
 const byId = Object.fromEntries([...FEATURES, ...REQUESTS].map((f) => [f.id, f]));
 const requestIds = REQUESTS.map((r) => r.id);
@@ -110,7 +113,7 @@ function checkPlan(items, budget) {
   const missing = Object.entries(impossible).map(([id, req]) => ({ id, req }));
   let message;
   if (items.length === 0) message = 'Le cahier des charges est vide : ajoutez au moins un lot.';
-  else if (over > 0) message = `Le cahier des charges dépasse de ${over} point${over > 1 ? 's' : ''} : retirez au moins un lot.`;
+  else if (over > 0) message = `Le cahier des charges dépasse de ${manDays(over)} : retirez au moins un lot.`;
   else if (missing.length) message = `« ${feature(missing[0].id).name} » nécessite « ${feature(missing[0].req).name} ».`;
   else message = 'Le cahier des charges tient dans le budget : la boulangère est prête à signer.';
   return { total, budget, over, missing, impossible, valid: items.length > 0 && over === 0 && missing.length === 0, message };
@@ -423,7 +426,7 @@ export function requestStatus(state, remove = []) {
     return { ...status, removable, valid: false, message: `« ${feature(blocked[0]).name} » est déjà commencé : ce lot ne peut plus être retiré.` };
   }
   let message = status.message;
-  if (status.over > 0) message = `Le cahier des charges dépasserait le budget de ${status.over} point${status.over > 1 ? 's' : ''} : retirez des lots pas encore commencés.`;
+  if (status.over > 0) message = `Le cahier des charges dépasserait le budget de ${manDays(status.over)} : retirez des lots pas encore commencés.`;
   else if (status.valid) message = 'Le cahier des charges tient dans le budget : le COPIL peut signer l\'avenant.';
   return { ...status, removable, message };
 }
@@ -455,6 +458,59 @@ export function decideRequest(state, { accept, remove = [], reason = null }) {
   return next;
 }
 
+/* ---------- Arbitrage du périmètre (manche 1) ---------- */
+
+/** Capacité restant jusqu'à la fin prévue du projet, en points. */
+export function capacityLeft(state) {
+  return Math.max(0, state.lastBuildSprint - state.sprint) * TEAM_CAPACITY;
+}
+
+/**
+ * Manche 1 : le COPIL peut-il arbitrer, c'est-à-dire retirer des lots pas encore commencés ?
+ * Seulement quand le reste à faire dépasse le temps restant (météo orageuse), entre deux COPIL.
+ */
+export function canDescope(state) {
+  return state.mode === MODES.cascade && state.planValidated && !state.pendingRequest && !state.finished
+    && !developmentOver(state) && projectWeather(state) === 'stormy'
+    && workItems(state).some((id) => canRemove(state, id));
+}
+
+/** Projet obtenu en retirant `remove` : reste à faire, capacité restante, météo prévue, validité et message. */
+export function descopeStatus(state, remove = []) {
+  const removable = workItems(state).filter((x) => canRemove(state, x));
+  const items = workItems(state).filter((x) => !remove.includes(x));
+  const impossible = impossibleLots(items);
+  const after = { ...state, included: state.included.filter((x) => !remove.includes(x)) };
+  const remaining = remainingWork(after);
+  const left = capacityLeft(state);
+  const weather = remaining <= left ? 'sunny' : 'stormy';
+  const blocked = remove.filter((x) => !removable.includes(x));
+  const missing = Object.keys(impossible);
+  let message;
+  let valid = false;
+  if (blocked.length) message = `« ${feature(blocked[0]).name} » est déjà commencé : ce lot ne peut plus être retiré.`;
+  else if (!remove.length) message = 'Cochez les lots à retirer du cahier des charges.';
+  else if (missing.length) message = `« ${feature(missing[0]).name} » nécessite « ${feature(impossible[missing[0]]).name} » : retirez-le aussi.`;
+  else {
+    valid = true;
+    message = weather === 'sunny'
+      ? 'Le reste à faire tient dans le temps restant : le projet repasse au soleil.'
+      : `Il manquerait encore ${manDays(remaining - left)} : le projet resterait orageux.`;
+  }
+  return { removable, impossible, remaining, left, weather, valid, message };
+}
+
+/** Manche 1 : le COPIL retire du cahier des charges des lots pas encore commencés. */
+export function descope(state, remove) {
+  if (!canDescope(state)) throw new Error("L'arbitrage n'est possible que lorsque le projet est orageux.");
+  const status = descopeStatus(state, remove);
+  if (!status.valid) throw new Error(status.message);
+  const next = clone(state);
+  next.included = next.included.filter((x) => !remove.includes(x));
+  next.log.push({ sprint: next.sprint, kind: 'descope', removed: remove.slice() });
+  return next;
+}
+
 /* ---------- Calendrier ---------- */
 
 /** Semaines couvertes par une période (1 à 10) : [2p − 1, 2p]. */
@@ -474,8 +530,7 @@ export function remainingWork(state) {
 /** « delivered » une fois l'appli sortie ; « sunny » si le reste tient dans la capacité restante ; « stormy » sinon. */
 export function projectWeather(state) {
   if (state.launched) return 'delivered';
-  const capacityLeft = Math.max(0, state.lastBuildSprint - state.sprint) * TEAM_CAPACITY;
-  return remainingWork(state) <= capacityLeft ? 'sunny' : 'stormy';
+  return remainingWork(state) <= capacityLeft(state) ? 'sunny' : 'stormy';
 }
 
 /* ---------- Mode collectif : état relu depuis la base, bilans reconstruits ---------- */
@@ -502,7 +557,7 @@ function reviveEntry(entry) {
     e.order = e.order === undefined ? null : toArray(e.order); // absent des parties commencées avant son ajout
   }
   if (e.kind === 'plan') e.dropped = toArray(e.dropped);
-  if (e.kind === 'decision') e.removed = toArray(e.removed);
+  if (e.kind === 'decision' || e.kind === 'descope') e.removed = toArray(e.removed);
   return e;
 }
 
@@ -550,7 +605,7 @@ export function reportFromState(state, sprint = state.sprint) {
 
 /**
  * Fil des décisions d'une équipe, en faits, période par période (0 = avant la première période) :
- * [{ period, facts: [{ kind: 'plan' | 'moved' | 'discovery' | 'status' | 'release' | 'live' | 'decision', … }] }].
+ * [{ period, facts: [{ kind: 'plan' | 'moved' | 'discovery' | 'status' | 'release' | 'live' | 'decision' | 'descope', … }] }].
  * Aucune vente : ce fil sert aux coulisses du formateur pendant la partie, puis au débrief.
  */
 export function decisionTrail(state) {
@@ -574,6 +629,7 @@ export function decisionTrail(state) {
       if (state.mode === MODES.increment && e.completed.length) at(e.sprint).push({ kind: 'live', ids: e.completed.slice() });
     }
     if (e.kind === 'discovery') at(e.sprint).push({ kind: 'discovery', target: e.target, extra: e.extra });
+    if (e.kind === 'descope') at(e.sprint).push({ kind: 'descope', removed: e.removed.slice() });
     if (e.kind === 'decision') {
       const fact = { kind: 'decision', request: e.request, decision: e.decision, removed: (e.removed ?? []).slice() };
       if (e.reason) fact.reason = e.reason;

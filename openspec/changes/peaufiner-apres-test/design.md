@@ -27,9 +27,17 @@ Alternatives écartées : seulement des fonctionnalités chères et adorées (pa
 
 Une découverte arrive quand l'élément reçoit son premier point. En première période, seuls la vitrine et la réservation peuvent commencer (tout le reste dépend de la vitrine, qui coûte 5 points, et la capacité est de 12 ou 10) ; sauf la vitrine retirée, ce qui rend tout impossible. La première période est donc toujours sans découverte.
 
-### Démarche cachée tant que la partie n'est pas lancée
+### Démarche annoncée dès l'attente
 
-L'attente de la salle donne le contexte commun, sans la démarche : le formateur peut encore déplacer un participant, et voir sa démarche changer avec l'équipe trahirait la répartition. Au lancement, le contexte complet (avec « démarche projet » ou « Scrum ») ouvre le premier écran de l'équipe : le cahier des charges pour une équipe projet, la présentation du rôle pour une équipe Scrum. En solo, le contexte ouvre le cahier des charges (la transition explique déjà la manche 2).
+Choix de l'auteur : chaque équipe connaît sa démarche dès l'attente de la salle, pour se mettre dans le rôle. Le contexte et la démarche ouvrent aussi le premier écran de l'équipe au lancement. L'écran projeté du formateur reste neutre. Un participant déplacé d'équipe pendant l'attente voit sa démarche changer : c'est accepté. En solo, le contexte ouvre le cahier des charges (la transition explique déjà la manche 2).
+
+### Jours/homme : un affichage, pas un changement de moteur
+
+Le moteur compte toujours en points ; la manche 1 les affiche multipliés par 5 (`MAN_DAYS_PER_POINT`). Le facteur 5 donne une équipe crédible (6 personnes × 10 jours = 60 jours/homme par COPIL) et des nombres ronds (vitrine 25 j/h, livraison 70 j/h, avenant 10 j/h). Les tests de vocabulaire interdisent « point » en manche 1 et « jours/homme » en manche 2.
+
+### Arbitrage du COPIL
+
+Ouvert seulement quand la météo est orageuse et qu'au moins un lot n'est pas commencé, entre deux COPIL. Le joueur coche des lots pas commencés ; la fenêtre montre le reste à faire après arbitrage face au temps restant jusqu'à la fin prévue, et refuse un retrait qui casse un prérequis. Pas d'avenant ni de coût : retirer du périmètre est une décision du COPIL avec la boulangère. Exemple : cahier des charges de 61 points, orageux au COPIL 2 ; retirer livraison, fidélité et click & collect le remet au soleil et l'appli sort au COPIL 5 (9 842 €). Retirer la seule livraison le remet au soleil… jusqu'à la coupure, qui tombe avant la fin prévue : 0 €. Les parcours de référence n'arbitrent pas et ne changent pas.
 
 ### Émojis plutôt qu'images
 

@@ -20,11 +20,11 @@ test('Équipe projet : plan validé, demande acceptée en retirant un lot, refus
   assert.deepEqual(trail.map((p) => p.period), [0, 1, 2, 3]);
   assert.deepEqual(trail[0].facts, [{ kind: 'plan', total: 61, dropped: ['avis'] }]);
   const all = texts(s).join('\n');
-  assert.match(all, /Cahier des charges de 61 points validé, sans : Avis clients\./);
+  assert.match(all, /Cahier des charges de 305 jours\/homme validé, sans : Avis clients\./);
   assert.match(all, /Version anglaise refusée/);
   assert.match(all, /Promotions flash acceptée par avenant .*en retirant : Livraison à domicile/);
   assert.match(all, /Plateaux pour les entreprises refusée faute de décision/);
-  assert.match(all, /Travail sous-estimé : Paiement en ligne \(\+6 points\)/);
+  assert.match(all, /Travail sous-estimé : Paiement en ligne \(\+30 jours\/homme\)/);
   assert.match(all, /météo orageux/);
   assert.equal(trailPeriod('cascade', 2), 'COPIL 2');
 });

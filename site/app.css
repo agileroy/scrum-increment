@@ -330,7 +330,7 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .board-main .intuition-help { margin: -4px 0 10px; }
 .wait-story { margin-bottom: 16px; }
 .emo { margin-right: 6px; font-style: normal; }
-.launch { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.launch .pop { vertical-align: -3px; }
 .pop { display: inline-block; font-size: 1.4rem; animation: pop 0.6s ease-out both; }
 @keyframes pop { 0% { transform: scale(0.3) rotate(-20deg); opacity: 0; } 60% { transform: scale(1.25) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
 @media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
@@ -495,3 +495,16 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .chart .axis { font-size: 15px; }
   .chart .frontier-label, .chart .ops-label { font-size: 14px; }
 }
+
+/* ---------------------------------------------------------------- Arbitrage et valeur révélée */
+
+.descope-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-text);
+}
+.descope-bar p { margin: 0; flex: 1 1 260px; font-weight: 600; }
+.descope-bar p::before { content: "⛈️"; margin-right: 6px; }
+.reveal { padding: 10px 14px; border-radius: 10px; background: var(--live-soft); color: var(--live-text); }
+.reveal p { margin: 0 0 4px; }
+.reveal ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.item-meta .value-known { padding: 0 8px; border-radius: 999px; background: var(--live-soft); color: var(--live-text); font-weight: 700; }

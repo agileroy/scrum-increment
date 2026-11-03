@@ -79,12 +79,12 @@
       <div class="briefing" aria-label="Votre mission de chef de projet">
         <p class="story" id="plan-story"></p>
         <figure class="speech"><span class="avatar" aria-hidden="true">👩‍🍳</span><blockquote><p>«&nbsp;Je veux savoir exactement ce que j'aurai, et quand. Tout doit être prêt dans 12 semaines.&nbsp;»</p><footer>Madame Lefèvre, la boulangère</footer></blockquote></figure>
-        <ul class="tiles"><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><strong>12 semaines</strong><span>Un COPIL toutes les 2 semaines</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><strong>72 points</strong><span>L'équipe abat 12 points tous les 15 jours</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg><strong>8 points</strong><span>Recette et mise en production, à la fin</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 13h7M9 17h5"/></svg><strong>Contrat</strong><span>Une fois validé, tout changement passe par un avenant</span></li></ul>
-        <p class="mission">Vous êtes chef de projet. Choisissez les lots et leur ordre : 64 points à répartir.</p>
+        <ul class="tiles"><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><strong>12 semaines</strong><span>Un COPIL toutes les 2 semaines</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><strong>360 j/h</strong><span>6 personnes : 60 jours/homme tous les 15 jours</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg><strong>40 j/h</strong><span>Recette et mise en production, à la fin</span></li><li class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 13h7M9 17h5"/></svg><strong>Contrat</strong><span>Une fois validé, tout changement passe par un avenant</span></li></ul>
+        <p class="mission">Vous êtes chef de projet. Choisissez les lots et leur ordre : 320 jours/homme à répartir.</p>
         <p class="intuition-help"><span class="stars" aria-hidden="true">★★★☆☆</span> Intuition : ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles. C'est son avis, pas une mesure.</p>
       </div>
       <div class="panel plan-gauge">
-        <div class="panel-head"><strong>Points planifiés</strong><span class="count" id="plan-total"></span></div>
+        <div class="panel-head"><strong>Charge planifiée</strong><span class="count" id="plan-total"></span></div>
         <div class="meter" id="plan-meter"><span></span></div>
         <p class="hint" id="plan-message" role="status"></p>
       </div>
@@ -112,6 +112,7 @@
           <h3 class="list-title" id="list-title"></h3>
           <p class="muted list-hint" id="list-hint"></p>
           <p class="intuition-help" id="board-intuition"></p>
+          <div class="descope-bar" id="descope-bar" hidden><p id="descope-hint"></p><button type="button" class="button button-primary" id="descope-open"></button></div>
           <ol class="backlog" id="board-list"></ol>
         </div>
         <aside class="panel journal-panel">
@@ -144,6 +145,7 @@
             <tr><td>COPIL toutes les 2 semaines</td><td>Sprint de 2 semaines, conclu par une Sprint Review</td></tr>
             <tr><td>Recette et mise en production à la fin</td><td>Definition of Done respectée à chaque Sprint</td></tr>
             <tr><td>Demande de changement et avenant</td><td>Nouvel élément du Product Backlog</td></tr>
+            <tr><td>Charge en jours/homme</td><td>Effort estimé en points, sans unité de temps</td></tr>
           </tbody>
         </table>
       </details>

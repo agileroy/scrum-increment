@@ -30,3 +30,18 @@ Après le dernier Sprint de développement, le moteur SHALL simuler des période
   - manche 1, tout petit cahier des charges de 26 points (vitrine, réservation, alerte, gâteaux) : 12 150 € ;
   - manche 2, Product Backlog dans l'ordre initial, jamais réordonné : 13 200 € ;
   - manche 2, ordre vitrine, réservation, alerte, gâteaux, click & collect, fidélité, paiement, livraison, avis : 22 800 €
+
+## ADDED Requirements
+
+### Requirement: Arbitrage du périmètre (manche 1)
+En manche 1, entre deux COPIL, quand le reste à faire dépasse la capacité restante jusqu'à la fin prévue (météo orageuse) et qu'aucune demande n'attend, le moteur SHALL permettre de retirer du cahier des charges des lots qui n'ont reçu aucun point. Le retrait MUST NOT être possible pour un lot commencé, ni s'il laisse un lot sans son prérequis, ni quand le projet est ensoleillé. Le moteur SHALL donner, pour un retrait envisagé, le reste à faire, la capacité restante et la météo qui en résulteraient, et journaliser l'arbitrage.
+
+#### Scenario: Arbitrer pour sortir
+- **GIVEN** le cahier des charges de 61 points, orageux au COPIL 2
+- **WHEN** le COPIL retire la livraison, la fidélité et le click & collect
+- **THEN** le projet repasse au soleil, l'appli sort au COPIL 5 et les ventes cumulées valent 9 842 €
+
+#### Scenario: Pas d'arbitrage au soleil
+- **GIVEN** un projet ensoleillé
+- **WHEN** le joueur cherche à retirer un lot
+- **THEN** l'arbitrage n'est pas proposé
