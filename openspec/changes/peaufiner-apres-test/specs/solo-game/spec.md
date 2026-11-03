@@ -24,7 +24,7 @@ Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la missi
 - **THEN** une légende sous la mission explique que les étoiles « Intuition » sont l'avis de Mme Lefèvre sur ce que chaque lot va rapporter, pas une mesure
 
 ### Requirement: Fenêtre de demande de changement (manche 1)
-En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande en deux temps. D'abord la situation : la réplique de Mme Lefèvre, la charge de la demande (jours/homme de lot et 10 jours/homme de recette pour l'avenant), l'intuition de Mme Lefèvre, puis deux choix côte à côte. « Si vous acceptez » SHALL dire de combien de jours/homme de lots pas commencés il faudra réduire le cahier des charges (demande, avenant et travail découvert compris), ou que rien n'est à retirer, ou que c'est impossible. « Si vous refusez » SHALL dire que le cahier des charges tient dans le temps prévu, ou de combien il faudra quand même le réduire à cause du travail découvert, le COPIL devant alors arbitrer. Le travail découvert MUST NOT être mentionné tant qu'il n'y en a pas eu, pour ne rien annoncer de ce qui vient. Ensuite, si l'équipe accepte et qu'il faut retirer des lots : les lots pas commencés avec des cases à cocher, une jauge du retiré face à l'objectif, ce qui reste à retirer (pour tenir le budget signé, puis pour finir dans les temps), « Signer l'avenant » (inactif tant que le budget signé n'est pas tenu ou qu'un prérequis manque) et « Revenir au choix ». « Refuser » SHALL toujours être possible ; fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande en deux temps. D'abord la situation : la réplique de Mme Lefèvre, la charge de la demande (jours/homme de lot et 10 jours/homme de recette pour l'avenant), l'intuition de Mme Lefèvre, puis deux choix côte à côte. « Si vous acceptez » SHALL dire de combien de jours/homme de lots pas commencés il faudra réduire le cahier des charges (demande, avenant et travail découvert compris), ou que rien n'est à retirer, ou que c'est impossible. « Si vous refusez » SHALL dire que le cahier des charges tient dans le temps prévu, ou de combien il faudra quand même le réduire à cause du travail découvert, le COPIL devant alors arbitrer. Le travail découvert MUST NOT être mentionné tant qu'il n'y en a pas eu, pour ne rien annoncer de ce qui vient. Ensuite, si l'équipe accepte et qu'il faut retirer des lots : les lots pas commencés avec des cases à cocher, une jauge du retiré face à l'objectif, ce qui reste à retirer pour tenir dans le temps prévu (un seul objectif, sans distinguer budget signé et délais), « Signer l'avenant » (inactif tant que l'objectif n'est pas atteint, sauf s'il n'y a plus rien à retirer, ou qu'un prérequis manque) et « Revenir au choix ». « Refuser » SHALL toujours être possible ; si le projet dépasse déjà le temps prévu, refuser SHALL ouvrir aussitôt la fenêtre d'arbitrage, qui propose aussi « Maintenir le périmètre » ; fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
 
 #### Scenario: Rien de découvert, rien d'annoncé
 - **GIVEN** la demande « Version anglaise » au COPIL 1, aucun travail découvert
@@ -101,12 +101,12 @@ Quand le projet est orageux, le tableau de la manche 1 SHALL afficher un bandeau
 - **WHEN** le joueur choisit « Maintenir le périmètre »
 - **THEN** il peut avancer au COPIL suivant, le journal indique « périmètre maintenu malgré l'orage », et il peut encore retirer des lots
 
-### Requirement: Revoir les décisions du COPIL
-Tant que le COPIL suivant n'a pas eu lieu, le tableau de la manche 1 SHALL proposer, à côté du bouton pour avancer, « Revoir les décisions du COPIL » dès qu'une décision a été prise depuis le dernier COPIL ; la demande de changement éventuelle rouvre alors sa fenêtre. Avant le premier COPIL, le bouton s'appelle « Revoir le cahier des charges » et ramène au cahier des charges, à nouveau modifiable.
+### Requirement: Changer la décision du COPIL
+Tant que le COPIL suivant n'a pas eu lieu, le tableau de la manche 1 SHALL proposer, à côté du bouton pour avancer, « Changer la décision du COPIL » dès qu'une décision a été prise depuis le dernier COPIL ; la demande de changement éventuelle rouvre alors sa fenêtre. Avant le premier COPIL, le bouton s'appelle « Revoir le cahier des charges » et ramène au cahier des charges, à nouveau modifiable.
 
 #### Scenario: Changer d'avis
 - **GIVEN** la demande « Version anglaise » refusée au COPIL 1
-- **WHEN** le joueur choisit « Revoir les décisions du COPIL »
+- **WHEN** le joueur choisit « Changer la décision du COPIL »
 - **THEN** la fenêtre de la demande se rouvre pour accepter ou refuser à nouveau
 
 ### Requirement: Valeur révélée en Sprint Review

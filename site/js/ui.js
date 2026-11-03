@@ -400,10 +400,14 @@ function requestHtml() {
   const timeGap = Math.max(0, st.forecast.accept.remaining - left);
   h += `<div class="panel-head"><strong>Retiré : ${jh(removed)}</strong><span class="count">objectif : ${jh(target)}</span></div>`;
   h += `<div class="meter ${removed >= target ? 'done' : ''}"><span style="width:${target ? Math.min(100, (removed / target) * 100) : 100}%"></span></div>`;
+  // Un seul objectif : tenir dans le temps prévu (le budget signé est compris dedans).
+  const missingWork = Math.max(st.over, timeGap);
+  const nothingLeft = st.removable.every((id) => app.remove.includes(id));
+  const canSign = st.valid && (missingWork === 0 || nothingLeft);
   let state;
-  if (st.over > 0) state = `<li class="stormy">Encore ${jh(st.over)} à retirer pour tenir le budget signé.</li>`;
-  else if (timeGap > 0) state = `<li class="stormy">Budget signé tenu : vous pouvez signer. Mais il manque encore ${jh(timeGap)} pour finir dans les temps : le COPIL devra arbitrer.</li>`;
-  else state = '<li class="sunny">Objectif atteint ✓ : le cahier des charges tient dans le temps prévu.</li>';
+  if (missingWork === 0) state = '<li class="sunny">Objectif atteint ✓ : le cahier des charges tient dans le temps prévu.</li>';
+  else if (canSign) state = `<li class="stormy">Plus rien à retirer : il manquera encore ${jh(missingWork)}, le COPIL devra arbitrer.</li>`;
+  else state = `<li class="stormy">Encore ${jh(missingWork)} à retirer.</li>`;
   h += `<ul class="forecast">${state}</ul>`;
   const missing = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
   if (missing.length) h += `<p class="item-alert">Deviendraient impossibles : ${missing.map((id) => esc(feature(id).name)).join(', ')}</p>`;
@@ -414,7 +418,7 @@ function requestHtml() {
       return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${esc(l.size(f.cost))} · ${stars(f.stars)}</span>${why}</span></label>`;
     }).join('')}</fieldset>`
     : '<p class="muted">Tous les lots sont commencés : plus rien ne peut être retiré.</p>';
-  h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Signer l'avenant</button><button type="button" class="button button-ghost" data-request-back>← Revenir au choix</button></div>`;
+  h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${canSign ? '' : 'disabled'}>Signer l'avenant</button><button type="button" class="button button-ghost" data-request-back>← Revenir au choix</button></div>`;
   return h;
 }
 
@@ -438,7 +442,10 @@ function decide(accept) {
   act((s) => (s.pendingRequest === id ? decideRequest(s, { accept, remove }) : s), renderBoard);
   app.remove = [];
   app.afterDialog = null;
-  if (!app.round.pendingRequest) $('dialog').close();
+  if (app.round.pendingRequest) return;
+  // Projet déjà au-delà du temps prévu : la fenêtre d'arbitrage s'ouvre tout de suite.
+  if (needsArbitrage(app.round)) { closeDialog(); openDescopeDialog(); return; }
+  $('dialog').close();
 }
 
 /* ---------------------------------------------------------------- Arbitrage du COPIL (manche 1) */
@@ -464,7 +471,8 @@ function descopeHtml() {
     const why = st.impossible[id] ? ` <span class="chip warn">Impossible sans « ${esc(feature(st.impossible[id]).name)} »</span>` : '';
     return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-descope="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${esc(l.size(f.cost))} · ${stars(f.stars)}</span>${why}</span></label>`;
   }).join('')}</fieldset>`;
-  h += `<div class="actions"><button type="button" class="button button-primary" data-descope-ok ${st.valid ? '' : 'disabled'}>${esc(l.descopeConfirm)}</button><button type="button" class="button button-ghost" data-close>Annuler</button></div>`;
+  const keep = needsArbitrage(s) ? `<button type="button" class="button button-ghost" data-keep-scope>${esc(l.keepButton)}</button>` : '';
+  h += `<div class="actions"><button type="button" class="button button-primary" data-descope-ok ${st.valid ? '' : 'disabled'}>${esc(l.descopeConfirm)}</button>${keep}<button type="button" class="button button-ghost" data-close>Plus tard</button></div>`;
   return h;
 }
 
@@ -837,6 +845,7 @@ export function init() {
     else if (e.target.closest('[data-accept]:not(:disabled)')) decide(true);
     else if (e.target.closest('[data-refuse]')) decide(false);
     else if (e.target.closest('[data-descope-ok]:not(:disabled)')) confirmDescope();
+    else if (e.target.closest('[data-keep-scope]')) { act((s) => (needsArbitrage(s) ? keepScope(s) : s), renderBoard); closeDialog(); }
     else if (e.target.closest('[data-request-step]')) { app.requestStep = 'remove'; refreshRequestDialog(); $('dialog-body').querySelector('[data-remove]')?.focus(); }
     else if (e.target.closest('[data-request-back]')) { app.requestStep = 'choice'; app.remove = []; refreshRequestDialog(); }
   });

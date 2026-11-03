@@ -55,7 +55,7 @@ const cascade = {
     return reason === 'timeout' ? 'Arbitrage du COPIL : périmètre maintenu faute de décision.' : "Arbitrage du COPIL : périmètre maintenu malgré l'orage.";
   },
   keepButton: 'Maintenir le périmètre',
-  reviseButton: 'Revoir les décisions du COPIL',
+  reviseButton: 'Changer la décision du COPIL',
   revisePlan: 'Revoir le cahier des charges',
   arbitrageNeeded: "Le projet est orageux : le reste à faire dépasse le temps restant. Le COPIL doit arbitrer avant de continuer : retirer des lots pas encore commencés, ou maintenir le périmètre.",
   arbitrageMore: 'Le projet reste orageux : le COPIL peut encore retirer des lots pas encore commencés.',
