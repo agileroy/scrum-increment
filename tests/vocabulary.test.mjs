@@ -150,7 +150,7 @@ test('Contexte, intuition et avenant : dans le vocabulaire de chaque manche, san
   assert.equal(SPEAKER, 'Madame Lefèvre, la boulangère');
   for (const mode of ['cascade', 'increment']) {
     const l = lexicon(mode);
-    const texts = [l.approach, l.intuitionHelp, l.stakeholder];
+    const texts = [l.approach, l.intuitionHelp, l.stakeholder, l.lobbySpeech];
     if (mode === 'cascade') texts.push(l.requestFits(feature('anglais')), l.requestTight(feature('anglais')), l.requestChip, l.seeRequest, l.planLog(61));
     for (const t of texts) {
       for (const re of FORBIDDEN[mode]) assert.ok(!re.test(t), `${mode} : ${re} dans « ${t} »`);

@@ -516,7 +516,7 @@ export async function startRoomMode() {
     if (meta.status === 'lobby' || !room.teams?.[n]?.state) {
       app.session = null;
       // Le contexte et la démarche de l'équipe dès l'attente ; l'écran projeté, lui, reste neutre.
-      const story = `<div class="briefing wait-story"><p class="story">${esc(`${STORY} ${lexicon(teamMode(n)).approach}`)}</p>${ui.speechHtml('Ma seule question : quand est-ce que ça me rapporte ?')}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe : chaque membre peut agir depuis son ordinateur, et tout le monde voit la même chose.</p></div>`;
+      const story = `<div class="briefing wait-story"><p class="story">${esc(`${STORY} ${lexicon(teamMode(n)).approach}`)}</p>${ui.speechHtml(lexicon(teamMode(n)).lobbySpeech)}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe : chaque membre peut agir depuis son ordinateur, et tout le monde voit la même chose.</p></div>`;
       showWait({ chip: label, title: `Bienvenue, ${room.players[uid].name}`, text: '', extra: story + teammatesHtml(n) });
       return;
     }

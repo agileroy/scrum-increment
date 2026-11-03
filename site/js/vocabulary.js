@@ -42,6 +42,8 @@ const cascade = {
   sizeOf: (done, cost, extra) => `${md(done)} / ${extra ? `${md(cost)} + ${md(extra)}` : md(cost)} j/h`,
   extraTitle: (pts) => `${jh(pts)} découverts en cours de route`,
   anomalies: (pts) => `dont ${jh(pts)} d'anomalies`,
+  // Réplique de Mme Lefèvre dans la salle d'attente, dans l'esprit de la démarche de l'équipe.
+  lobbySpeech: "J'ai besoin d'un engagement clair : un périmètre, un budget, une date. Je signe, et je vous laisse travailler.",
   descopeButton: 'Arbitrer : retirer des lots',
   descopeTitle: 'Arbitrage du COPIL',
   descopeIntro: (remaining, left) => `Reste à faire : ${jh(remaining)}. Temps restant jusqu'à la fin prévue : ${jh(left)}. Le COPIL peut retirer du cahier des charges des lots pas encore commencés, avec l'accord de la boulangère.`,
@@ -113,6 +115,7 @@ const increment = {
   round: 'Manche 2 · Scrum',
   role: 'Product Owner',
   stakeholder: 'Mme Lefèvre',
+  lobbySpeech: "Je ne sais pas encore tout ce dont j'ai besoin. Construisons petit à petit, et montrez-moi régulièrement ce qui marche.",
   size: (pts) => `${pts} pts`,
   sizeLong: (pts) => plural(pts, 'point'),
   sizeOf: (done, cost, extra) => `${done} / ${extra ? `${cost} + ${extra}` : cost} pts`,
