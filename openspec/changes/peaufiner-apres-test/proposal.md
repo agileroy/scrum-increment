@@ -20,6 +20,7 @@ Deuxième test de l'auteur, après les briefings, les COPIL sans ventes, les cou
 - **Travail sous-estimé déplacé** : plus rien sur la vitrine ni la réservation ; les découvertes portent sur le paiement en ligne (+6), les gâteaux sur mesure (+6) et le créneau click & collect (+4), plus la recette (+4) en manche 1. Aucune découverte possible au premier COPIL ni au premier Sprint, quel que soit l'ordre.
 - **Jours/homme en projet** : la manche 1 compte la charge en jours/homme (1 point du moteur = 5 jours/homme : une équipe de 6 personnes abat 60 jours/homme en 2 semaines, 360 au total, 40 de recette, 320 à répartir) ; la manche 2 garde les points. Aucun mot de l'une dans l'autre.
 - **Arbitrage du COPIL** : quand le projet est orageux (reste à faire au-delà du temps restant), le COPIL peut retirer du cahier des charges des lots pas encore commencés, sans attendre une demande de la boulangère.
+- **Ordinateur d'abord** : les textes ne présentent plus le téléphone comme le poste des participants ; ils jouent sur leur ordinateur, le téléphone restant un dépannage.
 - **Valeur révélée visible** : la Sprint Review dit ce que rapporte vraiment chaque fonctionnalité mise en ligne, et le Product Backlog l'affiche en badge.
 - **Demande de changement** : la phrase sur l'avenant dépend de la marge : « la marge suffit, rien à retirer » quand la demande tient déjà, la phrase actuelle sinon.
 

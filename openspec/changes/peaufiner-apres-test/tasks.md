@@ -28,6 +28,7 @@
 - [x] 4.4 Écrans : bandeau et fenêtre d'arbitrage, rappel au COPIL, suivi en équipe
 - [x] 4.5 Valeur révélée : liste chiffrée dans la Sprint Review, badge dans le Product Backlog
 - [x] 4.6 Étoiles devant la légende de l'intuition dans le tableau
+- [x] 4.7 Textes : ordinateur d'abord, téléphone en dépannage
 
 ## 5. Vérifications
 

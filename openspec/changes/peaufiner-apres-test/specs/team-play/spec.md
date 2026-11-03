@@ -10,7 +10,7 @@ Dès l'attente de la salle, l'écran d'un participant SHALL raconter le contexte
 
 #### Scenario: Démarche au lancement
 - **GIVEN** la partie lancée
-- **WHEN** un membre de Baguette ouvre son téléphone
+- **WHEN** un membre de Baguette ouvre le jeu
 - **THEN** la présentation du rôle de Product Owner commence par le contexte, suivi de « Vous optez pour Scrum »
 
 ### Requirement: Arbitrage en équipe
@@ -20,3 +20,11 @@ Dans une équipe projet, tout membre SHALL pouvoir ouvrir l'arbitrage quand il e
 - **GIVEN** deux membres de Croissant, la fenêtre d'arbitrage ouverte chez les deux
 - **WHEN** l'un retire la livraison et le projet repasse au soleil
 - **THEN** la fenêtre de l'autre se ferme et son tableau n'affiche plus la livraison
+
+### Requirement: Ordinateur d'abord
+Les participants SHALL être présentés comme jouant depuis leur ordinateur ; le téléphone reste un poste de dépannage (VPN qui bloque l'ordinateur, par exemple), toujours jouable. Les textes du jeu (accueil, attente, fin du projet, questions de débrief) MUST NOT présenter le téléphone comme le poste habituel.
+
+#### Scenario: Attente de la salle
+- **GIVEN** un participant qui vient de rejoindre
+- **WHEN** l'écran d'attente s'affiche
+- **THEN** il lit que chaque membre peut agir depuis son ordinateur, sans mention de téléphone

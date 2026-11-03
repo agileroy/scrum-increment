@@ -33,7 +33,7 @@ const DEBRIEF_TEAMS = [
   'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?',
   'Face aux demandes de Mme Lefèvre, les équipes projet ont décidé sur des opinions, les équipes Scrum avec des retours clients. Qu\'est-ce que ça change ?',
   'Vous ne parliez pas la même langue : COPIL et cahier des charges d\'un côté, Sprint Review et Product Backlog de l\'autre. Qu\'est-ce que le vocabulaire a changé dans votre façon de décider ?',
-  'Comment votre équipe a-t-elle décidé ensemble, à plusieurs téléphones ?',
+  'Comment votre équipe a-t-elle décidé ensemble, chacun sur son écran ?',
 ];
 
 /* ---------------------------------------------------------------- Outils */
@@ -369,7 +369,7 @@ export async function startRoomMode() {
       const preparing = teamsPreparing(room);
       h += '<div class="host-head">';
       h += ended
-        ? '<div><h2 class="title">Fin du projet</h2><p class="lead">Les équipes découvrent la fin de leur projet sur leur téléphone.</p></div>'
+        ? '<div><h2 class="title">Fin du projet</h2><p class="lead">Les équipes découvrent la fin de leur projet sur leur écran.</p></div>'
         : `<div><h2 class="title">Période ${next} sur ${PLANNED_SPRINTS} · semaines ${w1} et ${w2}</h2></div>`;
       if (!ended) h += `<p class="host-timer" id="host-timer" ${meta.timerSeconds ? '' : 'hidden'}></p>`;
       h += '</div>';
@@ -515,7 +515,7 @@ export async function startRoomMode() {
     if (meta.status === 'lobby' || !room.teams?.[n]?.state) {
       app.session = null;
       // Le contexte et la démarche de l'équipe dès l'attente ; l'écran projeté, lui, reste neutre.
-      const story = `<div class="briefing wait-story"><p class="story">${esc(`${STORY} ${lexicon(teamMode(n)).approach}`)}</p>${ui.speechHtml('Ma seule question : quand est-ce que ça me rapporte ?')}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe, chaque membre depuis son téléphone.</p></div>`;
+      const story = `<div class="briefing wait-story"><p class="story">${esc(`${STORY} ${lexicon(teamMode(n)).approach}`)}</p>${ui.speechHtml('Ma seule question : quand est-ce que ça me rapporte ?')}<p class="muted">Le formateur va lancer la partie. Vous jouerez en équipe : chaque membre peut agir depuis son ordinateur, et tout le monde voit la même chose.</p></div>`;
       showWait({ chip: label, title: `Bienvenue, ${room.players[uid].name}`, text: '', extra: story + teammatesHtml(n) });
       return;
     }
