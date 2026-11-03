@@ -53,7 +53,7 @@ Quand le formateur lance une période, chaque écran SHALL afficher le bilan de 
 - **THEN** chaque écran de l'équipe Croissant affiche le compte rendu du COPIL 2, et chaque écran de l'équipe Baguette la Sprint Review du Sprint 2
 
 ### Requirement: Demande de changement en équipe
-Dans une équipe « projet », la demande de changement SHALL s'afficher sur tous les écrans de l'équipe ; les cases de retrait sont propres à chaque écran jusqu'à la décision ; le premier membre qui accepte ou refuse tranche pour toute l'équipe, et la fenêtre se ferme sur les autres téléphones. Une demande non tranchée au lancement de la période suivante SHALL être refusée d'office, et le journal SHALL l'indiquer (« refusée faute de décision »).
+Dans une équipe « projet », la demande de changement SHALL s'afficher sur tous les écrans de l'équipe ; les cases de retrait sont propres à chaque écran jusqu'à la décision ; le premier membre qui accepte ou refuse tranche pour toute l'équipe, et la fenêtre se ferme sur les autres écrans. Une demande non tranchée au lancement de la période suivante SHALL être refusée d'office, et le journal SHALL l'indiquer (« refusée faute de décision »).
 
 #### Scenario: Décision d'un membre
 - **GIVEN** la demande « Version anglaise » ouverte sur trois écrans de l'équipe Croissant
