@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Nous sommes prêts
-Pendant la réflexion d'une période, chaque écran SHALL proposer « Nous sommes prêts », qui signale au formateur que l'équipe a fini, et « Nous ne sommes plus prêts » pour revenir dessus. Une équipe « projet » SHALL d'abord valider son cahier des charges pour se déclarer prête à la première période, trancher sa demande de changement en attente, et arbitrer quand le projet est orageux. Un bouton « Revoir les décisions du COPIL » (« Revoir le cahier des charges » avant le premier COPIL), à côté de « Nous sommes prêts », SHALL rouvrir ces décisions pour toute l'équipe, et « Nous ne sommes plus prêts » aussi (la demande de changement se rouvre) ; une équipe dont les décisions sont rouvertes n'est plus prête. Le lancement de la période par le formateur se fait sans attendre l'équipe ; les écrans SHALL l'indiquer (« En attente du formateur »).
+Pendant la réflexion d'une période, chaque écran SHALL proposer « Nous sommes prêts », qui signale au formateur que l'équipe a fini, et « Nous ne sommes plus prêts » pour revenir dessus. Une équipe « projet » SHALL d'abord valider son cahier des charges pour se déclarer prête à la première période, trancher sa demande de changement en attente, et arbitrer quand le projet est orageux. Un bouton « Revoir les décisions du COPIL » (« Revoir le cahier des charges » avant le premier COPIL), à côté de « Nous sommes prêts », SHALL rouvrir ces décisions pour toute l'équipe, et « Nous ne sommes plus prêts » aussi (la demande de changement se rouvre) ; une équipe dont les décisions sont rouvertes n'est plus prête. Une fois l'équipe prête, l'ordre du Product Backlog SHALL être figé (ni flèches ni glisser-déposer), avec un message qui renvoie à « Nous ne sommes plus prêts ». Le lancement de la période par le formateur se fait sans attendre l'équipe ; les écrans SHALL l'indiquer (« En attente du formateur »).
 
 #### Scenario: Prêts
 - **GIVEN** l'équipe Croissant, cahier des charges validé
@@ -12,6 +12,11 @@ Pendant la réflexion d'une période, chaque écran SHALL proposer « Nous somme
 - **GIVEN** l'équipe Croissant prête, après avoir accepté une demande au COPIL 2
 - **WHEN** un membre appuie sur « Nous ne sommes plus prêts »
 - **THEN** la fenêtre de la demande se rouvre pour toute l'équipe
+
+#### Scenario: Ordre figé une fois prêts
+- **GIVEN** l'équipe Baguette prête
+- **WHEN** un membre veut déplacer un élément
+- **THEN** il n'a ni flèches ni glisser-déposer, jusqu'à « Nous ne sommes plus prêts »
 
 #### Scenario: Arbitrage avant d'être prêts
 - **GIVEN** l'équipe Croissant, projet orageux, sans arbitrage

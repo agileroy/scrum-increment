@@ -130,10 +130,12 @@ function boardItemHtml(state, id, index, count) {
       : '<span>Ventes réelles : ?</span>';
   }
   const chip = isRequest(id) ? `<span class="chip request">${esc(l.requestChip)}</span>` : '';
-  const controls = canMove(state, id) ? moveButtons(id, index, count, firstMovableIndex(state)) : '';
+  // En équipe, une fois « prêts », l'ordre est figé jusqu'à « Nous ne sommes plus prêts ».
+  const movable = canMove(state, id) && !app.session?.locked;
+  const controls = movable ? moveButtons(id, index, count, firstMovableIndex(state)) : '';
   const dep = dependencyHtml(state, id);
   const cls = featureState(state, id) === 'live' ? 'is-live' : dep.cls;
-  return `<li class="item ${cls}" data-id="${id}"${canMove(state, id) ? ` data-drag="${id}"` : ''}>
+  return `<li class="item ${cls}" data-id="${id}"${movable ? ` data-drag="${id}"` : ''}>
     <div class="rank">${index + 1}</div>
     <div>
       <div class="item-head"><span class="item-name">${nameHtml(id)}</span>${chip}${stateBadge(state, id)}${dep.chip}</div>
@@ -202,7 +204,7 @@ function renderBoard() {
   $('team-bar').hidden = !app.session;
   app.session?.renderBar();
   $('list-title').textContent = l.listTitle;
-  $('list-hint').textContent = l.listHint;
+  $('list-hint').textContent = app.session?.locked && !cascade ? l.lockedHint : l.listHint;
   $('board-intuition').innerHTML = `${stars(3, true)} ${esc(l.intuitionHelp)}`;
   // Manche 1 : arbitrage du COPIL quand le reste à faire dépasse le temps restant, et décisions révisables.
   const need = cascade && needsArbitrage(s);
@@ -347,36 +349,75 @@ function onPlaySprint() {
 
 /* ---------------------------------------------------------------- Demande de changement (manche 1) */
 
+// Fenêtre de demande en deux temps : d'abord la situation (accepter ou refuser, et ce que chaque choix impose),
+// puis, si l'on accepte, le choix des lots à retirer pour atteindre la cible.
 function requestHtml() {
   const s = app.round;
   const r = feature(s.pendingRequest);
-  const st = requestStatus(s, app.remove);
-  let h = '<h2 id="dialog-title">Demande de changement</h2>';
   const l = lexicon(s.mode);
+  const jh = (pts) => esc(l.sizeLong(pts));
+  const base = requestStatus(s, []);
+  const left = base.forecast.left;
+  const needBudget = base.over;
+  const needTime = Math.max(0, base.forecast.accept.remaining - left);
+  const target = Math.max(needBudget, needTime);
+  const refuseGap = Math.max(0, base.forecast.refuse.remaining - left);
+  const removableTotal = base.removable.reduce((sum, id) => sum + feature(id).cost, 0);
+  let h = '<h2 id="dialog-title">Demande de changement</h2>';
   h += speechHtml(r.ask);
-  h += `<p><strong>${nameHtml(r.id)}</strong> (${esc(r.desc)}) : ${esc(l.sizeLong(r.cost))}, intuition de Mme Lefèvre ${stars(r.stars)}.</p>`;
-  // La phrase sur l'avenant dépend de la marge : sans rien retirer, la demande tient-elle déjà ?
-  h += `<p class="muted">${esc(requestStatus(s, []).valid ? l.requestFits(r) : l.requestTight(r))}</p>`;
-  h += `<div class="panel-head"><strong>Cahier des charges avec la demande</strong><span class="count">${ratio(st.total, st.budget)}</span></div>`;
-  h += `<div class="meter ${st.over > 0 ? 'over' : ''}"><span style="width:${Math.min(100, (st.total / st.budget) * 100)}%"></span></div>`;
-  h += `<p class="hint ${st.valid ? '' : 'is-error'}" role="status">${esc(st.message)}</p>`;
-  // Le budget du contrat ne dit pas tout : la prévision tient compte du travail découvert.
-  const fc = st.forecast;
-  h += `<ul class="forecast"><li class="${fc.accept.weather}">${esc(l.forecast('Si vous acceptez ainsi', fc.accept.weather, fc.accept.remaining, fc.left))}</li><li class="${fc.refuse.weather}">${esc(l.forecast('Si vous refusez', fc.refuse.weather, fc.refuse.remaining, fc.left))}</li></ul>`;
-  const broken = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
-  if (broken.length) h += `<p class="item-alert">Deviendraient impossibles : ${broken.map((id) => esc(feature(id).name)).join(', ')}</p>`;
+  h += `<p><strong>${nameHtml(r.id)}</strong> (${esc(r.desc)}) : ${jh(r.cost)} de lot, plus ${jh(AVENANT)} de recette (avenant). Intuition de Mme Lefèvre ${stars(r.stars)}.</p>`;
+
+  if (app.requestStep !== 'remove') {
+    // 1. La situation : ce qu'impose chaque choix.
+    let accept;
+    if (needBudget > removableTotal) {
+      accept = `<p>Impossible : il faudrait retirer ${jh(needBudget)} pour tenir le budget signé, et il n'en reste pas assez parmi les lots pas commencés.</p>`;
+    } else if (target === 0) {
+      accept = '<p>☀️ Le cahier des charges absorbe la demande : rien à retirer, et le projet reste dans les temps.</p>';
+    } else {
+      accept = `<p>Il faudra retirer au moins <strong>${jh(target)}</strong> de lots pas encore commencés :</p><ul>`
+        + (needBudget ? `<li>${jh(needBudget)} pour tenir le budget signé (obligatoire) ;</li>` : '<li>le budget signé tient déjà ;</li>')
+        + (needTime ? `<li>${jh(needTime)} pour finir dans les temps, travail découvert compris${needTime > removableTotal ? ' (impossible en entier : le projet restera orageux)' : ''}.</li>` : '<li>les délais tiennent déjà.</li>')
+        + '</ul>';
+    }
+    const refuse = refuseGap
+      ? `<p>⛈️ Le cahier des charges ne change pas, mais le travail découvert dépasse déjà le temps restant de <strong>${jh(refuseGap)}</strong> : le COPIL devra arbitrer quand même.</p>`
+      : '<p>☀️ Le cahier des charges ne change pas, et le projet tient dans les temps.</p>';
+    const acceptButton = needBudget > removableTotal
+      ? ''
+      : target === 0
+        ? '<button type="button" class="button button-primary" data-accept>Accepter (avenant)</button>'
+        : '<button type="button" class="button button-primary" data-request-step>Accepter : choisir les lots à retirer</button>';
+    h += `<div class="choices"><section class="choice"><h3>Si vous acceptez</h3>${accept}${acceptButton}</section>`
+      + `<section class="choice"><h3>Si vous refusez</h3>${refuse}<button type="button" class="button button-ghost" data-refuse>Refuser</button></section></div>`;
+    return h;
+  }
+
+  // 2. Accepter : retirer des lots jusqu'à la cible.
+  const st = requestStatus(s, app.remove);
+  const removed = app.remove.reduce((sum, id) => sum + feature(id).cost, 0);
+  const timeGap = Math.max(0, st.forecast.accept.remaining - left);
+  h += `<div class="panel-head"><strong>Retiré : ${jh(removed)}</strong><span class="count">objectif : ${jh(target)}</span></div>`;
+  h += `<div class="meter ${removed >= target ? 'done' : ''}"><span style="width:${target ? Math.min(100, (removed / target) * 100) : 100}%"></span></div>`;
+  h += '<ul class="forecast">'
+    + `<li class="${st.over > 0 ? 'stormy' : 'sunny'}">${st.over > 0 ? `Budget signé : il manque ${jh(st.over)} (obligatoire pour signer).` : 'Budget signé : tenu ✓'}</li>`
+    + `<li class="${timeGap > 0 ? 'stormy' : 'sunny'}">${timeGap > 0 ? `Délais : il manque ${jh(timeGap)}, le projet sera orageux et le COPIL devra arbitrer.` : 'Délais : le projet reste dans les temps ☀️'}</li>`
+    + '</ul>';
+  const missing = Object.keys(st.impossible).filter((id) => id !== s.pendingRequest);
+  if (missing.length) h += `<p class="item-alert">Deviendraient impossibles : ${missing.map((id) => esc(feature(id).name)).join(', ')}</p>`;
   h += st.removable.length
-    ? `<fieldset class="removals"><legend>Retirer des lots</legend>${st.removable.map((id) => {
+    ? `<fieldset class="removals"><legend>Lots pas encore commencés</legend>${st.removable.map((id) => {
       const f = feature(id);
       const why = st.impossible[id] && !app.remove.includes(id) ? ` <span class="chip warn">Impossible sans « ${esc(feature(st.impossible[id]).name)} »</span>` : '';
       return `<label class="include ${why ? 'is-impossible' : ''}"><input type="checkbox" data-remove="${id}" ${app.remove.includes(id) ? 'checked' : ''}><span>${nameHtml(id)} <span class="muted nowrap">· ${esc(l.size(f.cost))} · ${stars(f.stars)}</span>${why}</span></label>`;
     }).join('')}</fieldset>`
     : '<p class="muted">Tous les lots sont commencés : plus rien ne peut être retiré.</p>';
-  h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Accepter (avenant)</button><button type="button" class="button button-ghost" data-refuse>Refuser</button></div>`;
+  h += `<div class="actions"><button type="button" class="button button-primary" data-accept ${st.valid ? '' : 'disabled'}>Signer l'avenant</button><button type="button" class="button button-ghost" data-request-back>← Revenir au choix</button></div>`;
   return h;
 }
 
 function openRequestDialog() {
+  app.requestStep = 'choice';
   openDialog(requestHtml(), null, 'request');
 }
 
@@ -471,12 +512,12 @@ export const DEBRIEF_SOLO = [
   // D'abord l'exercice, chiffres à l'appui…
   { text: 'À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque manche ? Qu\'est-ce qui l\'a permis ?', show: { chart: true, kpi: ['first', 'invested'] } },
   { text: 'Qu\'ont appris les Sprint Reviews de la manche 2 ? Comment ont-elles changé l\'ordre du Product Backlog ?', show: { surprises: true } },
+  { text: 'Manche 1 : à quel COPIL avez-vous su que le projet ne tiendrait pas ? Qu\'en avez-vous fait : avenants, arbitrages, ou rien ?', show: { chart: true, kpi: ['live'] } },
   { text: 'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?', show: { surprises: true, kpi: ['lowUse'] } },
   { text: 'Face aux demandes de Mme Lefèvre, vous avez décidé sur des opinions en manche 1, et avec des retours clients en manche 2. Qu\'est-ce que ça change ?', show: { kpi: ['requests'] } },
   { text: 'Quand la banque a coupé le prêt, que restait-il entre vos mains dans chaque manche ?', show: { chart: true, kpi: ['live', 'cumulative'] } },
   { text: 'Si la banque vous avait prévenus deux COPIL plus tôt, qu\'auriez-vous fait ? Et avec Scrum, qu\'est-ce que ça aurait changé ?', show: { chart: true } },
-  // … puis la théorie.
-  { text: 'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?', show: { kpi: ['first', 'invested', 'live'] } },
+  // … puis la prise de recul.
   { text: 'COPIL et cahier des charges, puis Sprint Review et Product Backlog : qu\'est-ce que le changement de vocabulaire a changé dans votre façon de décider ?', show: {} },
 ];
 
@@ -794,6 +835,8 @@ export function init() {
     else if (e.target.closest('[data-accept]:not(:disabled)')) decide(true);
     else if (e.target.closest('[data-refuse]')) decide(false);
     else if (e.target.closest('[data-descope-ok]:not(:disabled)')) confirmDescope();
+    else if (e.target.closest('[data-request-step]')) { app.requestStep = 'remove'; refreshRequestDialog(); $('dialog-body').querySelector('[data-remove]')?.focus(); }
+    else if (e.target.closest('[data-request-back]')) { app.requestStep = 'choice'; app.remove = []; refreshRequestDialog(); }
   });
   dialog.addEventListener('change', (e) => {
     const cut = e.target.dataset.descope;

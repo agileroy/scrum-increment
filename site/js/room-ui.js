@@ -29,13 +29,13 @@ const DEBRIEF_TEAMS = [
   // D'abord l'exercice, chiffres à l'appui…
   { text: 'À quel moment la boulangerie a-t-elle gagné son premier euro dans chaque équipe ? Qu\'est-ce qui l\'a permis ?', show: { chart: true, kpi: ['first', 'invested'] } },
   { text: 'Équipes Scrum : qu\'ont appris vos Sprint Reviews ? Comment ont-elles changé l\'ordre du Product Backlog ?', show: { surprises: true } },
+  { text: 'Équipes projet : à quel COPIL avez-vous su que le projet ne tiendrait pas ? Qu\'en avez-vous fait : avenants, arbitrages, ou rien ?', show: { chart: true, decisions: true } },
   { text: 'Quelles fonctionnalités Madame Lefèvre jugeait-elle indispensables ? Qu\'en pensaient vraiment ses clients ?', show: { surprises: true, kpi: ['lowUse'] } },
   { text: 'Face aux demandes de Mme Lefèvre, les équipes projet ont décidé sur des opinions, les équipes Scrum avec des retours clients. Qu\'est-ce que ça change ?', show: { kpi: ['requests'], decisions: true } },
   { text: 'Quand la banque a coupé le prêt, que restait-il entre les mains de chaque équipe ?', show: { chart: true, kpi: ['live', 'cumulative'] } },
   { text: 'Équipes projet : si la banque vous avait prévenus deux COPIL plus tôt, qu\'auriez-vous fait ? Équipes Scrum : qu\'est-ce que ça aurait changé pour vous ?', show: { chart: true } },
   { text: 'Comment votre équipe a-t-elle décidé ensemble, chacun sur son écran ?', show: { decisions: true } },
-  // … puis la théorie.
-  { text: 'Pourquoi le Scrum Guide demande-t-il qu\'un Increment soit utilisable ? Que se passe-t-il quand il ne l\'est pas ?', show: { kpi: ['first', 'invested', 'live'] } },
+  // … puis la prise de recul.
   { text: 'Vous ne parliez pas la même langue : COPIL et cahier des charges d\'un côté, Sprint Review et Product Backlog de l\'autre. Qu\'est-ce que le vocabulaire a changé dans votre façon de décider ?', show: {} },
 ];
 
@@ -529,6 +529,7 @@ export async function startRoomMode() {
       label,
       commit: (fn) => store.teamAction(code, n, fn),
       renderBar: () => renderBar(n),
+      locked: meta.status === 'playing' && isReady(room.teams?.[n], meta.period ?? 0),
     };
     const seen = seenFor(n);
 

@@ -24,24 +24,22 @@ Avant le premier COPIL, l'écran du cahier des charges SHALL présenter la missi
 - **THEN** une légende sous la mission explique que les étoiles « Intuition » sont l'avis de Mme Lefèvre sur ce que chaque lot va rapporter, pas une mesure
 
 ### Requirement: Fenêtre de demande de changement (manche 1)
-En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande : réplique de Mme Lefèvre, coût, intuition de Mme Lefèvre et avenant de 10 jours/homme. La phrase sur l'avenant SHALL dépendre de la marge : si la demande tient déjà dans le budget sans rien retirer, elle dit que le cahier des charges garde assez de marge et qu'il n'y a rien à retirer ; sinon, qu'il faut retirer des lots pas encore commencés. La fenêtre SHALL lister les lots retirables avec des cases à cocher, une jauge du cahier des charges par rapport au nouveau budget et un message sur ce qui bloque. « Accepter (avenant) » SHALL rester inactif tant que le résultat est invalide ; « Refuser » SHALL toujours être possible. Fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+En manche 1, quand un COPIL annonce une demande de la boulangère, le compte rendu SHALL ensuite présenter la demande en deux temps. D'abord la situation : la réplique de Mme Lefèvre, la charge de la demande (jours/homme de lot et 10 jours/homme de recette pour l'avenant), l'intuition de Mme Lefèvre, puis deux choix côte à côte. « Si vous acceptez » SHALL dire combien de jours/homme de lots pas commencés il faudra retirer au moins, en distinguant ce qu'impose le budget signé (obligatoire) et ce qu'impose de finir dans les temps, travail découvert compris ; ou que rien n'est à retirer ; ou que c'est impossible. « Si vous refusez » SHALL dire si le projet tient dans les temps, ou de combien le travail découvert le dépasse déjà, le COPIL devant alors arbitrer quand même. Ensuite, si l'équipe accepte et qu'il faut retirer des lots : les lots pas commencés avec des cases à cocher, une jauge du retiré face à l'objectif, l'état du budget signé et des délais, « Signer l'avenant » (inactif tant que le budget signé n'est pas tenu ou qu'un prérequis manque) et « Revenir au choix ». « Refuser » SHALL toujours être possible ; fermer la fenêtre MUST NOT trancher la demande à la place du joueur.
+
+#### Scenario: Situation au COPIL 2
+- **GIVEN** le cahier des charges sans les avis clients, le paiement découvert, la demande « Promotions flash »
+- **WHEN** la fenêtre s'affiche
+- **THEN** « Si vous acceptez » demande de retirer au moins 55 jours/homme (25 pour le budget signé, 55 pour les délais), et « Si vous refusez » annonce que le travail découvert dépasse déjà le temps restant de 15 jours/homme
 
 #### Scenario: Faire de la place
-- **GIVEN** la demande « Version anglaise » avec le cahier des charges de 61 points
-- **WHEN** le joueur coche la livraison à domicile (14 points, pas commencée)
-- **THEN** la jauge passe à 260 sur 310 jours/homme et « Accepter (avenant) » devient actif
+- **GIVEN** la même situation, le joueur ayant choisi d'accepter
+- **WHEN** il coche la livraison et la fidélité (105 jours/homme)
+- **THEN** le budget signé est tenu, le projet reste dans les temps, et « Signer l'avenant » est actif
 
 #### Scenario: Touche Échap
 - **GIVEN** la fenêtre d'une demande de changement
 - **WHEN** le joueur appuie sur Échap
 - **THEN** la fenêtre reste ouverte et la demande n'est ni acceptée ni refusée
-
-La fenêtre SHALL aussi afficher la prévision réelle, travail découvert compris : reste à faire face au temps restant, et météo si la demande est acceptée telle quelle ou refusée (« le COPIL devra arbitrer » si orageux).
-
-#### Scenario: Demande qui tient dans la marge
-- **GIVEN** un cahier des charges de 130 jours/homme et la demande « Version anglaise » (25 jours/homme)
-- **WHEN** la fenêtre s'affiche
-- **THEN** elle dit que le cahier des charges garde assez de marge, qu'il n'y a rien à retirer, et « Accepter (avenant) » est actif sans rien cocher
 
 ### Requirement: Demandes visibles dans les listes
 Une fonctionnalité issue d'une demande SHALL être signalée comme « Demande de la boulangère » dans le cahier des charges et comme « Demande de Mme Lefèvre » dans le Product Backlog. Le journal SHALL garder chaque demande et la décision prise : acceptée par avenant avec les lots retirés, refusée, ou ajoutée au Product Backlog.

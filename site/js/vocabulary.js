@@ -128,6 +128,7 @@ const increment = {
   play: (n) => `Lancer le Sprint ${n}`,
   listTitle: 'Product Backlog',
   listHint: "Ordonnez le Product Backlog : l'équipe prend les éléments par le haut, et un élément non terminé continue au Sprint suivant.",
+  lockedHint: 'Vous êtes prêts : l\'ordre du Product Backlog est figé. Pour le changer, appuyez sur « Nous ne sommes plus prêts ».',
   item: 'élément',
   journalTitle: 'Journal des Sprints',
   journalEmpty: 'Le premier Sprint va commencer.',

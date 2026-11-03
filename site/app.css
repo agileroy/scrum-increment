@@ -533,3 +533,11 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 #surprises h4 { margin: 14px 0 6px; font-size: 1rem; }
 #surprises h4:first-child { margin-top: 0; }
 #surprises-panel[hidden] { display: none; }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.choice { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.choice h3 { margin: 0; font-size: 1rem; }
+.choice p, .choice ul { margin: 0; }
+.choice ul { padding-left: 18px; }
+.choice .button { margin-top: auto; align-self: flex-start; }
+.meter.done span { background: var(--live-text); }
+@media (max-width: 560px) { .choices { grid-template-columns: minmax(0, 1fr); } }
