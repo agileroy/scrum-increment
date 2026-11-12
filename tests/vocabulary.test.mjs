@@ -65,7 +65,7 @@ test('Tableau de la manche 1', () => {
   assert.equal(lex.deadline(2, 6), 'COPIL 2 sur 6');
   assert.equal(lex.play(2), "Avancer jusqu'au COPIL 2");
   assert.equal(lex.listTitle, 'Cahier des charges');
-  assert.equal(lex.deadlineWeeks(3), 'semaines 5 et 6');
+  assert.equal(lex.deadlineWeeks(3), 'semaine 3');
 });
 
 test('Capacité de la manche 2 : 10 points pour construire et 2 pour la Definition of Done', () => {
@@ -83,8 +83,8 @@ test('Annonce de la coupure en manche 1 : sans préavis, maintenant, en l\'état
 });
 
 test('fin du projet : exploitation sans Sprint ni COPIL', () => {
-  const text = exploitationText(5, 20, 2);
-  assert.match(text, /10 semaines/);
+  const text = exploitationText(5, 10, 1);
+  assert.match(text, /5 semaines sans développement, jusqu'à 10 semaines/);
   assert.doesNotMatch(text, /Sprint|COPIL/);
   assert.equal(LEXICON.cascade.endOfDev(5), "Le projet s'arrête au COPIL 5, en l'état.");
 });
@@ -137,8 +137,8 @@ test('Briefings : aucun mot de l\'autre manche sur le cahier des charges et sur 
   const role = section('screen-role');
   for (const re of FORBIDDEN.cascade) assert.ok(!re.test(plan), `cahier des charges : ${re}`);
   for (const re of FORBIDDEN.increment) assert.ok(!re.test(role), `rôle : ${re}`);
-  for (const text of ['12 semaines', '360 j/h', '40 j/h', 'Contrat', '320 jours/homme']) assert.ok(plan.includes(text), text);
-  for (const text of ['2 semaines', '10 + 2 points', 'En ligne', 'Retours clients', 'Nous sommes prêts']) assert.ok(role.includes(text), text);
+  for (const text of ['6 semaines', '72 j/h', '8 j/h', 'Contrat', '64 jours/homme']) assert.ok(plan.includes(text), text);
+  for (const text of ['1 semaine', '10 + 2 points', 'En ligne', 'Retours clients', 'Nous sommes prêts']) assert.ok(role.includes(text), text);
   assert.ok(!/class="lead"/.test(html.slice(html.indexOf('id="screen-plan"'), html.indexOf('id="plan-list"'))), 'plus de paragraphe sur le cahier des charges');
 });
 

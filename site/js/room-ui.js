@@ -10,7 +10,7 @@ import {
   MAX_TEAMS, MIN_TEAMS, TIMER_CHOICES, isValidCode, normalizeCode, teamName, teamMode, teamNumbers, teamMembers,
   isConnected, isReady, canBeReady, planReady, timeLeft, formatSeconds,
 } from './room-core.js?v=__VERSION__';
-import { MODES, reportFromState, finishSummary, roundResults, periodWeeks, decisionTrail, needsArbitrage, canRevise } from './game-core.js?v=__VERSION__';
+import { MODES, reportFromState, finishSummary, roundResults, weeksLabel, decisionTrail, needsArbitrage, canRevise } from './game-core.js?v=__VERSION__';
 import { lexicon, trailText, trailPeriod, STORY } from './vocabulary.js?v=__VERSION__';
 import { PLANNED_SPRINTS, HORIZON_WEEKS } from './scenario.js?v=__VERSION__';
 import { formatEuro } from './chart.js?v=__VERSION__';
@@ -367,12 +367,11 @@ export async function startRoomMode() {
       const period = meta.period ?? 0;
       const ended = meta.status === 'ended';
       const next = period + 1;
-      const [w1, w2] = periodWeeks(next);
       const preparing = teamsPreparing(room);
       h += '<div class="host-head">';
       h += ended
         ? '<div><h2 class="title">Fin du projet</h2><p class="lead">Les équipes découvrent la fin de leur projet sur leur écran.</p></div>'
-        : `<div><h2 class="title">Période ${next} sur ${PLANNED_SPRINTS} · semaines ${w1} et ${w2}</h2></div>`;
+        : `<div><h2 class="title">Période ${next} sur ${PLANNED_SPRINTS} · ${weeksLabel(next)}</h2></div>`;
       if (!ended) h += `<p class="host-timer" id="host-timer" ${meta.timerSeconds ? '' : 'hidden'}></p>`;
       h += '</div>';
       h += `<div class="team-grid">${teamNumbers(count).map((n) => {

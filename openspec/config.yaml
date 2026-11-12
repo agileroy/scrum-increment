@@ -13,8 +13,9 @@ context: |
   coupure budgétaire systématique et sans préavis (à la fin de la cinquième période, tout s'arrête en l'état ;
   rien ne l'annonce avant), et trois demandes de changement de Mme Lefèvre (en manche 1 : accepter par
   avenant en retirant des fonctionnalités, budget fixe, ou refuser ; en manche 2 : ajout au Product Backlog).
-  Calendrier : un Sprint dure 2 semaines ; après le développement, on parle de semaines d'exploitation, jamais
-  de Sprints, jusqu'à 20 semaines après le lancement. La fin du projet est la même pour les deux manches.
+  Calendrier : un Sprint dure 1 semaine (6 semaines de développement prévues) ; après le développement, on parle
+  de semaines d'exploitation, jamais de Sprints, jusqu'à 10 semaines après le lancement. En manche 1, la charge
+  s'affiche en jours/homme, à raison d'un jour/homme par point du moteur. La fin du projet est la même pour les deux manches.
   La fin compare les courbes de ventes cumulées et des indicateurs, puis guide le débrief.
   Mécanique volontairement sans cartes : les jeux frères roles-responsabilites et scrum-events en utilisent déjà.
   En séance collective, la comparaison reste cachée aux participants jusqu'à la fin : chaque équipe croit

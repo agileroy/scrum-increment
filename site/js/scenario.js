@@ -3,16 +3,16 @@
 // Les chiffres sont réglés avec les parcours de référence de tests/game-core.test.mjs :
 // toute retouche qui change l'histoire doit faire échouer ces tests.
 
-/** Ventes générées par un point de valeur, par Sprint. */
+/** Ventes générées par un point de valeur, par Sprint (une semaine). */
 export const EURO_PER_POINT = 100;
-/** Coût de développement d'un point de capacité, pour l'indicateur « Investi avant le premier euro ». */
+/** Coût de développement d'un point de capacité (un jour de travail), pour l'indicateur « Investi avant le premier euro ». */
 export const COST_PER_POINT = 500;
 /** Nombre de Sprints de développement prévus au budget. */
 export const PLANNED_SPRINTS = 6;
 /** Durée d'un Sprint, et de chaque période d'exploitation après le projet, en semaines. */
-export const SPRINT_WEEKS = 2;
+export const SPRINT_WEEKS = 1;
 /** Durée couverte par la partie, à partir du lancement du projet. */
-export const HORIZON_WEEKS = 20;
+export const HORIZON_WEEKS = 10;
 /** Nombre de périodes simulées (Sprints de développement, puis périodes d'exploitation). */
 export const LAST_SPRINT = HORIZON_WEEKS / SPRINT_WEEKS;
 /** Capacité par Sprint de l'équipe (12 points dans les deux manches). */
@@ -24,10 +24,10 @@ export const RECETTE = 8;
 /** Manche 1 : points de recette ajoutés par chaque demande de changement acceptée. */
 export const AVENANT = 2;
 /**
- * Manche 1 : un point de travail affiché en jours/homme (une équipe de 6 personnes abat 60 jours/homme
- * en 2 semaines). Le moteur compte en points ; seule la manche 1 parle en jours/homme.
+ * Manche 1 : un point de travail affiché en jours/homme (une petite équipe abat 12 jours/homme par semaine).
+ * Le moteur compte en points ; seule la manche 1 parle en jours/homme.
  */
-export const MAN_DAYS_PER_POINT = 5;
+export const MAN_DAYS_PER_POINT = 1;
 /** Manche 1 : capacité totale du projet, recette comprise. */
 export const PROJECT_CAPACITY = PLANNED_SPRINTS * TEAM_CAPACITY;
 /** Manche 1 : points disponibles pour les fonctionnalités du plan, sans avenant. */
@@ -135,8 +135,8 @@ export const EVENTS = [
     id: 'concurrent', after: 2, icon: '📰',
     title: 'Nouvelle du quartier',
     text: {
-      cascade: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients toutes les deux semaines.",
-      increment: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients toutes les deux semaines.",
+      cascade: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients chaque semaine.",
+      increment: "La boulangerie concurrente « La Mie Dorée » lance sa commande en ligne. Tant que Mme Lefèvre n'a pas d'appli, elle perd des clients chaque semaine.",
     },
     log: {
       cascade: 'La Mie Dorée lance sa commande en ligne.',

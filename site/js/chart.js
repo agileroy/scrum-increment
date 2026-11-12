@@ -2,6 +2,8 @@
 // Couleurs portées par des classes CSS (variables de thème), marqueurs et traits distincts
 // par courbe pour ne pas dépendre de la couleur seule.
 
+import { HORIZON_WEEKS, SPRINT_WEEKS } from './scenario.js?v=__VERSION__';
+
 export const formatEuro = (n) => `${Math.round(n).toLocaleString('fr-FR')} €`;
 
 const LAYOUT = {
@@ -41,7 +43,7 @@ export function chartSvg(series, { axis, names, frontier, compact = false }) {
   const top = niceTop(Math.max(...series.flatMap((s) => s.values)));
   const x = (i) => LEFT + (i * (W - LEFT - RIGHT)) / (n - 1);
   const y = (v) => TOP + (H - TOP - BOTTOM) * (1 - v / top);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur 20 semaines, une courbe par ${series.some((s) => s.team) ? 'équipe' : 'manche'}, avec la fin du projet après ${frontier * 2} semaines">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventes cumulées sur ${HORIZON_WEEKS} semaines, une courbe par ${series.some((s) => s.team) ? 'équipe' : 'manche'}, avec la fin du projet après ${frontier * SPRINT_WEEKS} semaines">`;
 
   // Zone d'exploitation et frontière « Fin du projet », sous les courbes.
   if (frontier < n) {
@@ -59,14 +61,13 @@ export function chartSvg(series, { axis, names, frontier, compact = false }) {
     svg += `<line class="grid" x1="${LEFT}" x2="${W - RIGHT}" y1="${y(v)}" y2="${y(v)}"/>`;
     svg += `<text class="axis" x="${LEFT - 8}" y="${y(v) + 4}" text-anchor="end">${formatEuro(v)}</text>`;
   }
+  // Sur téléphone, « 4 sem. » devient « 4 », avec une seule légende « semaines » sous l'axe.
+  const weeksOnly = compact && axis.every((label) => /^\+?\d+ sem\.$/.test(label));
   for (let i = 0; i < n; i++) {
-    const label = axis[i];
-    // Sur téléphone, « +4 sem. » passe sur deux lignes pour ne pas chevaucher ses voisins.
-    const m = compact && label.match(/^(\+?\d+) (sem\.)$/);
-    svg += m
-      ? `<text class="axis" x="${x(i)}" y="${H - 24}" text-anchor="middle"><tspan>${m[1]}</tspan><tspan x="${x(i)}" dy="13">${m[2]}</tspan></text>`
-      : `<text class="axis" x="${x(i)}" y="${H - 12}" text-anchor="middle">${label}</text>`;
+    const label = weeksOnly ? axis[i].replace(' sem.', '') : axis[i];
+    svg += `<text class="axis" x="${x(i)}" y="${weeksOnly ? H - 24 : H - 12}" text-anchor="middle">${label}</text>`;
   }
+  if (weeksOnly) svg += `<text class="axis" x="${(LEFT + W - RIGHT) / 2}" y="${H - 4}" text-anchor="middle">semaines</text>`;
   for (const s of series) {
     const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
     svg += `<polyline class="curve curve-${s.kind}${toneClass(s)}" points="${pts}"/>`;

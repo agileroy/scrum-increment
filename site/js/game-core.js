@@ -607,9 +607,16 @@ export function reviseDecisions(state) {
 
 /* ---------- Calendrier ---------- */
 
-/** Semaines couvertes par une période (1 à 10) : [2p − 1, 2p]. */
+/** Semaines couvertes par une période (1 à 10) : [première, dernière] (la même avec des Sprints d'une semaine). */
 export function periodWeeks(period) {
-  return [period * SPRINT_WEEKS - 1, period * SPRINT_WEEKS];
+  return [(period - 1) * SPRINT_WEEKS + 1, period * SPRINT_WEEKS];
+}
+
+/** « semaine 3 », ou « semaines 5 et 6 » pour une période de deux semaines. */
+export function weeksLabel(period) {
+  const [a, b] = periodWeeks(period);
+  if (a === b) return `semaine ${a}`;
+  return b === a + 1 ? `semaines ${a} et ${b}` : `semaines ${a} à ${b}`;
 }
 
 /* ---------- Météo du projet (manche 1) ---------- */

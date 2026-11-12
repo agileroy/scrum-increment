@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   newRound, planStatus, toggleInPlan, moveFeature, validatePlan, playSprint, finishRound,
   roundResults, canMove, featureState, developmentOver, truthTable,
-  requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, moveFeatureTo, periodWeeks, projectWeather, planStatus as status,
+  requestStatus, decideRequest, canRemove, impossibleLots, dependencyState, moveFeatureTo, periodWeeks, weeksLabel, projectWeather, planStatus as status,
   effectiveCost, underestimate, canDescope, descopeStatus, descope, decisionTrail,
   needsArbitrage, keepScope, canRevise, reviseDecisions, reviveRound,
 } from '../site/js/game-core.js';
@@ -87,7 +87,7 @@ test('Plan par défaut : 66 points, validation refusée', () => {
   assert.equal(st.total, 66);
   assert.equal(st.over, 2);
   assert.equal(st.valid, false);
-  assert.match(st.message, /dépasse de 10 jours\/homme/);
+  assert.match(st.message, /dépasse de 2 jours\/homme/);
   assert.throws(() => validatePlan(s));
   assert.throws(() => playSprint(s));
 });
@@ -128,7 +128,7 @@ test('Tout petit cahier des charges : sortie au COPIL 4, avant la coupure', () =
   assert.equal(reports[3].launched, true);
   assert.equal(results.liveAtEnd.length, 4);
   assert.equal(results.firstSale, 5);
-  assert.deepEqual(periodWeeks(results.firstSale), [9, 10]);
+  assert.deepEqual(periodWeeks(results.firstSale), [5, 5]);
 });
 
 test('fonctionnalités terminées hors ligne jusqu\'à la recette', () => {
@@ -414,16 +414,17 @@ test('les trois demandes arrivent aux Reviews 1, 2 et 3 dans les deux manches', 
   }
 });
 
-test('Coupure budgétaire : 10 semaines d\'exploitation après la cinquième période', () => {
+test('Coupure budgétaire : 5 semaines d\'exploitation après la cinquième période', () => {
   const { results } = playAll(newRound('increment'));
   assert.equal(results.lastBuildSprint, 5);
-  assert.deepEqual(periodWeeks(5), [9, 10]);
-  assert.equal((10 - results.lastBuildSprint) * 2, 10);
+  assert.deepEqual(periodWeeks(5), [5, 5]);
+  assert.equal(10 - results.lastBuildSprint, 5);
 });
 
-test('Échéance et semaines : la troisième période couvre les semaines 5 et 6', () => {
-  assert.deepEqual(periodWeeks(3), [5, 6]);
-  assert.deepEqual(periodWeeks(1), [1, 2]);
+test('Échéance et semaines : une période dure une semaine', () => {
+  assert.deepEqual(periodWeeks(3), [3, 3]);
+  assert.deepEqual(periodWeeks(1), [1, 1]);
+  assert.equal(weeksLabel(3), 'semaine 3');
 });
 
 test('Soleil jusqu\'à la coupure : orage au COPIL 5 (cahier des charges resserré)', () => {

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { chartSvg, legendHtml } from '../site/js/chart.js';
 
 const values = Array.from({ length: 10 }, (_, i) => i * 100);
-const axis = values.map((_, i) => `${(i + 1) * 2} sem.`);
+const axis = values.map((_, i) => `${i + 1} sem.`);
 
 test('une couleur par équipe, un style par approche', () => {
   const series = [

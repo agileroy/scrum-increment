@@ -7,7 +7,7 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, developmentOver, reviveRound, firstMovableIndex, intuitionSurprises, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
+  requestStatus, decideRequest, isRequest, developmentOver, weeksLabel, reviveRound, firstMovableIndex, intuitionSurprises, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
 import { EURO_PER_POINT, MAN_DAYS_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
 import { lexicon, logEntry, exploitationText, discoveryText, STORY, SPEAKER } from './vocabulary.js?v=__VERSION__';
@@ -370,7 +370,7 @@ function reportHtml(state, report, { team = false } = {}) {
     if (report.launched) {
       h += `<p class="good launch"><span class="emo pop" aria-hidden="true">🎉</span><strong>L'appli est en ligne !</strong> Les ${state.live.length} lots du cahier des charges sortent tous en même temps.</p>`;
     } else {
-      h += `<p>Temps écoulé : <strong>${weeks} semaines sur ${PLANNED_SPRINTS * SPRINT_WEEKS}</strong> · Travail fait : <strong>${report.progress} %</strong></p>`;
+      h += `<p>Temps écoulé : <strong>${plural(weeks, 'semaine')} sur ${PLANNED_SPRINTS * SPRINT_WEEKS}</strong> · Travail fait : <strong>${report.progress} %</strong></p>`;
     }
     if (report.sales > 0) h += `<p>${esc(l.salesLine(report.sales))}</p>`;
     if (report.weather === 'stormy' && !report.developmentOver) h += `<p class="hint">${esc(l.descopeHint)}</p>`;
@@ -634,7 +634,7 @@ function surprisesHtml(columns) {
     if (!p) return '—';
     return c.kind === 1 ? `COPIL ${p}` : `Sprint ${p}`;
   };
-  const head = `<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th>${columns.map((c) => `<th scope="col">En ligne · ${esc(c.head)}</th>`).join('')}</tr></thead>`;
+  const head = `<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / semaine</th>${columns.map((c) => `<th scope="col">En ligne · ${esc(c.head)}</th>`).join('')}</tr></thead>`;
   const rows = (list) => list.map((f) => `<tr><td>${nameHtml(f.id)}${f.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(f.stars)}</td><td class="num">${formatEuro(f.sales)}</td>${columns.map((c) => `<td>${when(c, f.id)}</td>`).join('')}</tr>`).join('');
   return `<h4>💎 Peu d'étoiles, beaucoup de ventes</h4><div class="table-wrap"><table>${head}<tbody>${rows(underrated)}</tbody></table></div>`
     + `<h4>🎈 Beaucoup d'étoiles, presque rien</h4><div class="table-wrap"><table>${head}<tbody>${rows(overrated)}</tbody></table></div>`;
@@ -718,15 +718,15 @@ function renderComparison(columns, { title, intro = '', keepScroll = false, debr
     ['first', 'Premier euro encaissé', first],
     ['invested', 'Investi avant le premier euro', invested],
     ['live', 'Fonctionnalités en ligne à la fin du projet', (r) => r.liveAtEnd.length],
-    ['lowUse', 'Fonctionnalités en ligne peu utilisées (100 € ou moins toutes les 2 semaines)', low],
-    ['requests', 'Demandes de Mme Lefèvre mises en ligne (ventes toutes les 2 semaines)', reqs],
+    ['lowUse', 'Fonctionnalités en ligne peu utilisées (100 € ou moins par semaine)', low],
+    ['requests', 'Demandes de Mme Lefèvre mises en ligne (ventes par semaine)', reqs],
     ['cumulative', `Ventes cumulées après ${HORIZON_WEEKS} semaines`, (r) => `<strong>${formatEuro(r.cumulative)}</strong>`],
   ];
   $('kpi').innerHTML = `<thead><tr><th scope="col"><span hidden>Indicateur</span></th>${columns.map((c) => `<th scope="col">${esc(c.head)}</th>`).join('')}</tr></thead><tbody>`
     + rows.map(([key, label, cell]) => `<tr data-kpi="${key}"><th scope="row">${label}</th>${columns.map((c) => `<td>${cell(c.results)}</td>`).join('')}</tr>`).join('') + '</tbody>';
   $('kpi').classList.toggle('kpi-wide', columns.length > 2);
   $('surprises').innerHTML = surprisesHtml(columns);
-  $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / 2 sem.</th></tr></thead><tbody>'
+  $('truth').innerHTML = '<thead><tr><th scope="col">Fonctionnalité</th><th scope="col">Intuition</th><th scope="col" class="num">Ventes réelles / semaine</th></tr></thead><tbody>'
     + truthTable().map((t) => `<tr><td>${emo(feature(t.id).icon)}${esc(t.name)}${t.requested ? ' <span class="chip request">Demande</span>' : ''}</td><td>${stars(t.stars)}</td><td class="num">${formatEuro(t.sales)}</td></tr>`).join('') + '</tbody>';
   // Débrief : à l'arrivée sur les résultats, on repart de la première question, indicateurs cachés ;
   // ensuite, seul le présentateur fait avancer (en salle, l'étape vient de la salle).
@@ -740,7 +740,7 @@ function drawChart() {
   const { series, frontier, periods } = app.chart;
   $('chart').innerHTML = chartSvg(series, {
     axis: periods.map((p) => `${periodWeeks(p)[1]} sem.`),
-    names: periods.map((p) => { const [x, y] = periodWeeks(p); return `semaines ${x} et ${y}`; }),
+    names: periods.map((p) => weeksLabel(p)),
     frontier,
     compact: compactQuery.matches,
   });

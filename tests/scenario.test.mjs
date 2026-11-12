@@ -73,9 +73,9 @@ test('imprévus : concurrent à la fin de la période 2, coupure toujours à la 
   assert.ok(EVENTS.every((e) => !('optional' in e)));
 });
 
-test('calendrier : Sprints de 2 semaines, 20 semaines, 10 périodes', () => {
-  assert.equal(SPRINT_WEEKS, 2);
-  assert.equal(HORIZON_WEEKS, 20);
+test('calendrier : Sprints d\'une semaine, 10 semaines, 10 périodes', () => {
+  assert.equal(SPRINT_WEEKS, 1);
+  assert.equal(HORIZON_WEEKS, 10);
   assert.equal(LAST_SPRINT, 10);
 });
 

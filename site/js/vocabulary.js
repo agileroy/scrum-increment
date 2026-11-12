@@ -2,7 +2,7 @@
 // Toutes les phrases propres à une manche sont ici ; ui.js n'en contient aucune.
 // tests/vocabulary.test.mjs vérifie qu'aucune manche n'emploie les mots de l'autre.
 
-import { feature, periodWeeks } from './game-core.js?v=__VERSION__';
+import { feature, weeksLabel } from './game-core.js?v=__VERSION__';
 import { EVENTS, QUOTES, TEAM_CAPACITY, DONE_COST, AVENANT, UNDERESTIMATES, MAN_DAYS_PER_POINT } from './scenario.js?v=__VERSION__';
 
 const euro = (n) => `${Math.round(n).toLocaleString('fr-FR')} €`;
@@ -11,7 +11,7 @@ const names = (ids) => ids.map((id) => feature(id).name).join(', ');
 // Charge : en jours/homme en manche 1 (projet), en points en manche 2 (Scrum).
 const md = (pts) => pts * MAN_DAYS_PER_POINT;
 const jh = (pts) => `${md(pts)} jours/homme`;
-const weeksText = (period) => { const [a, b] = periodWeeks(period); return `semaines ${a} et ${b}`; };
+const weeksText = (period) => weeksLabel(period);
 
 /** Mots qu'une manche ne doit jamais employer (ceux de l'autre manche). */
 export const FORBIDDEN = {
@@ -61,7 +61,7 @@ const cascade = {
   arbitrageMore: 'Le projet reste orageux : le COPIL peut encore retirer des lots pas encore commencés.',
   arbitrageBar: 'Arbitrez d\'abord : le projet est orageux.',
   forecast: (label, weather, remaining, left) => `${label} : reste à faire ${jh(remaining)} pour ${jh(left)} de temps restant, ${weather === 'sunny' ? 'projet ensoleillé ☀️' : 'projet orageux ⛈️, le COPIL devra arbitrer'}.`,
-  approach: 'Vous optez pour une démarche projet : un cahier des charges complet, signé avant de commencer, et un COPIL toutes les deux semaines pour suivre l\'avancement.',
+  approach: 'Vous optez pour une démarche projet : un cahier des charges complet, signé avant de commencer, et un COPIL chaque semaine pour suivre l\'avancement.',
   intuitionHelp: "Intuition : ce que Mme Lefèvre pense que chaque lot va rapporter, de 1 à 5 étoiles. C'est son avis, pas une mesure.",
   requestFits: (r) => `Accepter, c'est signer un avenant : ${jh(r.cost)} de lot et ${jh(AVENANT)} de recette en plus. Le cahier des charges garde assez de marge : rien à retirer.`,
   requestTight: () => `Accepter, c'est signer un avenant : ${jh(AVENANT)} de recette en plus, et le budget du projet ne bouge pas. Il faut donc retirer du cahier des charges des lots pas encore commencés.`,
@@ -74,7 +74,7 @@ const cascade = {
   journalTitle: 'Comptes rendus de COPIL',
   journalEmpty: 'Le projet démarre.',
   requestChip: 'Demande de la boulangère',
-  valuePer: '/ 2 semaines',
+  valuePer: '/ semaine',
   awaiting: 'Terminé, en attente de recette',
   recetteName: 'Recette et mise en production',
   recetteReady: 'Tous les lots du cahier des charges sont terminés.',
@@ -85,14 +85,14 @@ const cascade = {
   // (le bloc « Temps contre travail » est dessiné par ui.js).
   stats: (s, { weather, launched, cumulative }) => [
     [`${WEATHER[weather].icon} ${WEATHER[weather].label}`, 'Météo du projet'],
-    [`${md(TEAM_CAPACITY)} j/h`, 'Capacité toutes les 2 semaines'],
+    [`${md(TEAM_CAPACITY)} j/h`, 'Capacité chaque semaine'],
     ...(launched ? [[euro(cumulative), 'Ventes cumulées']] : []),
   ],
   timeVsWork: ({ weeks, totalWeeks, done, total }) => `${weeks} semaine${weeks > 1 ? 's' : ''} sur ${totalWeeks} · ${md(done)} jours/homme sur ${md(total)}, recette comprise`,
   reportTitle: (n) => `Compte rendu du COPIL ${n}`,
   next: (n) => `Avancer jusqu'au COPIL ${n}`,
   seeRequest: 'Voir la demande de la boulangère',
-  salesLine: (sales) => `Ventes pendant ces 2 semaines : ${euro(sales)}`,
+  salesLine: (sales) => `Ventes de la semaine : ${euro(sales)}`,
   eventText: (e) => e.text.cascade,
   eventLog: (e) => e.log.cascade,
   requestAnnounce: (r) => `${r.name} : ${jh(r.cost)}, plus ${jh(AVENANT)} d'avenant. Le COPIL doit trancher avant de continuer.`,
