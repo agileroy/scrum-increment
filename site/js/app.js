@@ -28,3 +28,10 @@ $('join-form').addEventListener('submit', async (event) => {
 });
 
 if (new URLSearchParams(location.search).has('salle')) loadRoomMode();
+
+// En salle, l'enseigne n'est plus un lien : la quitter ferait sortir de la partie collective.
+new MutationObserver(() => {
+  const link = $('home-link');
+  if (document.body.dataset.mode === 'room') link.removeAttribute('href');
+  else link.setAttribute('href', './');
+}).observe(document.body, { attributes: true, attributeFilter: ['data-mode'] });

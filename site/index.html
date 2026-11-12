@@ -23,7 +23,7 @@
 </head>
 <body>
   <header class="topbar">
-    <h1 class="brand"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>Fournée</h1>
+    <h1 class="brand"><a class="brand-link" id="home-link" href="./" title="Retour à l'accueil"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>Fournée</a></h1>
     <div class="topbar-actions">
       <span class="round-chip" id="round-chip" hidden></span>
       <span class="round-chip" id="room-chip" hidden></span>
@@ -41,7 +41,7 @@
   <main>
     <!-- Accueil -->
     <section class="screen home" id="screen-home">
-      <p class="home-intro">Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 12 semaines de développement. Ce qu'elle veut savoir : <strong>« Est-ce que mes clients vont s'en servir ? »</strong></p>
+      <p class="home-intro">Madame Lefèvre tient la boulangerie du quartier. Elle veut une appli pour que ses clients commandent en ligne, avec un budget de 12 semaines de développement. Elle l'avoue elle-même : <strong>« Je sais ce que je veux… enfin, je crois. »</strong></p>
       <div class="home-grid">
       <section class="panel home-card" aria-labelledby="home-host-title">
         <h2 id="home-host-title">Animer une partie</h2>
@@ -66,6 +66,8 @@
       <section class="panel home-card" aria-labelledby="home-solo-title">
         <h2 id="home-solo-title">Jouer seul</h2>
         <p class="muted">Deux manches sur le même projet, avec le même budget et les mêmes imprévus : d'abord en chef de projet, puis en Product Owner. Seule la façon de travailler change. À la fin, on compare.</p>
+        <p class="resume-note" id="resume-note" hidden></p>
+        <button type="button" class="button button-primary button-large" id="resume" hidden>Reprendre la partie</button>
         <button type="button" class="button button-primary button-large" id="start">Commencer la manche 1</button>
       </section>
       </div>

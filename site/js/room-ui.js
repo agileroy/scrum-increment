@@ -188,6 +188,7 @@ export async function startRoomMode() {
 
   // « Jouer seul » quitte la salle suivie (sans la supprimer).
   $('start').addEventListener('click', () => { if (code) leave(); }, true);
+  $('resume').addEventListener('click', () => { if (code) leave(); }, true);
   $('replay').addEventListener('click', () => { if (code) leave(); });
 
   /* ------------------------------------------------------------ Accueil */

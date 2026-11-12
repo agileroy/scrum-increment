@@ -7,7 +7,7 @@
 import {
   MODES, feature, newRound, planStatus, toggleInPlan, canMove, moveFeature, validatePlan,
   moveFeatureTo, workItems, featureState, playSprint, finishRound, roundResults, truthTable,
-  requestStatus, decideRequest, isRequest, firstMovableIndex, intuitionSurprises, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
+  requestStatus, decideRequest, isRequest, developmentOver, reviveRound, firstMovableIndex, intuitionSurprises, canDescope, descopeStatus, descope, needsArbitrage, keepScope, canRevise, reviseDecisions, periodWeeks, planProgress, planWork, projectWeather, dependencyState,
 } from './game-core.js?v=__VERSION__';
 import { EURO_PER_POINT, MAN_DAYS_PER_POINT, AVENANT, SPRINT_WEEKS, HORIZON_WEEKS, RECETTE, PLANNED_SPRINTS } from './scenario.js?v=__VERSION__';
 import { lexicon, logEntry, exploitationText, discoveryText, STORY, SPEAKER } from './vocabulary.js?v=__VERSION__';
@@ -46,6 +46,96 @@ function show(name, { keepScroll = false } = {}) {
   chip.hidden = !inRound;
   if (inRound) chip.textContent = roundLabel();
   if (changed || !keepScroll) window.scrollTo(0, 0);
+  saveSolo();
+}
+
+/* ---------------------------------------------------------------- Partie seule : adresse et sauvegarde */
+
+// La partie seule a son adresse (#solo) et se sauvegarde dans ce navigateur à chaque action :
+// rafraîchir la reprend, l'enseigne ou « Précédent » ramènent à l'accueil, qui propose de la reprendre.
+const SOLO_KEY = 'scrum-increment.solo';
+const SOLO_HASH = '#solo';
+const SOLO_SCREENS = ['plan', 'board', 'transition', 'results'];
+const inRoom = () => document.body.dataset.mode === 'room';
+
+function currentScreen() {
+  return SCREENS.find((s) => !$(`screen-${s}`).hidden);
+}
+
+function saveSolo() {
+  if (app.session || inRoom() || !app.round) return;
+  const screen = currentScreen();
+  if (!SOLO_SCREENS.includes(screen)) return;
+  try { localStorage.setItem(SOLO_KEY, JSON.stringify({ v: 1, screen, round: app.round, results: app.results })); } catch { /* stockage indisponible */ }
+}
+
+function loadSolo() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SOLO_KEY));
+    return saved?.v === 1 && saved.round ? saved : null;
+  } catch { return null; }
+}
+
+function clearSolo() {
+  try { localStorage.removeItem(SOLO_KEY); } catch { /* stockage indisponible */ }
+}
+
+/** Où en est la partie sauvegardée, en une phrase. */
+function savedLabel(saved) {
+  const l = lexicon(saved.round.mode);
+  if (saved.screen === 'results') return 'Partie terminée : les résultats vous attendent.';
+  if (saved.screen === 'transition') return 'Partie en cours : la manche 1 est terminée.';
+  if (saved.screen === 'plan') return 'Partie en cours : cahier des charges en préparation.';
+  const r = saved.round;
+  return `Partie en cours : ${l.round}, ${l.deadline(Math.min(r.sprint + 1, r.lastBuildSprint), r.lastBuildSprint)}.`;
+}
+
+/** Accueil : « Reprendre la partie » quand une partie seule est sauvegardée. */
+function renderHomeSolo() {
+  const saved = inRoom() ? null : loadSolo();
+  $('resume').hidden = !saved;
+  $('resume-note').hidden = !saved;
+  if (saved) $('resume-note').textContent = savedLabel(saved);
+  $('start').textContent = saved ? 'Nouvelle partie' : 'Commencer la manche 1';
+  $('start').classList.toggle('button-primary', !saved);
+  $('start').classList.toggle('button-ghost', Boolean(saved));
+}
+
+function goHome() {
+  closeDialog();
+  show('home');
+  renderHomeSolo();
+}
+
+/** Reprend la partie sauvegardée là où elle en était. */
+function resumeSolo() {
+  const saved = loadSolo();
+  if (!saved || inRoom()) return false;
+  closeDialog();
+  app.session = null;
+  app.results = saved.results ?? {};
+  app.round = reviveRound(saved.round);
+  app.remove = [];
+  const r = app.round;
+  if (saved.screen === 'results') renderResults();
+  else if (saved.screen === 'transition') show('transition');
+  else if (saved.screen === 'plan') { renderPlan(); show('plan'); }
+  else if (r.finished) { if (r.mode === MODES.cascade) show('transition'); else renderResults(); }
+  else {
+    renderBoard();
+    show('board');
+    if (developmentOver(r)) finishCurrentRound();
+    else if (r.pendingRequest) openRequestDialog();
+  }
+  return true;
+}
+
+function enterSoloAddress() {
+  if (location.hash !== SOLO_HASH) history.pushState(null, '', SOLO_HASH);
+}
+
+function leaveSoloAddress() {
+  if (location.hash) history.pushState(null, '', location.pathname + location.search);
 }
 
 /** Action du joueur : appliquée à l'écran tout de suite, et à l'état partagé en équipe. */
@@ -56,6 +146,7 @@ function act(fn, render) {
   app.round = next;
   render?.();
   app.session?.commit(fn);
+  saveSolo();
   return true;
 }
 
@@ -332,6 +423,7 @@ function finishCurrentRound() {
   const { state, summary } = finishRound(app.round);
   app.round = state;
   app.results[state.mode] = roundResults(state);
+  saveSolo();
   openDialog(finishHtml(state, summary), () => {
     if (state.mode === MODES.cascade) show('transition');
     else renderResults();
@@ -342,6 +434,7 @@ function onPlaySprint() {
   const { state, report } = playSprint(app.round);
   app.round = state;
   renderBoard();
+  saveSolo();
   let after = report.developmentOver ? finishCurrentRound : null;
   if (state.pendingRequest) after = () => { app.remove = []; openRequestDialog(); };
   openDialog(reportHtml(state, report), after, 'report');
@@ -795,6 +888,24 @@ export function init() {
     app.round = newRound(MODES.cascade);
     renderPlan();
     show('plan');
+    enterSoloAddress();
+  });
+
+  $('resume').addEventListener('click', () => { if (resumeSolo()) enterSoloAddress(); });
+
+  // L'enseigne ramène à l'accueil ; la partie seule reste sauvegardée.
+  $('home-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (inRoom()) return;
+    leaveSoloAddress();
+    goHome();
+  });
+
+  // Précédent et Suivant du navigateur : l'adresse dit l'écran.
+  window.addEventListener('popstate', () => {
+    if (inRoom()) return;
+    if (location.hash === SOLO_HASH) { if (!resumeSolo()) { history.replaceState(null, '', location.pathname + location.search); goHome(); } }
+    else goHome();
   });
 
   $('plan-list').addEventListener('change', (e) => {
@@ -836,7 +947,9 @@ export function init() {
   $('replay').addEventListener('click', () => {
     app.round = null;
     app.chart = null;
-    show('home');
+    clearSolo();
+    leaveSoloAddress();
+    goHome();
   });
 
   const dialog = $('dialog');
@@ -877,6 +990,11 @@ export function init() {
     // Si le navigateur ferme quand même la fenêtre d'une demande (Échap répété), on la rouvre.
     else if (app.round?.pendingRequest) openRequestDialog();
   });
+
+  // Arrivée sur la page : #solo reprend la partie sauvegardée ; sinon l'accueil la propose.
+  const inviteToRoom = new URLSearchParams(location.search).has('salle');
+  if (!inviteToRoom && location.hash === SOLO_HASH && !resumeSolo()) history.replaceState(null, '', location.pathname + location.search);
+  if (!inviteToRoom) renderHomeSolo();
 }
 
 /** Ce que room-ui.js réutilise pour le jeu d'une équipe et les résultats collectifs. */
