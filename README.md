@@ -43,7 +43,7 @@ Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages : jouer hors VPN.
 
 ## Architecture
 
-Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, polices système, ni CDN ni traceur. Seul le mode collectif utilise un service tiers : Firebase Realtime Database (connexion anonyme), dans un projet Firebase propre au jeu ; le jeu seul ne charge rien d'externe.
+Site statique (HTML/CSS/JavaScript, sans build) publié sur GitHub Pages, ni CDN ni traceur. L'habillage est celui d'une boulangerie de quartier : en-tête en devanture (enseigne et store rayé), thème clair « comptoir » et thème sombre « ardoise », polices Bricolage Grotesque et Caveat (licence OFL) hébergées avec le site dans `site/fonts/`. Seul le mode collectif utilise un service tiers : Firebase Realtime Database (connexion anonyme), dans un projet Firebase propre au jeu ; le jeu seul ne charge rien d'externe.
 
 - `site/js/scenario.js` : données du scénario (fonctionnalités, demandes de changement, retours clients, imprévus, calendrier, constantes) ;
 - `site/js/game-core.js` : logique métier pure et déterministe (plan, Sprints, construction dans l'ordre, prérequis, mises en ligne, demandes de changement et avenants, ventes, clients perdus, coupure, calendrier, résultats), testée avec Node.js ; l'état d'une manche est un objet JSON simple ;
